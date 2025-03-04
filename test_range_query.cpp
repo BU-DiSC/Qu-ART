@@ -32,14 +32,13 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-N") {
             N = atoi(argv[i + 1]);
             i += 2;
-        } else if (string(argv[i]) == "-f") {
-            input_file = argv[i + 1];
-            i += 2;
-        }
+        } 
     }
 
     // read data
-    auto keys = read_bin<uint64_t>(input_file.c_str());
+    // auto keys = read_bin<uint64_t>(input_file.c_str());
+    std::vector<uint64_t> keys(N, 0);
+    for(int i = 0; i < N; i ++)keys[i] = i;
 
     // Build tree
 
@@ -62,20 +61,30 @@ int main(int argc, char** argv) {
 
     // Query tree
     long long query_time = 0;
-    for (uint64_t i = 0; i < N; i++) {
-        uint8_t key[8];
+    
+    // Range Queries
+    for (uint64_t i = 4; i < N / 10; i++) {
+        uint8_t key[8], key2[8];
         ART::loadKey(keys[i], key);
+        ART::loadKey(std::min((uint64_t)N - 1, keys[i] + 133), key2);
         auto start = chrono::high_resolution_clock::now();
-        ART::ArtNode* leaf = ART::lookup(tree, key, 8, 0, 8);
+        ART::Chain* ch = ART::rangelookup(tree, key, 8, key2, 8, 0, 8);
+
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         query_time += duration.count();
-        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
-    }
-
-    if (verbose) {
-        cout << "Query time: " << query_time << " ns" << endl;
+        // while(!ch->isEmpty()) {
+        //     uint8_t k[8];
+        //     // ART::loadKey(ART::getLeafValue(ch->pop_front()->nodeptr()), k);
+        //     std::cout << ART::getLeafValue(ch->pop_front()->nodeptr()) << ", ";
+        // }
+        // std::cout << std::endl;
+        // auto stop = chrono::high_resolution_clock::now();
+        // auto duration =
+        //     chrono::duration_cast<chrono::nanoseconds>(stop - start);
+        // query_time += duration.count();
+        // assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
     }
 
     // simply output the times in csv format
