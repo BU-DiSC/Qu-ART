@@ -584,7 +584,6 @@
          *nodeRef = makeLeaf(value);
          // root_id is initially a leaf node
          root_id = reinterpret_cast<uintptr_t>(*nodeRef);
-         printf("111Inserted root node with value: %lu\n", value);
          return;
      }
  
