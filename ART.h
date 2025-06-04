@@ -795,8 +795,14 @@
  
      if (isLeaf(node)) {
          // Make sure we have the right leaf
-         if (leafMatches(node, key, keyLength, depth, maxKeyLength))
+         if (leafMatches(node, key, keyLength, depth, maxKeyLength)) {
              *nodeRef = NULL;
+
+             // Update root_id only if the erased node was the root node
+             if (nodeRef == reinterpret_cast<ArtNode**>(&root_id)) {
+                 root_id = 0;  // tree is now empty
+             }
+         }
          return;
      }
  
@@ -825,6 +831,11 @@
              case NodeType256:
                  eraseNode256(static_cast<Node256*>(node), nodeRef, key[depth]);
                  break;
+         }
+
+         // update root_id only if the erased node was the root node
+         if (nodeRef == reinterpret_cast<ArtNode**>(&root_id)) {
+             root_id = reinterpret_cast<uintptr_t>(*nodeRef);
          }
      } else {
          // Recurse
