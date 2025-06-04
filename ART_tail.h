@@ -670,6 +670,9 @@ void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                           newNode);
             break;
     }
+
+    // update root_id if node changes and expands
+    root_id = reinterpret_cast<uintptr_t>(*nodeRef); 
 }
 
 void insertNode4(Node4* node, ArtNode** nodeRef, uint8_t keyByte,
