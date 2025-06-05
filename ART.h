@@ -54,10 +54,32 @@ struct ArtNode {
     ArtNode(int8_t type) : prefixLength(0), count(0), type(type) {}
 };
 
-struct AdaptiveRadixTree {
-    ArtNode* root_id;  // root node of the tree
+// struct AdaptiveRadixTree {
+//     ArtNode* root_id;  // root node of the tree
 
-    AdaptiveRadixTree() : root_id(nullptr) {}
+//     AdaptiveRadixTree() : root_id(nullptr) {}
+// };
+
+//declare insert here to allow use in class
+void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
+    uintptr_t value, unsigned maxKeyLength);
+
+class ART {
+    public:
+        ArtNode** root_ref;  //reference to root node
+
+        //constructor
+        ART() {
+            *root_ref = NULL;
+        }
+
+        void insert(uint8_t key[], 
+                    unsigned depth, 
+                    uintptr_t value, 
+                    unsigned maxKeyLength) {
+            ::ART::insert(*root_ref, root_ref, key, depth, value, maxKeyLength);
+        }
+
 };
 
 // Node with up to 4 children
@@ -598,17 +620,7 @@ void copyPrefix(ArtNode* src, ArtNode* dst) {
     memcpy(dst->prefix, src->prefix, min(src->prefixLength, maxPrefixLength));
 }
 
-void insert(AdaptiveRadixTree* tree, AdaptiveRadixTree** treeRef, uint8_t key[], unsigned depth,
-            uintptr_t value, unsigned maxKeyLength) {
-    if (tree->root_id == nullptr) {
-        tree->root_id = makeLeaf(value);
-        return;
-    }
-
-    insertRecursive(tree->root_id, &tree->root_id, key, depth, value, maxKeyLength);
-}
-
-void insertRecursive(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
+void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
             uintptr_t value, unsigned maxKeyLength) {
     // Insert the leaf value into the tree
 
