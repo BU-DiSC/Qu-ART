@@ -644,8 +644,6 @@ void insertRecursive(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned d
         if (mismatchPos != node->prefixLength) {
             // Prefix differs, create new node
             Node4* newNode = new Node4();
-            // stores nodeRef before operations
-            uintptr_t prevNodeRef = reinterpret_cast<uintptr_t>(nodeRef);  
             *nodeRef = newNode;
             newNode->prefixLength = mismatchPos;
             memcpy(newNode->prefix, node->prefix,
@@ -679,9 +677,6 @@ void insertRecursive(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned d
         insertRecursive(*child, child, key, depth + 1, value, maxKeyLength);
         return;
     }
-
-    // nodeRef before insertion
-    uintptr_t prevNodeRef = reinterpret_cast<uintptr_t>(nodeRef);  
 
     // Insert leaf into inner node
     ArtNode* newNode = makeLeaf(value);
@@ -834,9 +829,6 @@ void eraseRecursive(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned ke
             return;
         depth += node->prefixLength;
     }
-
-    // nodeRef before erase
-    uintptr_t prevNodeRef = reinterpret_cast<uintptr_t>(nodeRef); 
 
     ArtNode** child = findChild(node, key[depth]);
     if (isLeaf(*child) &&

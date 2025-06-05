@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ArtNode* tree = NULL;
+    ART::ArtTree* tree = NULL;
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[8];
