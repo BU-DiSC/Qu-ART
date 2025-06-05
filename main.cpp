@@ -86,5 +86,7 @@ int main(int argc, char** argv) {
     // simply output the times in csv format
     cout << insertion_time << "," << query_time << endl;
 
+    cout << "Is leaf: " << ART::isLeaf(reinterpret_cast<ART::ArtNode*>(tree->root_id)) << endl;
+
     return 0;
 }
