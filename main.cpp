@@ -38,19 +38,16 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("here\n");
 
     // read data
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
-    printf("read it well\n");
 
     // Build tree
 
     ART::ArtTree* tree = new ART::ArtTree();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
-        printf("inserting %lu\n", i);
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
@@ -85,8 +82,6 @@ int main(int argc, char** argv) {
 
     // simply output the times in csv format
     cout << insertion_time << "," << query_time << endl;
-
-    cout << "Is leaf: " << ART::isLeaf(reinterpret_cast<ART::ArtNode*>(tree->root_id)) << endl;
 
     return 0;
 }

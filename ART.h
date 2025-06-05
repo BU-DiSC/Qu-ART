@@ -600,7 +600,7 @@ void copyPrefix(ArtNode* src, ArtNode* dst) {
 
 void insert(ArtTree* tree, ArtTree** treeRef, uint8_t key[], unsigned depth,
             uintptr_t value, unsigned maxKeyLength) {
-    if (tree->root_id == 0) {ß
+    if (tree->root_id == 0) {
         tree->root_id = reinterpret_cast<uintptr_t>(makeLeaf(value));
         return;
     }
