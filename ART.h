@@ -54,10 +54,10 @@ struct ArtNode {
     ArtNode(int8_t type) : prefixLength(0), count(0), type(type) {}
 };
 
-struct ArtTree {
-    uintptr_t root_id;  // root node of the tree
+struct AdaptiveRadixTree {
+    ArtNode* root_id;  // root node of the tree
 
-    ArtTree() : root_id(0) {}
+    AdaptiveRadixTree() : root_id(nullptr) {}
 };
 
 // Node with up to 4 children
@@ -437,11 +437,11 @@ unsigned prefixMismatch(ArtNode* node, uint8_t key[], unsigned depth,
 Chain* rangelookupRecursive(ArtNode* node, uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], uint8_t h_keyLength,
     unsigned depth, unsigned maxKeyLength);
 
-Chain rangelookup(ArtTree* tree, uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], unsigned h_keyLength,
+Chain rangelookup(AdaptiveRadixTree* tree, uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], unsigned h_keyLength,
     unsigned depth, unsigned maxKeyLength) {
     // Find the node with a matching key, optimistic version
-    ArtNode* root = reinterpret_cast<ArtNode*>(tree->root_id);
-    if (root == NULL) return Chain();
+    ArtNode* root = tree->root_id;
+    if (root == nullptr) return Chain();
 
     return *rangelookupRecursive(root, l_key, l_keyLength, h_key, h_keyLength, depth, maxKeyLength);
 }
@@ -509,8 +509,8 @@ Chain* rangelookupRecursive(ArtNode* node, uint8_t l_key[], unsigned l_keyLength
 }
 
 // Lookup a key in the tree
-ArtNode* lookup(ArtTree* tree, uint8_t key[], unsigned keyLength, unsigned depth, unsigned maxKeyLength) {
-    return lookupRecursive(reinterpret_cast<ArtNode*>(tree->root_id), key, keyLength, depth, maxKeyLength);
+ArtNode* lookup(AdaptiveRadixTree* tree, uint8_t key[], unsigned keyLength, unsigned depth, unsigned maxKeyLength) {
+    return lookupRecursive(tree->root_id, key, keyLength, depth, maxKeyLength);
 }
 
 ArtNode* lookupRecursive(ArtNode* node, uint8_t key[], unsigned keyLength,
@@ -598,16 +598,14 @@ void copyPrefix(ArtNode* src, ArtNode* dst) {
     memcpy(dst->prefix, src->prefix, min(src->prefixLength, maxPrefixLength));
 }
 
-void insert(ArtTree* tree, ArtTree** treeRef, uint8_t key[], unsigned depth,
+void insert(AdaptiveRadixTree* tree, AdaptiveRadixTree** treeRef, uint8_t key[], unsigned depth,
             uintptr_t value, unsigned maxKeyLength) {
-    if (tree->root_id == 0) {
-        tree->root_id = reinterpret_cast<uintptr_t>(makeLeaf(value));
+    if (tree->root_id == nullptr) {
+        tree->root_id = makeLeaf(value);
         return;
     }
 
-    insertRecursive(reinterpret_cast<ArtNode*>(tree->root_id),
-                    reinterpret_cast<ArtNode**>(&tree->root_id), key, depth,
-                    value, maxKeyLength);
+    insertRecursive(tree->root_id, &tree->root_id, key, depth, value, maxKeyLength);
 }
 
 void insertRecursive(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
@@ -797,14 +795,12 @@ void eraseNode16(Node16* node, ArtNode** nodeRef, ArtNode** leafPlace);
 void eraseNode48(Node48* node, ArtNode** nodeRef, uint8_t keyByte);
 void eraseNode256(Node256* node, ArtNode** nodeRef, uint8_t keyByte);
 
-void erase(ArtTree* tree, ArtTree** treeRef, uint8_t key[], unsigned keyLength,
+void erase(AdaptiveRadixTree* tree, AdaptiveRadixTree** treeRef, uint8_t key[], unsigned keyLength,
            unsigned maxKeyLength) {
     // Erase a leaf from the tree
-    if (tree->root_id == 0) return;
+    if (tree->root_id == nullptr) return;
 
-    eraseRecursive(reinterpret_cast<ArtNode*>(tree->root_id),
-          reinterpret_cast<ArtNode**>(&tree->root_id), key, keyLength, 0,
-          maxKeyLength);
+    eraseRecursive(tree->root_id, &tree->root_id, key, keyLength, 0, maxKeyLength);
 }
 
 void eraseRecursive(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned keyLength,

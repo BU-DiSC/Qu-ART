@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ArtTree* tree = new ART::ArtTree();
+    ART::AdaptiveRadixTree* tree = new ART::AdaptiveRadixTree();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[8];
