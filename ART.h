@@ -27,6 +27,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <vector>
+
 namespace ART {
 
 // Constants for the node types
@@ -62,7 +64,13 @@ ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
 
 class ART {
     public:
-        ArtNode* root;  //reference to root node
+        ArtNode* root;  // pointer to root node
+
+        ArtNode* tail; // pointer to tail node
+        ArtNode* lil; // pointer to lil node
+
+        std::vector<ArtNode*> tail_path; // pointer to tail path
+        std::vector<ArtNode*> lil_path; // pointer to lil path
 
         //constructor
         ART() {
