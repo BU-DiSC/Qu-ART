@@ -62,25 +62,25 @@ ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
 
 class ART {
     public:
-        ArtNode** root_ref;  //reference to root node
+        ArtNode* root;  //reference to root node
 
         //constructor
         ART() {
-            *root_ref = NULL;
+            root = NULL;
         }
 
         void insert(uint8_t key[], 
                     unsigned depth, 
                     uintptr_t value, 
                     unsigned maxKeyLength) {
-            ::ART::insert(*root_ref, root_ref, key, depth, value, maxKeyLength);
+            ::ART::insert(root, &root, key, depth, value, maxKeyLength);
         }
 
         ArtNode* lookup( uint8_t key[], 
                         unsigned keyLength,
                         unsigned depth, 
                         unsigned maxKeyLength) {
-            return ::ART::lookup(*root_ref, key, keyLength, depth, maxKeyLength);
+            return ::ART::lookup(root, key, keyLength, depth, maxKeyLength);
         }
 };
 
