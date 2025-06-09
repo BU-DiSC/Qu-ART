@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     // read data
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
-
+    keys = {5,4,3,2,1};
     // Build tree
 
     ART::ART* tree = new ART::ART();
