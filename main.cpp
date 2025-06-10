@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     }
 
     // read data
-    auto keys = read_bin<uint64_t>(input_file.c_str());
+    auto keys = read_bin<uint32_t>(input_file.c_str());
 
     // Build tree
 
