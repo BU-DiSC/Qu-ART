@@ -58,12 +58,13 @@ struct ArtNode {
 
 //declare functions here to allow use in class
 void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
-    uintptr_t value, unsigned maxKeyLength, ArtNode* lil, 
-    std::vector<ArtNode*> lil_path, signed path_pos);
+    uintptr_t value, unsigned maxKeyLength, ArtNode* lil, ArtNode** lilRef,
+    std::vector<ArtNode*>* lil_path, signed path_pos);
 ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
     unsigned depth, unsigned maxKeyLength);
 unsigned prefixMismatch(ArtNode* node, uint8_t key[], unsigned depth,
     unsigned maxKeyLength);
+bool isLeaf(ArtNode* node);
 
 class ART {
     public:
@@ -83,12 +84,13 @@ class ART {
 
             //If the key matches lil in full, it can be inserted from lil. Else it must
             // be inserted from the root.
-            unsigned mismatchPos = prefixMismatch(lil, key, depth, maxKeyLength);
             //need to check if root is not null, since if so then it has no prefixLength
-            if (root != NULL && mismatchPos == lil->prefixLength) {
-                ::ART::insert(lil, &lil, key, depth, value, maxKeyLength, lil, lil_path, lil_path.size()-1);
+            if (root != NULL 
+                && !(isLeaf(root))
+                && prefixMismatch(lil, key, depth, maxKeyLength) == lil->prefixLength) {
+                ::ART::insert(lil, &lil, key, depth, value, maxKeyLength, lil, &lil, &lil_path, lil_path.size()-1);
             } else {
-                ::ART::insert(root, &root, key, depth, value, maxKeyLength, lil, lil_path, lil_path.size()-1);
+                ::ART::insert(root, &root, key, depth, value, maxKeyLength, lil, &lil, &lil_path, lil_path.size()-1);
             }
         }
 
@@ -458,7 +460,6 @@ unsigned prefixMismatch(ArtNode* node, uint8_t key[], unsigned depth,
         return 0;
     }
     unsigned pos;
-    std::cout << node->prefixLength << std::endl;
     if (node->prefixLength > maxPrefixLength) {
         for (pos = 0; pos < maxPrefixLength; pos++)
             if (key[depth + pos] != node->prefix[pos]) return pos;
@@ -601,13 +602,13 @@ ArtNode* lookupPessimistic(ArtNode* node, uint8_t key[], unsigned keyLength,
 
 // Forward references
 void insertNode4(Node4* node, ArtNode** nodeRef, uint8_t keyByte,
-                 ArtNode* child, ArtNode* lil, std::vector<ArtNode*> lil_path);
+                 ArtNode* child, ArtNode** lilRef, std::vector<ArtNode*>* lil_path);
 void insertNode16(Node16* node, ArtNode** nodeRef, uint8_t keyByte,
-                  ArtNode* child, ArtNode* lil, std::vector<ArtNode*> lil_path);
+                  ArtNode* child, ArtNode** lilRef, std::vector<ArtNode*>* lil_path);
 void insertNode48(Node48* node, ArtNode** nodeRef, uint8_t keyByte,
-                  ArtNode* child, ArtNode* lil, std::vector<ArtNode*> lil_path);
+                  ArtNode* child, ArtNode** lilRef, std::vector<ArtNode*>* lil_path);
 void insertNode256(Node256* node, ArtNode** nodeRef, uint8_t keyByte,
-                   ArtNode* child, ArtNode* lil, std::vector<ArtNode*> lil_path);
+                   ArtNode* child, ArtNode** lilRef, std::vector<ArtNode*>* lil_path);
 
 unsigned min(unsigned a, unsigned b) {
     // Helper function
@@ -628,12 +629,13 @@ void insert(ArtNode* node,
             uintptr_t value, 
             unsigned maxKeyLength,
             ArtNode* lil,
-            std::vector<ArtNode*> lil_path,
+            ArtNode** lilRef,
+            std::vector<ArtNode*>* lil_path,
             signed path_pos = -1   //the position on the path corresponding to this node
             ) {
     //if the position was not given or is invalid, set to the bottom of the path
-    if(path_pos < 0 || path_pos >= lil_path.size()){
-        path_pos = lil_path.size() - 1;
+    if(path_pos < 0 || path_pos >= lil_path->size()){
+        path_pos = lil_path->size() - 1;
     }
     // Insert the leaf value into the tree    
 
@@ -644,8 +646,8 @@ void insert(ArtNode* node,
     if (node == NULL) {
         ArtNode* newLeaf = makeLeaf(value);
         *nodeRef = newLeaf;
-        lil = newLeaf;
-        lil_path.push_back(newLeaf);
+        *lilRef = newLeaf;
+        lil_path->push_back(newLeaf);
         return;
     }
     /*
@@ -675,14 +677,14 @@ void insert(ArtNode* node,
 
         //add the previous root value and the given key as leaves to the new root.
         insertNode4(newNode, nodeRef, existingKey[depth + newPrefixLength],
-                    node, lil, lil_path);
+                    node, lilRef, lil_path);
         insertNode4(newNode, nodeRef, key[depth + newPrefixLength],
-                    makeLeaf(value), lil, lil_path);
+                    makeLeaf(value), lilRef, lil_path);
 
         //lil is set to new root. lil_path is also set to just the new root.
-        *lil = *newNode;
-        lil_path.clear();
-        lil_path.push_back(newNode);
+        *lilRef = newNode;
+        lil_path->clear();
+        lil_path->push_back(newNode);
 
         return;
     }
@@ -702,7 +704,7 @@ void insert(ArtNode* node,
             //The new node's prefix is the matching portion of the previous node's and the key's prefixes.
             //The previous node's prefix is cut down to not include that section.
             if (node->prefixLength < maxPrefixLength) {
-                insertNode4(newNode, nodeRef, node->prefix[mismatchPos], node, lil, lil_path);
+                insertNode4(newNode, nodeRef, node->prefix[mismatchPos], node, lilRef, lil_path);
                 node->prefixLength -= (mismatchPos + 1);
                 memmove(node->prefix, node->prefix + mismatchPos + 1,
                         min(node->prefixLength, maxPrefixLength));
@@ -711,18 +713,18 @@ void insert(ArtNode* node,
                 uint8_t minKey[maxKeyLength];
                 loadKey(getLeafValue(minimum(node)), minKey);
                 insertNode4(newNode, nodeRef, minKey[depth + mismatchPos],
-                            node, lil, lil_path);
+                            node, lilRef, lil_path);
                 memmove(node->prefix, minKey + depth + mismatchPos + 1,
                         min(node->prefixLength, maxPrefixLength));
             }
 
             //the old parent node at the end of the path has to be replaced with the new one.
-            lil_path.pop_back();
-            lil_path.push_back(newNode);
-            *lil = *newNode;
+            lil_path->pop_back();
+            lil_path->push_back(newNode);
+            *lilRef = newNode;
 
             insertNode4(newNode, nodeRef, key[depth + mismatchPos],
-                        makeLeaf(value), lil, lil_path);
+                        makeLeaf(value), lilRef, lil_path);
 
             return;
         }
@@ -732,7 +734,7 @@ void insert(ArtNode* node,
     // Recurse
     ArtNode** child = findChild(node, key[depth]);
     if (*child) {
-        insert(*child, child, key, depth + 1, value, maxKeyLength, lil, lil_path);
+        insert(*child, child, key, depth + 1, value, maxKeyLength, lil, lilRef, lil_path);
         return;
     }
 
@@ -741,19 +743,19 @@ void insert(ArtNode* node,
     switch (node->type) {
         case NodeType4:
             insertNode4(static_cast<Node4*>(node), nodeRef, key[depth],
-                        newNode, lil, lil_path);
+                        newNode, lilRef, lil_path);
             break;
         case NodeType16:
             insertNode16(static_cast<Node16*>(node), nodeRef, key[depth],
-                         newNode, lil, lil_path);
+                         newNode, lilRef, lil_path);
             break;
         case NodeType48:
             insertNode48(static_cast<Node48*>(node), nodeRef, key[depth],
-                         newNode, lil, lil_path);
+                         newNode, lilRef, lil_path);
             break;
         case NodeType256:
             insertNode256(static_cast<Node256*>(node), nodeRef, key[depth],
-                          newNode, lil, lil_path);
+                          newNode, lilRef, lil_path);
             break;
     }
 }
@@ -762,8 +764,8 @@ void insertNode4(Node4* node,
                  ArtNode** nodeRef, 
                  uint8_t keyByte,
                  ArtNode* child, 
-                 ArtNode* lil, 
-                 std::vector<ArtNode*> lil_path
+                 ArtNode** lilRef, 
+                 std::vector<ArtNode*>* lil_path
             ) {
     // Insert leaf into inner node
     if (node->count < 4) {
@@ -780,17 +782,16 @@ void insertNode4(Node4* node,
         // Grow to Node16
         Node16* newNode = new Node16();
         *nodeRef = newNode;
-        lil = newNode;
-        lil_path.pop_back();
-        lil_path.push_back(newNode);
+        *lilRef = newNode;
+        lil_path->pop_back();
+        lil_path->push_back(newNode);
         newNode->count = 4;
         copyPrefix(node, newNode);
         for (unsigned i = 0; i < 4; i++)
             newNode->key[i] = flipSign(node->key[i]);
         memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
         delete node;
-        lil_path[lil_path.size()-1] = newNode;    //update the node in the path
-        return insertNode16(newNode, nodeRef, keyByte, child, lil, lil_path);
+        return insertNode16(newNode, nodeRef, keyByte, child, lilRef, lil_path);
     }
 }
 
@@ -798,8 +799,8 @@ void insertNode16(Node16* node,
                   ArtNode** nodeRef, 
                   uint8_t keyByte,
                   ArtNode* child, 
-                  ArtNode* lil, 
-                  std::vector<ArtNode*> lil_path
+                  ArtNode** lilRef, 
+                  std::vector<ArtNode*>* lil_path
             ) {
     // Insert leaf into inner node
     if (node->count < 16) {
@@ -821,17 +822,16 @@ void insertNode16(Node16* node,
         // Grow to Node48
         Node48* newNode = new Node48();
         *nodeRef = newNode;
-        lil = newNode;
-        lil_path.pop_back();
-        lil_path.push_back(newNode);
+        *lilRef = newNode;
+        lil_path->pop_back();
+        lil_path->push_back(newNode);
         memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
         for (unsigned i = 0; i < node->count; i++)
             newNode->childIndex[flipSign(node->key[i])] = i;
         copyPrefix(node, newNode);
         newNode->count = node->count;
         delete node;
-        lil_path[lil_path.size()-1] = newNode;    //update the node in the path
-        return insertNode48(newNode, nodeRef, keyByte, child, lil, lil_path);
+        return insertNode48(newNode, nodeRef, keyByte, child, lilRef, lil_path);
     }
 }
 
@@ -839,8 +839,8 @@ void insertNode48(Node48* node,
                   ArtNode** nodeRef, 
                   uint8_t keyByte,
                   ArtNode* child, 
-                  ArtNode* lil, 
-                  std::vector<ArtNode*> lil_path
+                  ArtNode** lilRef, 
+                  std::vector<ArtNode*>* lil_path
             ) {
     // Insert leaf into inner node
     if (node->count < 48) {
@@ -860,12 +860,11 @@ void insertNode48(Node48* node,
         newNode->count = node->count;
         copyPrefix(node, newNode);
         *nodeRef = newNode;
-        lil = newNode;
-        lil_path.pop_back();
-        lil_path.push_back(newNode);
+        *lilRef = newNode;
+        lil_path->pop_back();
+        lil_path->push_back(newNode);
         delete node;
-        lil_path[lil_path.size()-1] = newNode;    //update the node in the path
-        return insertNode256(newNode, nodeRef, keyByte, child, lil, lil_path);
+        return insertNode256(newNode, nodeRef, keyByte, child, lilRef, lil_path);
     }
 }
 
@@ -873,8 +872,8 @@ void insertNode256(Node256* node,
                    ArtNode** nodeRef, 
                    uint8_t keyByte,
                    ArtNode* child, 
-                   ArtNode* lil, 
-                   std::vector<ArtNode*> lil_path
+                   ArtNode** lilRef, 
+                   std::vector<ArtNode*>* lil_path
             ) {
     // Insert leaf into inner node
     node->count++;
