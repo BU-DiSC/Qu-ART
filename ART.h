@@ -40,7 +40,7 @@ namespace ART {
             ArtNode* root;  // pointer to root node
             ArtNode* fp; // fast path
             std::vector<ArtNode*> fp_path; // fp path
-            uint32_t fp_value; 
+            ArtNode* fp_leaf; 
 
             //constructor
             ART() {
