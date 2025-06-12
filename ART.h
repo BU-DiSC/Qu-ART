@@ -27,6 +27,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <vector>
+
 namespace ART {
 
 // Constants for the node types
@@ -39,6 +41,34 @@ static const int8_t NodeType256 = 3;
 // header, if the path is longer it is loaded from the database on
 // demand
 static const unsigned maxPrefixLength = 9;
+
+class ART {
+    public:
+        ArtNode* root;  // pointer to root node
+        ArtNode* fp; // fast path
+        std::vector<ArtNode*> fp_path; // fp path
+        uint32_t fp_value; 
+
+        //constructor
+        ART() {
+            root = NULL;
+        }
+
+        void insert(uint8_t key[], 
+                    unsigned depth, 
+                    uintptr_t value, 
+                    unsigned maxKeyLength) {
+
+            ::ART::insert(this, root, &root, key, depth, value, maxKeyLength);
+        }
+
+        ArtNode* lookup( uint8_t key[], 
+                        unsigned keyLength,
+                        unsigned depth, 
+                        unsigned maxKeyLength) {
+            return ::ART::lookup(this, root, key, keyLength, depth, maxKeyLength);
+        }
+};
 
 // Shared header of all inner nodes
 struct ArtNode {
@@ -486,7 +516,7 @@ Chain* rangelookup(ArtNode* node, uint8_t l_key[], unsigned l_keyLength, uint8_t
 }
 
 
-ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
+ArtNode* lookup(ART* tree, ArtNode* node, uint8_t key[], unsigned keyLength,
                 unsigned depth, unsigned maxKeyLength) {
     // Find the node with a matching key, optimistic version
 
@@ -571,7 +601,7 @@ void copyPrefix(ArtNode* src, ArtNode* dst) {
     memcpy(dst->prefix, src->prefix, min(src->prefixLength, maxPrefixLength));
 }
 
-void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
+void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
             uintptr_t value, unsigned maxKeyLength) {
     // Insert the leaf value into the tree
 
@@ -637,7 +667,7 @@ void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
     // Recurse
     ArtNode** child = findChild(node, key[depth]);
     if (*child) {
-        insert(*child, child, key, depth + 1, value, maxKeyLength);
+        insert(tree, *child, child, key, depth + 1, value, maxKeyLength);
         return;
     }
 
