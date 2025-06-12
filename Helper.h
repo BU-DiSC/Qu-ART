@@ -31,6 +31,7 @@
 #include <vector>
 
 namespace ART {
+    class ART;
 
     inline ArtNode* makeLeaf(uintptr_t tid) {
         // Create a pseudo-leaf
@@ -309,18 +310,7 @@ namespace ART {
         }
     
         return NULL;
-    }
-    
-    // Forward references
-    void insertNode4(Node4* node, ArtNode** nodeRef, uint8_t keyByte,
-                     ArtNode* child);
-    void insertNode16(Node16* node, ArtNode** nodeRef, uint8_t keyByte,
-                      ArtNode* child);
-    void insertNode48(Node48* node, ArtNode** nodeRef, uint8_t keyByte,
-                      ArtNode* child);
-    void insertNode256(Node256* node, ArtNode** nodeRef, uint8_t keyByte,
-                       ArtNode* child);
-    
+    }    
     unsigned min(unsigned a, unsigned b) {
         // Helper function
         return (a < b) ? a : b;
@@ -332,9 +322,74 @@ namespace ART {
         dst->prefixLength = src->prefixLength;
         memcpy(dst->prefix, src->prefix, min(src->prefixLength, maxPrefixLength));
     }
-    
-    void insertNode4(Node4* node, ArtNode** nodeRef, uint8_t keyByte,
-                     ArtNode* child) {
+
+    void insertNode256(ART* tree, Node256* node, ArtNode** nodeRef, uint8_t keyByte,
+        ArtNode* child) {
+        // Insert leaf into inner node
+        node->count++;
+        node->child[keyByte] = child;
+    }
+
+    void insertNode48(ART* tree, Node48* node, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child) {
+        // Insert leaf into inner node
+        if (node->count < 48) {
+            // Insert element
+            unsigned pos = node->count;
+            if (node->child[pos])
+                for (pos = 0; node->child[pos] != NULL; pos++);
+                    node->child[pos] = child;
+                    node->childIndex[keyByte] = pos;
+                    node->count++;
+        } else {
+            // Grow to Node256
+            Node256* newNode = new Node256();
+            for (unsigned i = 0; i < 256; i++)
+            if (node->childIndex[i] != 48)
+                newNode->child[i] = node->child[node->childIndex[i]];
+            newNode->count = node->count;
+            copyPrefix(node, newNode);
+            *nodeRef = newNode;
+            delete node;
+            return insertNode256(tree, newNode, nodeRef, keyByte, child);
+        }
+    }
+
+    void insertNode16(ART* tree, Node16* node, ArtNode** nodeRef, uint8_t keyByte,
+        ArtNode* child) {
+        // Insert leaf into inner node
+        if (node->count < 16) {
+        // Insert element
+        uint8_t keyByteFlipped = flipSign(keyByte);
+        __m128i cmp = _mm_cmplt_epi8(
+        _mm_set1_epi8(keyByteFlipped),
+        _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
+        uint16_t bitfield =
+        _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - node->count));
+        unsigned pos = bitfield ? ctz(bitfield) : node->count;
+        memmove(node->key + pos + 1, node->key + pos, node->count - pos);
+        memmove(node->child + pos + 1, node->child + pos,
+            (node->count - pos) * sizeof(uintptr_t));
+        node->key[pos] = keyByteFlipped;
+        node->child[pos] = child;
+        node->count++;
+        } else {
+        // Grow to Node48
+        Node48* newNode = new Node48();
+        *nodeRef = newNode;
+        memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
+        for (unsigned i = 0; i < node->count; i++)
+            newNode->childIndex[flipSign(node->key[i])] = i;
+        copyPrefix(node, newNode);
+        newNode->count = node->count;
+        delete node;
+        return insertNode48(tree, newNode, nodeRef, keyByte, child);
+        }
+    }
+
+
+
+    void insertNode4(ART* tree, Node4* node, ArtNode** nodeRef, uint8_t keyByte,
+                    ArtNode* child) {
         // Insert leaf into inner node
         if (node->count < 4) {
             // Insert element
@@ -356,89 +411,20 @@ namespace ART {
                 newNode->key[i] = flipSign(node->key[i]);
             memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
             delete node;
-            return insertNode16(newNode, nodeRef, keyByte, child);
+            return insertNode16(tree, newNode, nodeRef, keyByte, child);
         }
     }
-    
-    void insertNode16(Node16* node, ArtNode** nodeRef, uint8_t keyByte,
-                      ArtNode* child) {
-        // Insert leaf into inner node
-        if (node->count < 16) {
-            // Insert element
-            uint8_t keyByteFlipped = flipSign(keyByte);
-            __m128i cmp = _mm_cmplt_epi8(
-                _mm_set1_epi8(keyByteFlipped),
-                _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
-            uint16_t bitfield =
-                _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - node->count));
-            unsigned pos = bitfield ? ctz(bitfield) : node->count;
-            memmove(node->key + pos + 1, node->key + pos, node->count - pos);
-            memmove(node->child + pos + 1, node->child + pos,
-                    (node->count - pos) * sizeof(uintptr_t));
-            node->key[pos] = keyByteFlipped;
-            node->child[pos] = child;
-            node->count++;
-        } else {
-            // Grow to Node48
-            Node48* newNode = new Node48();
-            *nodeRef = newNode;
-            memcpy(newNode->child, node->child, node->count * sizeof(uintptr_t));
-            for (unsigned i = 0; i < node->count; i++)
-                newNode->childIndex[flipSign(node->key[i])] = i;
-            copyPrefix(node, newNode);
-            newNode->count = node->count;
-            delete node;
-            return insertNode48(newNode, nodeRef, keyByte, child);
-        }
-    }
-    
-    void insertNode48(Node48* node, ArtNode** nodeRef, uint8_t keyByte,
-                      ArtNode* child) {
-        // Insert leaf into inner node
-        if (node->count < 48) {
-            // Insert element
-            unsigned pos = node->count;
-            if (node->child[pos])
-                for (pos = 0; node->child[pos] != NULL; pos++);
-            node->child[pos] = child;
-            node->childIndex[keyByte] = pos;
-            node->count++;
-        } else {
-            // Grow to Node256
-            Node256* newNode = new Node256();
-            for (unsigned i = 0; i < 256; i++)
-                if (node->childIndex[i] != 48)
-                    newNode->child[i] = node->child[node->childIndex[i]];
-            newNode->count = node->count;
-            copyPrefix(node, newNode);
-            *nodeRef = newNode;
-            delete node;
-            return insertNode256(newNode, nodeRef, keyByte, child);
-        }
-    }
-    
-    void insertNode256(Node256* node, ArtNode** nodeRef, uint8_t keyByte,
-                       ArtNode* child) {
-        // Insert leaf into inner node
-        node->count++;
-        node->child[keyByte] = child;
-    }
-    
-    // Forward references
-    void eraseNode4(Node4* node, ArtNode** nodeRef, ArtNode** leafPlace);
-    void eraseNode16(Node16* node, ArtNode** nodeRef, ArtNode** leafPlace);
-    void eraseNode48(Node48* node, ArtNode** nodeRef, uint8_t keyByte);
-    void eraseNode256(Node256* node, ArtNode** nodeRef, uint8_t keyByte);
-    
-    
-    void eraseNode4(Node4* node, ArtNode** nodeRef, ArtNode** leafPlace) {
+
+
+        
+    void eraseNode4(ART* tree, Node4* node, ArtNode** nodeRef, ArtNode** leafPlace) {
         // Delete leaf from inner node
         unsigned pos = leafPlace - node->child;
         memmove(node->key + pos, node->key + pos + 1, node->count - pos - 1);
         memmove(node->child + pos, node->child + pos + 1,
                 (node->count - pos - 1) * sizeof(uintptr_t));
         node->count--;
-    
+
         if (node->count == 1) {
             // Get rid of one-way node
             ArtNode* child = node->child[0];
@@ -462,15 +448,15 @@ namespace ART {
             delete node;
         }
     }
-    
-    void eraseNode16(Node16* node, ArtNode** nodeRef, ArtNode** leafPlace) {
+
+    void eraseNode16(ART* tree, Node16* node, ArtNode** nodeRef, ArtNode** leafPlace) {
         // Delete leaf from inner node
         unsigned pos = leafPlace - node->child;
         memmove(node->key + pos, node->key + pos + 1, node->count - pos - 1);
         memmove(node->child + pos, node->child + pos + 1,
                 (node->count - pos - 1) * sizeof(uintptr_t));
         node->count--;
-    
+
         if (node->count == 3) {
             // Shrink to Node4
             Node4* newNode = new Node4();
@@ -484,12 +470,12 @@ namespace ART {
         }
     }
     
-    void eraseNode48(Node48* node, ArtNode** nodeRef, uint8_t keyByte) {
+    void eraseNode48(ART* tree, Node48* node, ArtNode** nodeRef, uint8_t keyByte) {
         // Delete leaf from inner node
         node->child[node->childIndex[keyByte]] = NULL;
         node->childIndex[keyByte] = emptyMarker;
         node->count--;
-    
+
         if (node->count == 12) {
             // Shrink to Node16
             Node16* newNode = new Node16();
@@ -506,12 +492,12 @@ namespace ART {
             delete node;
         }
     }
-    
-    void eraseNode256(Node256* node, ArtNode** nodeRef, uint8_t keyByte) {
+
+    void eraseNode256(ART* tree, Node256* node, ArtNode** nodeRef, uint8_t keyByte) {
         // Delete leaf from inner node
         node->child[keyByte] = NULL;
         node->count--;
-    
+
         if (node->count == 37) {
             // Shrink to Node48
             Node48* newNode = new Node48();
@@ -527,4 +513,5 @@ namespace ART {
             delete node;
         }
     }    
+
 }

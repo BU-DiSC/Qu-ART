@@ -47,25 +47,8 @@ namespace ART {
                 root = NULL;
             }
 
-            void insert(uint8_t key[], unsigned depth, uintptr_t value, unsigned maxKeyLength) {
-                insert(this, root, &root, key, depth, value, maxKeyLength);
-            }
-
-            ArtNode* lookup(uint8_t key[], unsigned keyLength, unsigned depth, unsigned maxKeyLength) {
-                return lookup(this, root, key, keyLength, depth, maxKeyLength);
-            }
-
-            Chain* rangelookup(uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], 
-                uint8_t h_keyLength, unsigned depth, unsigned maxKeyLength) {
-                    return rangelookup(this, root, l_key, l_keyLength, h_key, h_keyLength, depth, maxKeyLength);
-                    }
-                
-
-        private:
-            // Void insert function
-            void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
-                            uintptr_t value, unsigned maxKeyLength) {
-                // Insert the leaf value into the tree
+            void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth, 
+                uintptr_t value, unsigned maxKeyLength) {
 
                 if (node == NULL) {
                     *nodeRef = makeLeaf(value);
@@ -87,9 +70,9 @@ namespace ART {
                         min(newPrefixLength, maxPrefixLength));
                     *nodeRef = newNode;
 
-                    insertNode4(newNode, nodeRef, existingKey[depth + newPrefixLength],
+                    insertNode4(this, newNode, nodeRef, existingKey[depth + newPrefixLength],
                                 node);
-                    insertNode4(newNode, nodeRef, key[depth + newPrefixLength],
+                    insertNode4(this, newNode, nodeRef, key[depth + newPrefixLength],
                                 makeLeaf(value));
                     return;
                 }
@@ -106,7 +89,7 @@ namespace ART {
                             min(mismatchPos, maxPrefixLength));
                         // Break up prefix
                         if (node->prefixLength < maxPrefixLength) {
-                            insertNode4(newNode, nodeRef, node->prefix[mismatchPos], node);
+                            insertNode4(this, newNode, nodeRef, node->prefix[mismatchPos], node);
                             node->prefixLength -= (mismatchPos + 1);
                             memmove(node->prefix, node->prefix + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
@@ -114,12 +97,12 @@ namespace ART {
                             node->prefixLength -= (mismatchPos + 1);
                             uint8_t minKey[maxKeyLength];
                             loadKey(getLeafValue(minimum(node)), minKey);
-                            insertNode4(newNode, nodeRef, minKey[depth + mismatchPos],
+                            insertNode4(this, newNode, nodeRef, minKey[depth + mismatchPos],
                                         node);
                             memmove(node->prefix, minKey + depth + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
                         }
-                        insertNode4(newNode, nodeRef, key[depth + mismatchPos],
+                        insertNode4(this, newNode, nodeRef, key[depth + mismatchPos],
                                     makeLeaf(value));
                         return;
                     }
@@ -129,7 +112,7 @@ namespace ART {
                 // Recurse
                 ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
-                    insert(tree, *child, child, key, depth + 1, value, maxKeyLength);
+                    insert(*child, child, key, depth + 1, value, maxKeyLength);
                     return;
                 }
 
@@ -137,27 +120,25 @@ namespace ART {
                 ArtNode* newNode = makeLeaf(value);
                 switch (node->type) {
                     case NodeType4:
-                        insertNode4(static_cast<Node4*>(node), nodeRef, key[depth],
+                        insertNode4(this, static_cast<Node4*>(node), nodeRef, key[depth],
                                     newNode);
                         break;
                     case NodeType16:
-                        insertNode16(static_cast<Node16*>(node), nodeRef, key[depth],
+                        insertNode16(this, static_cast<Node16*>(node), nodeRef, key[depth],
                                     newNode);
                         break;
                     case NodeType48:
-                        insertNode48(static_cast<Node48*>(node), nodeRef, key[depth],
+                        insertNode48(this, static_cast<Node48*>(node), nodeRef, key[depth],
                                     newNode);
                         break;
                     case NodeType256:
-                        insertNode256(static_cast<Node256*>(node), nodeRef, key[depth],
+                        insertNode256(this, static_cast<Node256*>(node), nodeRef, key[depth],
                                     newNode);
                         break;
                 }
             }
 
-            // Lookup function, returns ArtNode
-            ArtNode* lookup(ART* tree, ArtNode* node, uint8_t key[], unsigned keyLength,
-                                unsigned depth, unsigned maxKeyLength) {
+            ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength, unsigned depth, unsigned maxKeyLength) {
                 // Find the node with a matching key, optimistic version
 
                 bool skippedPrefix =
@@ -195,56 +176,10 @@ namespace ART {
                 return NULL;
             }
 
-            // Erase function, deletes a leaf from the tree
-            void erase(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned keyLength,
-                    unsigned depth, unsigned maxKeyLength) {
-                // Delete a leaf from a tree
 
-                if (!node) return;
+            Chain* rangelookup(ArtNode* node, uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], 
+                uint8_t h_keyLength, unsigned depth, unsigned maxKeyLength) {
 
-                if (isLeaf(node)) {
-                    // Make sure we have the right leaf
-                    if (leafMatches(node, key, keyLength, depth, maxKeyLength))
-                        *nodeRef = NULL;
-                    return;
-                }
-
-                // Handle prefix
-                if (node->prefixLength) {
-                    if (prefixMismatch(node, key, depth, maxKeyLength) !=
-                        node->prefixLength)
-                        return;
-                    depth += node->prefixLength;
-                }
-
-                ArtNode** child = findChild(node, key[depth]);
-                if (isLeaf(*child) &&
-                    leafMatches(*child, key, keyLength, depth, maxKeyLength)) {
-                    // Leaf found, delete it in inner node
-                    switch (node->type) {
-                        case NodeType4:
-                            eraseNode4(static_cast<Node4*>(node), nodeRef, child);
-                            break;
-                        case NodeType16:
-                            eraseNode16(static_cast<Node16*>(node), nodeRef, child);
-                            break;
-                        case NodeType48:
-                            eraseNode48(static_cast<Node48*>(node), nodeRef, key[depth]);
-                            break;
-                        case NodeType256:
-                            eraseNode256(static_cast<Node256*>(node), nodeRef, key[depth]);
-                            break;
-                    }
-                } else {
-                    // Recurse
-                    erase(*child, child, key, keyLength, depth + 1, maxKeyLength);
-                }
-            }
-            
-            // Range lookup function, returns a Chain of ArtNode
-            Chain* rangelookup(ART* tree, ArtNode* node, uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], uint8_t h_keyLength,
-                unsigned depth, unsigned maxKeyLength) {
-                // Find the node with a matching key, optimistic version
                 Chain *queue = new Chain((ChainItem *)new ChainItemWithDepth(node, 0, true, true));
                 Chain *result = new Chain();
                 
@@ -302,6 +237,53 @@ namespace ART {
                 delete queue;
                 return result;
             }        
+
+            // Erase function, deletes a leaf from the tree
+            void erase(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned keyLength,
+                    unsigned depth, unsigned maxKeyLength) {
+                // Delete a leaf from a tree
+
+                if (!node) return;
+
+                if (isLeaf(node)) {
+                    // Make sure we have the right leaf
+                    if (leafMatches(node, key, keyLength, depth, maxKeyLength))
+                        *nodeRef = NULL;
+                    return;
+                }
+
+                // Handle prefix
+                if (node->prefixLength) {
+                    if (prefixMismatch(node, key, depth, maxKeyLength) !=
+                        node->prefixLength)
+                        return;
+                    depth += node->prefixLength;
+                }
+
+                ArtNode** child = findChild(node, key[depth]);
+                if (isLeaf(*child) &&
+                    leafMatches(*child, key, keyLength, depth, maxKeyLength)) {
+                    // Leaf found, delete it in inner node
+                    switch (node->type) {
+                        case NodeType4:
+                            eraseNode4(this, static_cast<Node4*>(node), nodeRef, child);
+                            break;
+                        case NodeType16:
+                            eraseNode16(this, static_cast<Node16*>(node), nodeRef, child);
+                            break;
+                        case NodeType48:
+                            eraseNode48(this, static_cast<Node48*>(node), nodeRef, key[depth]);
+                            break;
+                        case NodeType256:
+                            eraseNode256(this, static_cast<Node256*>(node), nodeRef, key[depth]);
+                            break;
+                    }
+                } else {
+                    // Recurse
+                    erase(*child, child, key, keyLength, depth + 1, maxKeyLength);
+                }
+            }
+
 
     };
 
