@@ -1,14 +1,14 @@
 
-#include "ArtNode.h"
-#include "Chain.h"
-#include "Helper.h"
-#include "ART.h"
-
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <algorithm>
+
+#include "ART.h"
+#include "ArtNode.h"
+#include "Chain.h"
+#include "Helper.h"
 
 using namespace std;
 
@@ -35,13 +35,13 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-N") {
             N = atoi(argv[i + 1]);
             i += 2;
-        } 
+        }
     }
 
     // read data
     // auto keys = read_bin<uint64_t>(input_file.c_str());
     std::vector<uint64_t> keys(N, 0);
-    for(int i = 0; i < N; i ++)keys[i] = i;
+    for (int i = 0; i < N; i++) keys[i] = i;
 
     // Build tree
 
@@ -64,7 +64,7 @@ int main(int argc, char** argv) {
 
     // Query tree
     long long query_time = 0;
-    
+
     // Range Queries
     for (uint64_t i = 4; i < N / 10; i++) {
         uint8_t key[8], key2[8];
@@ -79,8 +79,9 @@ int main(int argc, char** argv) {
         query_time += duration.count();
         // while(!ch->isEmpty()) {
         //     uint8_t k[8];
-        //     // ART::loadKey(ART::getLeafValue(ch->pop_front()->nodeptr()), k);
-        //     std::cout << ART::getLeafValue(ch->pop_front()->nodeptr()) << ", ";
+        //     // ART::loadKey(ART::getLeafValue(ch->pop_front()->nodeptr()),
+        //     k); std::cout << ART::getLeafValue(ch->pop_front()->nodeptr()) <<
+        //     ", ";
         // }
         // std::cout << std::endl;
         // auto stop = chrono::high_resolution_clock::now();

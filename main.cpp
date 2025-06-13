@@ -1,14 +1,14 @@
 
-#include "ArtNode.h"
-#include "Chain.h"
-#include "Helper.h"
-#include "ART.h"
-
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <algorithm>
+
+#include "ART.h"
+#include "ArtNode.h"
+#include "Chain.h"
+#include "Helper.h"
 
 using namespace std;
 
