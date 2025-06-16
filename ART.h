@@ -64,9 +64,9 @@ class ART {
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            insertNode4(this, newNode, nodeRef,
+            newNode->insertNode4(this, nodeRef,
                         existingKey[depth + newPrefixLength], node);
-            insertNode4(this, newNode, nodeRef, key[depth + newPrefixLength],
+            newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
                         makeLeaf(value));
             return;
         }
@@ -84,7 +84,7 @@ class ART {
                        min(mismatchPos, maxPrefixLength));
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    insertNode4(this, newNode, nodeRef,
+                    newNode->insertNode4(this, nodeRef,
                                 node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
                     memmove(node->prefix, node->prefix + mismatchPos + 1,
@@ -93,12 +93,12 @@ class ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    insertNode4(this, newNode, nodeRef,
+                    newNode->insertNode4(this, nodeRef,
                                 minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
-                insertNode4(this, newNode, nodeRef, key[depth + mismatchPos],
+                newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
                             makeLeaf(value));
                 return;
             }
@@ -116,19 +116,19 @@ class ART {
         ArtNode* newNode = makeLeaf(value);
         switch (node->type) {
             case NodeType4:
-                insertNode4(this, static_cast<Node4*>(node), nodeRef,
+                static_cast<Node4*>(node)->insertNode4(this, nodeRef,
                             key[depth], newNode);
                 break;
             case NodeType16:
-                insertNode16(this, static_cast<Node16*>(node), nodeRef,
+                static_cast<Node16*>(node)->insertNode16(this, nodeRef,
                              key[depth], newNode);
                 break;
             case NodeType48:
-                insertNode48(this, static_cast<Node48*>(node), nodeRef,
+                static_cast<Node48*>(node)->insertNode48(this, nodeRef,
                              key[depth], newNode);
                 break;
             case NodeType256:
-                insertNode256(this, static_cast<Node256*>(node), nodeRef,
+                static_cast<Node256*>(node)->insertNode256(this, nodeRef,
                               key[depth], newNode);
                 break;
         }
@@ -240,7 +240,7 @@ class ART {
             depth += node->prefixLength;
 
             std::unique_ptr<Chain> newly_added =
-                std::move(std::unique_ptr<Chain>(findChildbyRange(
+                std::move(std::unique_ptr<Chain>(newly_added->findChildbyRange(
                     item->nodeptr(), lequ ? l_key[depth] : 0,
                     hequ ? h_key[depth] : 255, depth, lequ, hequ)));
             queue->extend(std::move(newly_added));
@@ -277,18 +277,18 @@ class ART {
             // Leaf found, delete it in inner node
             switch (node->type) {
                 case NodeType4:
-                    eraseNode4(this, static_cast<Node4*>(node), nodeRef, child);
+                    static_cast<Node4*>(node)->eraseNode4(this, nodeRef, child);
                     break;
                 case NodeType16:
-                    eraseNode16(this, static_cast<Node16*>(node), nodeRef,
+                    static_cast<Node16*>(node)->eraseNode16(this, nodeRef,
                                 child);
                     break;
                 case NodeType48:
-                    eraseNode48(this, static_cast<Node48*>(node), nodeRef,
+                    static_cast<Node48*>(node)->eraseNode48(this, nodeRef,
                                 key[depth]);
                     break;
                 case NodeType256:
-                    eraseNode256(this, static_cast<Node256*>(node), nodeRef,
+                    static_cast<Node256*>(node)->eraseNode256(this, nodeRef,
                                  key[depth]);
                     break;
             }
