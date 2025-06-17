@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     ART::ART* tree = new ART::ART();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
-        uint8_t key[8];
+        uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
         tree->insert(key, keys[i]);
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
-        uint8_t key[8];
+        uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
         ART::ArtNode* leaf = tree->lookup(key);

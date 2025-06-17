@@ -32,10 +32,10 @@ uint8_t flipSign(uint8_t keyByte) {
     return keyByte ^ 128;
 }
 
-void loadKey(uintptr_t tid, uint8_t key[]) {
+void loadKey(uint32_t tid, uint8_t key[]) {
     // Store the key of the tuple into the key vector
     // Implementation is database specific
-    reinterpret_cast<uint64_t*>(key)[0] = __builtin_bswap64(tid);
+    reinterpret_cast<uint32_t*>(key)[0] = __builtin_bswap32(tid);
 }
 
 static inline unsigned ctz(uint16_t x) {
