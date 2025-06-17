@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        tree->insert(tree->root, &tree->root, key, 0, keys[i], 8);
+        tree->insert(key, keys[i]);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        ART::ArtNode* leaf = tree->lookup(tree->root, key, 8, 0, 8);
+        ART::ArtNode* leaf = tree->lookup(key);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);

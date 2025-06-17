@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        tree->insert(tree->root, &tree->root, key, 0, keys[i], 8);
+        tree->insert(key, keys[i]);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         ART::loadKey(std::min((uint64_t)N - 1, keys[i] + 133), key2);
         auto start = chrono::high_resolution_clock::now();
-        ART::Chain* ch = tree->rangelookup(tree->root, key, 8, key2, 8, 0, 8);
+        ART::Chain* ch = tree->rangelookup(key, 8, key2, 8, 0, 8);
 
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
