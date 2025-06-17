@@ -36,7 +36,7 @@ namespace ART {
         public:
             ArtNode* root;  // pointer to root node
             ArtNode* fp; // fast path
-            std::array<ArtNode*, 4> fp_path; // fp path
+            std::array<ArtNode*, maxPrefixLength> fp_path; // fp path
             ArtNode* fp_leaf; 
 
             //constructor
@@ -45,11 +45,11 @@ namespace ART {
             }
 
             void insert(uint8_t key[], uintptr_t value) {
-                insert(this, root, &root, key, 0, value, 4);
+                insert(this, root, &root, key, 0, value, maxPrefixLength);
             }
 
             ArtNode* lookup(uint8_t key[]) {
-                return lookup(this, root, key, 4, 0, 4);
+                return lookup(this, root, key, maxPrefixLength, 0, maxPrefixLength);
             }
 
             Chain* rangelookup(uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[], 
