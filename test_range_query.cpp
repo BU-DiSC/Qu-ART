@@ -1,11 +1,14 @@
 
-#include "ART.h"
-
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <algorithm>
+
+#include "ART.h"
+#include "ArtNode.h"
+#include "Chain.h"
+#include "Helper.h"
 
 using namespace std;
 
@@ -32,23 +35,23 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-N") {
             N = atoi(argv[i + 1]);
             i += 2;
-        } 
+        }
     }
 
     // read data
     // auto keys = read_bin<uint64_t>(input_file.c_str());
     std::vector<uint64_t> keys(N, 0);
-    for(int i = 0; i < N; i ++)keys[i] = i;
+    for (int i = 0; i < N; i++) keys[i] = i;
 
     // Build tree
 
-    ART::ArtNode* tree = NULL;
+    ART::ART* tree = new ART::ART();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        ART::insert(tree, &tree, key, 0, keys[i], 8);
+        tree->insert(key, keys[i]);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
@@ -61,14 +64,14 @@ int main(int argc, char** argv) {
 
     // Query tree
     long long query_time = 0;
-    
+
     // Range Queries
     for (uint64_t i = 4; i < N / 10; i++) {
         uint8_t key[8], key2[8];
         ART::loadKey(keys[i], key);
         ART::loadKey(std::min((uint64_t)N - 1, keys[i] + 133), key2);
         auto start = chrono::high_resolution_clock::now();
-        ART::Chain* ch = ART::rangelookup(tree, key, 8, key2, 8, 0, 8);
+        ART::Chain* ch = tree->rangelookup(key, 8, key2, 8, 0, 8);
 
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
@@ -76,8 +79,9 @@ int main(int argc, char** argv) {
         query_time += duration.count();
         // while(!ch->isEmpty()) {
         //     uint8_t k[8];
-        //     // ART::loadKey(ART::getLeafValue(ch->pop_front()->nodeptr()), k);
-        //     std::cout << ART::getLeafValue(ch->pop_front()->nodeptr()) << ", ";
+        //     // ART::loadKey(ART::getLeafValue(ch->pop_front()->nodeptr()),
+        //     k); std::cout << ART::getLeafValue(ch->pop_front()->nodeptr()) <<
+        //     ", ";
         // }
         // std::cout << std::endl;
         // auto stop = chrono::high_resolution_clock::now();

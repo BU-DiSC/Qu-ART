@@ -1,11 +1,14 @@
 
-#include "ART.h"
-
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <vector>
-#include <algorithm>
+
+#include "ART.h"
+#include "ArtNode.h"
+#include "Chain.h"
+#include "Helper.h"
 
 using namespace std;
 
@@ -43,13 +46,13 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ArtNode* tree = NULL;
+    ART::ART* tree = new ART::ART();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        ART::insert(tree, &tree, key, 0, keys[i], 8);
+        tree->insert(key, keys[i]);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
@@ -66,7 +69,7 @@ int main(int argc, char** argv) {
         uint8_t key[8];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        ART::ArtNode* leaf = ART::lookup(tree, key, 8, 0, 8);
+        ART::ArtNode* leaf = tree->lookup(key);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
