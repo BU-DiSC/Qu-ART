@@ -37,6 +37,7 @@ namespace ART {
             ArtNode* root;  // pointer to root node
             ArtNode* fp; // fast path
             std::array<ArtNode*, maxPrefixLength> fp_path; // fp path
+            size_t fp_path_length; // stores real length of fp path
             ArtNode* fp_leaf; 
 
             //constructor
