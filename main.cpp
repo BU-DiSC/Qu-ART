@@ -59,6 +59,10 @@ int main(int argc, char** argv) {
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
+        if (!tree->verifyTailPath()) {
+            cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
+            break;
+        }
     }
 
     if (verbose) {

@@ -16,6 +16,88 @@ namespace ART {
                     ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
                         temp_fp_path, temp_fp_path_length);
                 }
+            
+            bool verifyTailPath() {
+                if (this->fp_path_length == 0) {
+                    return true;
+                }
+
+                ArtNode* current = this->root;
+                // Traverse the tree following the fp_path
+                for (size_t i = 0; i < this->fp_path_length; i++) {
+                    if (i == this->fp_path_length - 1) {
+                        if (current == this->fp) {
+                            if (getLeafValue(maximum(current)) == getLeafValue(this->fp_leaf)) {
+                                //printf("Success: fp_path is correct.\n");
+                                return true;
+                            } else {
+                                printf("Error: fp_leaf mismatch. Expected %lu, got %lu.\n",
+                                    getLeafValue(this->fp_leaf), getLeafValue(maximum(current)));
+                                return false;
+                            }
+                        } else {
+                            printf("Error: last node in fp_path is not the fp. Expected %p, got %p.\n",
+                                static_cast<void*>(this->fp), static_cast<void*>(current));
+                            return false;
+                        }
+                    }
+
+                    // Move to the rightmost child
+                    switch (current->type) {
+                        case NodeType4: {
+                            Node4* node = static_cast<Node4*>(current);
+                            if (node->count > 0) {
+                                current = node->child[node->count - 1];
+                            } else {
+                                printf("Error: NodeType4 has no children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        case NodeType16: {
+                            Node16* node = static_cast<Node16*>(current);
+                            if (node->count > 0) {
+                                current = node->child[node->count - 1];
+                            } else {
+                                printf("Error: NodeType16 has no children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        case NodeType48: {
+                            Node48* node = static_cast<Node48*>(current);
+                            unsigned pos = 255;
+                            while (pos > 0 && node->childIndex[pos] == emptyMarker) pos--;
+                            if (node->childIndex[pos] != emptyMarker) {
+                                current = node->child[node->childIndex[pos]];
+                            } else {
+                                printf("Error: NodeType48 has no valid children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        case NodeType256: {
+                            Node256* node = static_cast<Node256*>(current);
+                            unsigned pos = 255;
+                            while (pos > 0 && !node->child[pos]) pos--;
+                            if (node->child[pos]) {
+                                current = node->child[pos];
+                            } else {
+                                printf("Error: NodeType256 has no valid children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        default:
+                            printf("Error: Unknown node type.\n");
+                            return false;
+                    }
+                }
+
+                // If we exit the loop without returning, the path is incorrect
+                printf("Error: fp_path does not lead to the fp.\n");
+                return false;
+            }
         
         private:
             void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
