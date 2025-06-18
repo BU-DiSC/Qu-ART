@@ -74,6 +74,11 @@
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
+
+         void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
+            size_t temp_fp_path_length);
+
      };
  
      // Node with up to 16 children
@@ -89,6 +94,10 @@
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
+
+         void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
+             size_t temp_fp_path_length);
      };
  
      // Node with up to 48 children
@@ -104,6 +113,11 @@
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
+
+         void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
+            size_t temp_fp_path_length);
+
      };
  
      // Node with up to 256 children
@@ -115,6 +129,11 @@
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
+
+         void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
+            size_t temp_fp_path_length);
+
  
      };
  
@@ -166,6 +185,49 @@
              return newNode->insertNode16(tree, nodeRef, keyByte, child);
          }
      }
+
+     // fp insert method for Node4
+     void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+        ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
+        size_t temp_fp_path_length) {
+        // Insert leaf into inner node
+        if (this->count < 4) {
+            // Insert element
+            unsigned pos;
+            for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++);
+            memmove(this->key + pos + 1, this->key + pos, this->count - pos);
+            memmove(this->child + pos + 1, this->child + pos,
+                    (this->count - pos) * sizeof(uintptr_t));
+            this->key[pos] = keyByte;
+            this->child[pos] = child;
+            
+            // If what's being inserted is a leaf
+            if (isLeaf(this->child[pos])) {
+                // If the new value is greater than or equal to the current fp_leaf, 
+                // update the fp_leaf, fp and fp_path
+                if (getLeafValue(child) >= getLeafValue(tree->fp_leaf)) {
+                    tree->fp_leaf = this->child[pos];
+                    tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
+                    tree->fp_path = temp_fp_path;
+                    tree->fp_path_length = temp_fp_path_length; // update fp_path size
+                }
+            }
+            
+            this->count++;
+        } else {
+            // Grow to Node16
+            Node16* newNode = new Node16();
+            *nodeRef = newNode;
+            newNode->count = 4;
+            copyPrefix(this, newNode);
+            for (unsigned i = 0; i < 4; i++)
+                newNode->key[i] = flipSign(this->key[i]);
+            memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
+            delete this;
+            return newNode->insertNode16(tree, nodeRef, keyByte, child);
+        }
+    }
+
  
      void Node4::eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
          // Delete leaf from inner node
