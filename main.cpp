@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "ART.h"
+#include "ART_tail.h"
 #include "ArtNode.h"
 #include "Chain.h"
 #include "Helper.h"
@@ -46,7 +47,7 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ART* tree = new ART::ART();
+    ART::ART_tail* tree = new ART::ART_tail();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
