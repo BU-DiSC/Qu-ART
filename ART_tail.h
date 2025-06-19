@@ -46,6 +46,7 @@ namespace ART {
                 size_t j = 0;
 
                 for (size_t i = 0; i < this->fp_path_length; i++) {
+                    ptr = this->fp_path[i];
                     if (ptr->prefixLength != 0) {
                         for (j; j < ptr->prefixLength; j++) {
                             if (ptr->prefix[j] != key[i]) {
