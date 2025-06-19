@@ -86,6 +86,7 @@ namespace ART {
             memmove(this->key + pos + 1, this->key + pos, this->count - pos);
             memmove(this->child + pos + 1, this->child + pos,
                 (this->count - pos) * sizeof(uintptr_t));
+            
             this->key[pos] = keyByteFlipped;
             this->child[pos] = child;
 
@@ -95,6 +96,7 @@ namespace ART {
                 // update the fp_leaf, fp and fp_path
                 if (getLeafValue(child) >= getLeafValue(tree->fp_leaf)) {
                     tree->fp_leaf = this->child[pos];
+                    printf("fp updated to: %p\n", tree->fp);
                     tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                     tree->fp_path = temp_fp_path;
                     tree->fp_path_length = temp_fp_path_length; // update fp_path size

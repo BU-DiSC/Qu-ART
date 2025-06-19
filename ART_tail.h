@@ -18,7 +18,7 @@ namespace ART {
                         printf("can tail insert\n");
                         printf("doing tail insert with\n");
                         printTailPath(temp_fp_path, temp_fp_path_length);
-                        ART_tail::insert(this, this->fp, &this->fp, key, 0, value, maxPrefixLength, 
+                        ART_tail::insert(this, this->fp, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
@@ -49,6 +49,8 @@ namespace ART {
                     if (ptr->prefixLength != 0) {
                         for (j; j < ptr->prefixLength; j++) {
                             if (ptr->prefix[j] != key[i]) {
+                                temp_fp_path = {};
+                                temp_fp_path_length = 0;
                                 return false;
                             }
                         }
@@ -60,8 +62,12 @@ namespace ART {
 
                     temp_fp_path[temp_fp_path_length] = ptr; // update the fp_path
                     temp_fp_path_length++;
+
                     printf("node ptr added to temp_fp_path: %p\n", static_cast<void*>(ptr));
-                }                
+                }            
+                temp_fp_path = {};
+                temp_fp_path_length = 0;
+
                 return false;
             }
             
