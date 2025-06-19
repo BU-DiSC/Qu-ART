@@ -199,7 +199,7 @@ namespace ART {
            }
 
            delete this;
-           return newNode->insertNode256(tree, nodeRef, keyByte, child);
+           return newNode->insertNode256(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length);
        }
     }
 

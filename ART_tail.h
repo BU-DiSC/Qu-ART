@@ -99,32 +99,8 @@ namespace ART {
                 return false;
             }
 
-            void printTailPath() {
-                // Print the fp path for debugging
-                for (size_t i = 0; i < this->fp_path_length; i++) {
-                    if (isLeaf(this->fp_path[i])) {
-                        printf("Leaf(%lu)\n", getLeafValue(this->fp_path[i]));
-                    } 
-                    else {
-                        switch (this->fp_path[i]->type) {
-                        case NodeType4:
-                            printf("Node4 %p\n", this->fp_path[i]);
-                            break;
-                        case NodeType16:
-                            printf("Node16 %p\n", this->fp_path[i]);
-                            break;
-                        case NodeType48:
-                            printf("Node48 %p\n", this->fp_path[i]);
-                            break;
-                        case NodeType256:
-                            printf("Node256 %p\n", this->fp_path[i]);
-                            break;
-                        default:
-                            printf("Unknown NodeType %p\n", this->fp_path[i]);
-                            break;
-                        }
-                    }
-                }
+            void printTree() { 
+                printTree(this->root, 0);
             }
         
         private:
@@ -184,9 +160,6 @@ namespace ART {
                             // Stores the temp_fp_path and fp_path sizes before operations
                             size_t temp_fp_path_length_old = temp_fp_path_length;
                             size_t fp_path_length_old = tree->fp_path_length;
-                            // A deep copy of remainder of fp_path 
-                            std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                            std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), tree->fp_path.end(), fp_path_remainder.begin());
                             // In all cases, newNode should be added to fp_path
                             temp_fp_path[temp_fp_path_length_old - 1] = newNode;    
                             // If the nodes that being changed is in fp_path
@@ -195,6 +168,9 @@ namespace ART {
                                 // restore fp_path to what it before the change with the
                                 // newNode added
                                 if (value < getLeafValue(tree->fp)) {
+                                    // A deep copy of remainder of fp_path 
+                                    std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
+                                    std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
                                     tree->fp_path = temp_fp_path; // update the fp path
                                     tree->fp_path_length = temp_fp_path_length_old;
                                     // Add the remainder of fp_path to fp_path
@@ -217,9 +193,6 @@ namespace ART {
                             // Stores the temp_fp_path and fp_path sizes before operations
                             size_t temp_fp_path_length_old = temp_fp_path_length;
                             size_t fp_path_length_old = tree->fp_path_length;
-                            // A deep copy of remainder of fp_path 
-                            std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                            std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), tree->fp_path.end(), fp_path_remainder.begin());
                             // In all cases, newNode should be added to fp_path
                             temp_fp_path[temp_fp_path_length_old - 1] = newNode;    
                             // If the nodes that being changed is in fp_path
@@ -228,6 +201,9 @@ namespace ART {
                                 // restore fp_path to what it before the change with the
                                 // newNode added
                                 if (value < getLeafValue(tree->fp)) {
+                                    // A deep copy of remainder of fp_path 
+                                    std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
+                                    std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
                                     tree->fp_path = temp_fp_path; // update the fp path
                                     tree->fp_path_length = temp_fp_path_length_old;
                                     // Add the remainder of fp_path to fp_path
@@ -257,7 +233,7 @@ namespace ART {
                         temp_fp_path, temp_fp_path_length);
                     return;
                 }
-
+                
                 // Insert leaf into inner node
                 ArtNode* newNode = makeLeaf(value);
                 switch (node->type) {
@@ -277,6 +253,59 @@ namespace ART {
                         static_cast<Node256*>(node)->insertNode256(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length);
                         break;
+                }
+            }
+
+            void printTree(ArtNode* node, int depth) {
+                if (!node) return;
+            
+                // Indent based on depth
+                for (int i = 0; i < depth; i++) {
+                    printf("  ");
+                }
+            
+                if (isLeaf(node)) {
+                    printf("Leaf(%lu)\n", getLeafValue(node));
+                    return;
+                }
+            
+                switch (node->type) {
+                    case NodeType4: {
+                        Node4* n = static_cast<Node4*>(node);
+                        printf("Node4\n");
+                        for (unsigned i = 0; i < n->count; i++) {
+                            printTree(n->child[i], depth + 1);
+                        }
+                        break;
+                    }
+                    case NodeType16: {
+                        Node16* n = static_cast<Node16*>(node);
+                        printf("Node16\n");
+                        for (unsigned i = 0; i < n->count; i++) {
+                            printTree(n->child[i], depth + 1);
+                        }
+                        break;
+                    }
+                    case NodeType48: {
+                        Node48* n = static_cast<Node48*>(node);
+                        printf("Node48\n");
+                        for (unsigned i = 0; i < 256; i++) {
+                            if (n->childIndex[i] != emptyMarker) {
+                                printTree(n->child[n->childIndex[i]], depth + 1);
+                            }
+                        }
+                        break;
+                    }
+                    case NodeType256: {
+                        Node256* n = static_cast<Node256*>(node);
+                        printf("Node256\n");
+                        for (unsigned i = 0; i < 256; i++) {
+                            if (n->child[i]) {
+                                printTree(n->child[i], depth + 1);
+                            }
+                        }
+                        break;
+                    }
                 }
             }
             
