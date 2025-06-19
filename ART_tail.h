@@ -13,10 +13,59 @@ namespace ART {
             void insert(uint8_t key[], uintptr_t value) {
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path;
                 size_t temp_fp_path_length = 0;
-                    ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
-                        temp_fp_path, temp_fp_path_length);
+                    if (canTailInsert(key, temp_fp_path, temp_fp_path_length)) {
+                        // adjust temp_fp_path and fp_path too
+                        printf("can tail insert\n");
+                        printf("doing tail insert with\n");
+                        printTailPath(temp_fp_path, temp_fp_path_length);
+                        ART_tail::insert(this, this->fp, &this->fp, key, 0, value, maxPrefixLength, 
+                            temp_fp_path, temp_fp_path_length);
+                    }
+                    else {
+                        printf("normal insert\n");
+                        ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
+                            temp_fp_path, temp_fp_path_length);
+                    }
                 }
             
+            
+            bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
+                size_t& temp_fp_path_length) {
+                
+                if (this->fp_path_length == 0) {
+                    return false; 
+                }
+
+                if (getLeafValue(this->fp_leaf) > keyToInt(key)) {
+                    return false;
+                }
+
+
+                ArtNode* ptr = this->fp_path[0];
+                
+                size_t j = 0;
+
+                for (size_t i = 0; i < this->fp_path_length; i++) {
+                    if (ptr->prefixLength != 0) {
+                        for (j; j < ptr->prefixLength; j++) {
+                            if (ptr->prefix[j] != key[i]) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    if (ptr == this->fp) {
+                        return true;
+                    }
+
+                    temp_fp_path[temp_fp_path_length] = ptr; // update the fp_path
+                    temp_fp_path_length++;
+                    printf("node ptr added to temp_fp_path: %p\n", static_cast<void*>(ptr));
+                }                
+                return false;
+            }
+            
+
             bool verifyTailPath() {
                 if (this->fp_path_length == 0) {
                     return true;
@@ -108,7 +157,6 @@ namespace ART {
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
                 size_t temp_fp_path_length) {
                 // Insert the leaf value into the tree
-
                 if (node == NULL) {
                     *nodeRef = makeLeaf(value);
                     // Adjust only fp_leaf (fp will still be null)

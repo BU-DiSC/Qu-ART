@@ -66,5 +66,9 @@ unsigned min(unsigned a, unsigned b) {
     return (a < b) ? a : b;
 }
 
+int keyToInt(const uint8_t key[4]) {
+    return (key[0]) | (key[1] << 8) | (key[2] << 16) | (key[3] << 24);
+}
+
 
 }  // namespace ART
