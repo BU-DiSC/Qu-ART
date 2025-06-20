@@ -26,33 +26,33 @@
 #include <memory>
 #include <stdexcept>
 
-#include "ArtNode.h"  // ArtNode definitions
-#include "ArtNode_lil.h"
-#include "Chain.h"   // Chain definitions
-#include "Helper.h"  // Helper functions
+#include "ART.h"          // Original ART class
+#include "ArtNode_lil.h"  // ArtNode definitions
+#include "Chain.h"        // Chain definitions
+#include "Helper.h"       // Helper functions
 
 namespace ART {
 
-class ART {
+class QuART_lil : ART::ART {
    public:
-    ArtNode* root;                                  // pointer to root node
-    ArtNode* fp;                                    // fast path
-    std::array<ArtNode*, maxPrefixLength> fp_path;  // fp path
-    size_t fp_path_length;  // stores real length of fp path
-    ArtNode* fp_leaf;
-
     // constructor
-    ART() {
-        root = NULL;
-        fp_path_length = 0;
-    }
+    QuART_lil() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
-        insert(this, root, &root, key, 0, value, maxPrefixLength);
+        // First, check if the new key fits on the fast path.
+        bool onFastPath =
+            fp != NULL &&
+            prefixMismatch(fp, key, 0, maxPrefixLength) == fp_path_length;
+        if (onFastPath) {  // If so, insert from the end of the fast path.
+            insert(this, fp, &fp, key, fp->prefixLength, value,
+                   maxPrefixLength);
+        } else {  // Else, insert from the root
+            insert(this, root, &root, key, 0, value, maxPrefixLength);
+        }
     }
 
     ArtNode* lookup(uint8_t key[]) {
-        return lookup(this, root, key, maxPrefixLength, 0, maxPrefixLength);
+        return lookup(root, key, maxPrefixLength, 0, maxPrefixLength);
     }
 
     Chain* rangelookup(uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[],
@@ -64,12 +64,18 @@ class ART {
 
    private:
     // Void insert function
-    void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[],
-                unsigned depth, uintptr_t value, unsigned maxKeyLength) {
+    void insert(QuART_lil* tree, ArtNode* node, ArtNode** nodeRef,
+                uint8_t key[], unsigned depth, uintptr_t value,
+                unsigned maxKeyLength) {
         // Insert the leaf value into the tree
 
+        // If tree is empty, populate with a single node.
+        // Do not alter fp values; fp should only refer to internal nodes, not
+        // leaf nodes
         if (node == NULL) {
-            *nodeRef = makeLeaf(value);
+            ArtNode* newLeaf = makeLeaf(value);
+            *nodeRef = newLeaf;
+            fp_leaf = newLeaf;
             return;
         }
 
@@ -92,6 +98,9 @@ class ART {
                                  existingKey[depth + newPrefixLength], node);
             newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
                                  makeLeaf(value));
+
+            fp = newNode;
+            fp_path[fp_path_length++] = newNode;
             return;
         }
 
@@ -122,12 +131,19 @@ class ART {
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
+                ArtNode* newLeaf = makeLeaf(value);
                 newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
-                                     makeLeaf(value));
+                                     newLeaf);
+
+                fp_path[fp_path_length++] = newNode;
+                fp = newNode;
+                fp_leaf = newLeaf;
+
                 return;
             }
             depth += node->prefixLength;
         }
+        fp_path[fp_path_length++] = node;
 
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
@@ -138,6 +154,7 @@ class ART {
 
         // Insert leaf into inner node
         ArtNode* newNode = makeLeaf(value);
+        fp_leaf = newNode;
         switch (node->type) {
             case NodeType4:
                 static_cast<Node4*>(node)->insertNode4(this, nodeRef,
@@ -159,7 +176,7 @@ class ART {
     }
 
     // Lookup function, returns ArtNode
-    ArtNode* lookup(ART* tree, ArtNode* node, uint8_t key[], unsigned keyLength,
+    ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
                     unsigned depth, unsigned maxKeyLength) {
         // Find the node with a matching key, optimistic version
 
@@ -248,7 +265,7 @@ class ART {
     }
 
     // Range lookup function, returns a Chain of ArtNode
-    Chain* rangelookup(ART* tree, ArtNode* node, uint8_t l_key[],
+    Chain* rangelookup(QuART_lil* tree, ArtNode* node, uint8_t l_key[],
                        unsigned l_keyLength, uint8_t h_key[],
                        uint8_t h_keyLength, unsigned depth,
                        unsigned maxKeyLength) {

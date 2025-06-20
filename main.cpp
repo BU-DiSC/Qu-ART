@@ -5,10 +5,11 @@
 #include <iostream>
 #include <vector>
 
-#include "ART.h"
 #include "ArtNode.h"
+#include "ArtNode_lil.h"
 #include "Chain.h"
 #include "Helper.h"
+#include "QuART_lil.h"
 
 using namespace std;
 
@@ -46,7 +47,7 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ART* tree = new ART::ART();
+    ART::QuART_lil* tree = new ART::QuART_lil();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
