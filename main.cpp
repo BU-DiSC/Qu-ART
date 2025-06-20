@@ -55,12 +55,12 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        bool k = true;
+        int k = 4;
 
-        if (k) {
+        if (i == k) {
             cout << "Before inserting " << keys[i] <<  endl;
-            //cout << "tree" << endl;
-            //tree->printTree();
+            cout << "tree" << endl;
+            tree->printTree();
             cout << "fp_path" << endl;
             printTailPath(tree->fp_path, tree->fp_path_length);
             cout << "prefixes" << endl;
@@ -81,10 +81,10 @@ int main(int argc, char** argv) {
         
         tree->insert(key, keys[i]);
         
-        if (k) {
+        if (i == k) {
             cout << "After inserting " << keys[i] << endl;
-            //cout << "tree" << endl;
-            //tree->printTree();
+            cout << "tree" << endl;
+            tree->printTree();
             cout << "fp_path" << endl;
             printTailPath(tree->fp_path, tree->fp_path_length);
             cout << "prefixes" << endl;

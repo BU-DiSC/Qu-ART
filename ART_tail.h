@@ -17,8 +17,9 @@ namespace ART {
                         // adjust temp_fp_path and fp_path too
                         printf("can tail insert\n");
                         printf("doing tail insert with\n");
+                        // adjust depth too
                         printTailPath(temp_fp_path, temp_fp_path_length);
-                        ART_tail::insert(this, this->fp, &root, key, 0, value, maxPrefixLength, 
+                        ART_tail::insert(this, this->fp, &this->fp, key, temp_fp_path_length, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
