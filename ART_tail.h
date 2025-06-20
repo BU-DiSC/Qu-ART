@@ -19,7 +19,7 @@ namespace ART {
                         printf("doing tail insert with\n");
                         // adjust depth too
                         printTailPath(temp_fp_path, temp_fp_path_length);
-                        ART_tail::insert(this, this->fp, &this->fp, key, temp_fp_path_length, value, maxPrefixLength, 
+                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), key, temp_fp_path_length, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
@@ -37,7 +37,10 @@ namespace ART {
                     return false; 
                 }
 
-                if (getLeafValue(this->fp_leaf) > keyToInt(key)) {
+                int leafVal = getLeafValue(this->fp_leaf);
+                int keyVal = keyToInt(key);
+
+                if (leafVal > keyVal) {
                     return false;
                 }
 
@@ -89,7 +92,7 @@ namespace ART {
                                 return true;
                             } else {
                                 printf("Error: fp_leaf mismatch. Expected %lu, got %lu.\n",
-                                    getLeafValue(this->fp_leaf), getLeafValue(maximum(current)));
+                                    getLeafValue(maximum(current)), getLeafValue(this->fp_leaf));
                                 return false;
                             }
                         } else {

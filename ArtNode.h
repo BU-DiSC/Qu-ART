@@ -413,34 +413,64 @@
      }
      
      ArtNode* maximum(ArtNode* node) {
-         // Find the leaf with largest key
+         // Find the leaf with largest key by iterating over all children
          if (!node) return NULL;
-     
          if (isLeaf(node)) return node;
-     
+
+         ArtNode* maxLeaf = NULL;
+         uintptr_t maxVal = 0;
+
          switch (node->type) {
              case NodeType4: {
                  Node4* n = static_cast<Node4*>(node);
-                 return maximum(n->child[n->count - 1]);
+                 for (unsigned i = 0; i < n->count; i++) {
+                     ArtNode* candidate = maximum(n->child[i]);
+                     if (candidate && (!maxLeaf || getLeafValue(candidate) > maxVal)) {
+                         maxLeaf = candidate;
+                         maxVal = getLeafValue(candidate);
+                     }
+                 }
+                 break;
              }
              case NodeType16: {
                  Node16* n = static_cast<Node16*>(node);
-                 return maximum(n->child[n->count - 1]);
+                 for (unsigned i = 0; i < n->count; i++) {
+                     ArtNode* candidate = maximum(n->child[i]);
+                     if (candidate && (!maxLeaf || getLeafValue(candidate) > maxVal)) {
+                         maxLeaf = candidate;
+                         maxVal = getLeafValue(candidate);
+                     }
+                 }
+                 break;
              }
              case NodeType48: {
                  Node48* n = static_cast<Node48*>(node);
-                 unsigned pos = 255;
-                 while (n->childIndex[pos] == emptyMarker) pos--;
-                 return maximum(n->child[n->childIndex[pos]]);
+                 for (unsigned b = 0; b < 256; b++) {
+                     if (n->childIndex[b] != emptyMarker) {
+                         ArtNode* candidate = maximum(n->child[n->childIndex[b]]);
+                         if (candidate && (!maxLeaf || getLeafValue(candidate) > maxVal)) {
+                             maxLeaf = candidate;
+                             maxVal = getLeafValue(candidate);
+                         }
+                     }
+                 }
+                 break;
              }
              case NodeType256: {
                  Node256* n = static_cast<Node256*>(node);
-                 unsigned pos = 255;
-                 while (!n->child[pos]) pos--;
-                 return maximum(n->child[pos]);
+                 for (unsigned b = 0; b < 256; b++) {
+                     if (n->child[b]) {
+                         ArtNode* candidate = maximum(n->child[b]);
+                         if (candidate && (!maxLeaf || getLeafValue(candidate) > maxVal)) {
+                             maxLeaf = candidate;
+                             maxVal = getLeafValue(candidate);
+                         }
+                     }
+                 }
+                 break;
              }
          }
-         throw;  // Unreachable
+         return maxLeaf;
      }
      
      bool leafMatches(ArtNode* leaf, uint8_t key[], unsigned keyLength,

@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        int k = 4;
+        int k = 2548;
 
         if (i == k) {
             cout << "Before inserting " << keys[i] <<  endl;
