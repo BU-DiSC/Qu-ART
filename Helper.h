@@ -66,12 +66,20 @@ unsigned min(unsigned a, unsigned b) {
     return (a < b) ? a : b;
 }
 
-int keyToInt(const uint8_t key[4]) {
+int arrToInt(const uint8_t key[4]) {
     return (int32_t(key[0]) << 24) |
     (int32_t(key[1]) << 16) |
     (int32_t(key[2]) << 8)  |
     (int32_t(key[3]));
 }
 
+std::array<uint8_t, 4> intToArr(int value) {
+    return {
+        static_cast<uint8_t>((value / 16777216) % 256), // 2^24
+        static_cast<uint8_t>((value / 65536) % 256),    // 2^16
+        static_cast<uint8_t>((value / 256) % 256),      // 2^8
+        static_cast<uint8_t>(value % 256)               // 2^0
+    };
+}
 
 }  // namespace ART

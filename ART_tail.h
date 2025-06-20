@@ -19,32 +19,50 @@ namespace ART {
                         printf("doing tail insert with\n");
                         // adjust depth too
                         printTailPath(temp_fp_path, temp_fp_path_length);
-                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), key, temp_fp_path_length, value, maxPrefixLength, 
+                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), key, temp_fp_path_length + 1, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
-                        printf("normal insert\n");
                         ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                 }
             
-            
+            /*
             bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
                 size_t& temp_fp_path_length) {
+
+                // print key array
+                printf("Key array: ");
+                for (size_t i = 0; i < maxPrefixLength; i++) {
+                    printf("%u ", key[i]);
+                }
+                printf("\n");
+
+                printf("leeaf value: %lu\n", getLeafValue(this->fp_leaf));
+                std::array<uint8_t, 4> arr = intToArr(getLeafValue(this->fp_leaf));
+
+
+                printf("Leaf array: ");
+                for (size_t i = 0; i < maxPrefixLength; i++) {
+                    printf("%u ", arr[i]);
+                }
+                printf("\n");
+
+
                 
                 if (this->fp_path_length == 0) {
                     return false; 
                 }
 
                 int leafVal = getLeafValue(this->fp_leaf);
-                int keyVal = keyToInt(key);
+                int keyVal = arrToInt(key);
 
                 if (leafVal > keyVal) {
                     return false;
                 }
 
-
+                
                 ArtNode* ptr = this->fp_path[0];
                 
                 size_t j = 0;
@@ -60,7 +78,6 @@ namespace ART {
                             }
                         }
                     }
-
                     if (ptr == this->fp) {
                         return true;
                     }
@@ -69,12 +86,80 @@ namespace ART {
                     temp_fp_path_length++;
 
                     printf("node ptr added to temp_fp_path: %p\n", static_cast<void*>(ptr));
-                }            
+                } 
+                   
+                
                 temp_fp_path = {};
                 temp_fp_path_length = 0;
-
                 return false;
             }
+
+            */
+
+            bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
+                size_t& temp_fp_path_length) {
+
+                    if (this->fp_path_length == 0) {
+                        return false; 
+                    }
+    
+                    int leafVal = getLeafValue(this->fp_leaf);
+                    int keyVal = arrToInt(key);
+    
+                    if (leafVal > keyVal) {
+                        return false;
+                    }    
+
+                    std::array<uint8_t, maxPrefixLength> leaf = intToArr(getLeafValue(this->fp_leaf));
+
+                    // print key array
+                    printf("Key array: ");
+                    for (size_t i = 0; i < maxPrefixLength; i++) {
+                        printf("%u ", key[i]);
+                    }
+                    printf("\n");
+                    printf("Leaf value: %lu\n", getLeafValue(this->fp_leaf));
+                    printf("Leaf array: ");
+                    for (size_t i = 0; i < maxPrefixLength; i++) {
+                        printf("%u ", leaf[i]);
+                    }
+                    printf("\n");
+                    int a = 0;
+
+                    for (int i = 0; i < this->fp_path_length; i++) {
+                        for (int j = 0; j < this->fp_path[i]->prefixLength; j++) {
+                            if (key[a] != this->fp_path[i]->prefix[j]) {
+                                temp_fp_path = {};
+                                temp_fp_path_length = 0;
+                                return false;
+                            }
+                            a++;
+                        }
+                        if (fp_path[i]->prefixLength == 0) {
+                            // If the prefix length is 0, we can tail insert
+                            a++;
+                        }
+                        if (a < maxPrefixLength && key[a] != leaf[a]) {
+                            temp_fp_path = {};
+                            temp_fp_path_length = 0;
+                            return false;
+                        }
+
+                        temp_fp_path[temp_fp_path_length] = this->fp_path[i]; // update the fp_path
+                        temp_fp_path_length++;
+                    }
+
+                    if (temp_fp_path[temp_fp_path_length - 1] == this->fp) {
+                        // If the last node in the temp_fp_path is the fp, we can tail insert
+                        return true;
+                    } else {
+                        // If the last node in the temp_fp_path is not the fp, we cannot tail insert
+                        temp_fp_path = {};
+                        temp_fp_path_length = 0;
+                        return false;
+                    }
+            
+                }
             
 
             bool verifyTailPath() {
@@ -96,8 +181,9 @@ namespace ART {
                                 return false;
                             }
                         } else {
+                            printf("looking for type: %lu\n", this->fp->type);
                             printf("Error: last node in fp_path is not the fp. Expected %p, got %p.\n",
-                                static_cast<void*>(this->fp), static_cast<void*>(current));
+                                static_cast<void*>(current), static_cast<void*>(this->fp));
                             return false;
                         }
                     }
@@ -158,10 +244,6 @@ namespace ART {
                 printf("Error: fp_path does not lead to the fp.\n");
                 return false;
             }
-
-            void printTree() { 
-                printTree(this->root, 0);
-            }
         
         private:
             void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
@@ -200,9 +282,6 @@ namespace ART {
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length);
                     return;
                 }
-
-                temp_fp_path[temp_fp_path_length] = node; // add the node to the array before recursion
-                temp_fp_path_length++; // increase the size of the array
             
                 // Handle prefix of inner node
                 if (node->prefixLength) {
@@ -288,6 +367,8 @@ namespace ART {
                 // Recurse
                 ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
+                    temp_fp_path[temp_fp_path_length] = node; // add the node to the array before recursion
+                    temp_fp_path_length++; // increase the size of the array    
                     insert(tree, *child, child, key, depth + 1, value, maxKeyLength, 
                         temp_fp_path, temp_fp_path_length);
                     return;
@@ -313,61 +394,7 @@ namespace ART {
                                     newNode, temp_fp_path, temp_fp_path_length);
                         break;
                 }
-            }
-
-            void printTree(ArtNode* node, int depth) {
-                if (!node) return;
-            
-                // Indent based on depth
-                for (int i = 0; i < depth; i++) {
-                    printf("  ");
-                }
-            
-                if (isLeaf(node)) {
-                    printf("Leaf(%lu)\n", getLeafValue(node));
-                    return;
-                }
-            
-                switch (node->type) {
-                    case NodeType4: {
-                        Node4* n = static_cast<Node4*>(node);
-                        printf("Node4\n");
-                        for (unsigned i = 0; i < n->count; i++) {
-                            printTree(n->child[i], depth + 1);
-                        }
-                        break;
-                    }
-                    case NodeType16: {
-                        Node16* n = static_cast<Node16*>(node);
-                        printf("Node16\n");
-                        for (unsigned i = 0; i < n->count; i++) {
-                            printTree(n->child[i], depth + 1);
-                        }
-                        break;
-                    }
-                    case NodeType48: {
-                        Node48* n = static_cast<Node48*>(node);
-                        printf("Node48\n");
-                        for (unsigned i = 0; i < 256; i++) {
-                            if (n->childIndex[i] != emptyMarker) {
-                                printTree(n->child[n->childIndex[i]], depth + 1);
-                            }
-                        }
-                        break;
-                    }
-                    case NodeType256: {
-                        Node256* n = static_cast<Node256*>(node);
-                        printf("Node256\n");
-                        for (unsigned i = 0; i < 256; i++) {
-                            if (n->child[i]) {
-                                printTree(n->child[i], depth + 1);
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-            
+            }            
     };
 
 } // namespace ART

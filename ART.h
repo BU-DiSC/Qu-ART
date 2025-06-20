@@ -57,6 +57,10 @@ namespace ART {
                 uint8_t h_keyLength, unsigned depth, unsigned maxKeyLength) {
                     return rangelookup(this, root, l_key, l_keyLength, h_key, h_keyLength, depth, maxKeyLength);
             }
+
+            void printTree() { 
+                printTree(this->root, 0);
+            }
                 
 
         private:
@@ -299,7 +303,60 @@ namespace ART {
                 }
                 delete queue;
                 return result;
-            }        
+            }    
+            
+            void printTree(ArtNode* node, int depth) {
+                if (!node) return;
+
+                // Indent based on depth
+                for (int i = 0; i < depth; i++) {
+                    printf("  ");
+                }
+
+                if (isLeaf(node)) {
+                    printf("Leaf(%lu)\n", getLeafValue(node));
+                    return;
+                }
+
+                switch (node->type) {
+                    case NodeType4: {
+                        Node4* n = static_cast<Node4*>(node);
+                        printf("Node4 [%p]\n", static_cast<void*>(n));
+                        for (unsigned i = 0; i < n->count; i++) {
+                            printTree(n->child[i], depth + 1);
+                        }
+                        break;
+                    }
+                    case NodeType16: {
+                        Node16* n = static_cast<Node16*>(node);
+                        printf("Node16 [%p]\n", static_cast<void*>(n));
+                        for (unsigned i = 0; i < n->count; i++) {
+                            printTree(n->child[i], depth + 1);
+                        }
+                        break;
+                    }
+                    case NodeType48: {
+                        Node48* n = static_cast<Node48*>(node);
+                        printf("Node48 [%p]\n", static_cast<void*>(n));
+                        for (unsigned i = 0; i < 256; i++) {
+                            if (n->childIndex[i] != emptyMarker) {
+                                printTree(n->child[n->childIndex[i]], depth + 1);
+                            }
+                        }
+                        break;
+                    }
+                    case NodeType256: {
+                        Node256* n = static_cast<Node256*>(node);
+                        printf("Node256 [%p]\n", static_cast<void*>(n));
+                        for (unsigned i = 0; i < 256; i++) {
+                            if (n->child[i]) {
+                                printTree(n->child[i], depth + 1);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
 
     };
 }  // namespace ART
