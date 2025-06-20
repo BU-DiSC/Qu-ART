@@ -11,8 +11,9 @@ namespace ART {
             ART_tail() : ART() {}
 
             void insert(uint8_t key[], uintptr_t value) {
-                std::array<ArtNode*, maxPrefixLength> temp_fp_path;
-                size_t temp_fp_path_length = 0;
+                // we don't want to do this
+                std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
+                size_t temp_fp_path_length = 1;
                     if (canTailInsert(key, temp_fp_path, temp_fp_path_length)) {
                         // adjust temp_fp_path and fp_path too
                         printf("can tail insert\n");
@@ -23,6 +24,8 @@ namespace ART {
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
+                        std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
+                        size_t temp_fp_path_length = 1;
                         ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
@@ -282,6 +285,9 @@ namespace ART {
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length);
                     return;
                 }
+
+                // before this, nodes was added. now, it is not added yet
+                // this causes an issue probably
             
                 // Handle prefix of inner node
                 if (node->prefixLength) {

@@ -55,13 +55,13 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        int k = -1;
+        int k = 1;
 
         if (i == k) {
             cout << "Before inserting " << keys[i] <<  endl;
             cout << "tree" << endl;
             tree->printTree();
-            /*
+            
             cout << "fp_path" << endl;
             printTailPath(tree->fp_path, tree->fp_path_length);
             cout << "prefixes" << endl;
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
                     }
                 }   
             }
-            */
+            
             cout << endl;
             cout << endl;
         }
@@ -87,7 +87,7 @@ int main(int argc, char** argv) {
             cout << "After inserting " << keys[i] << endl;
             cout << "tree" << endl;
             tree->printTree();
-            /*
+            
             cout << "fp_path" << endl;
             printTailPath(tree->fp_path, tree->fp_path_length);
             cout << "prefixes" << endl;
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
                     }
                 }
             }
-            */
+            
             cout << endl;
             cout << endl;
         }
@@ -111,12 +111,12 @@ int main(int argc, char** argv) {
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
         
-        /*
+        
         if (!tree->verifyTailPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
-        */
+        
         
         
     }
@@ -128,6 +128,7 @@ int main(int argc, char** argv) {
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
+        //cout << i << endl;
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
