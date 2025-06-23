@@ -14,18 +14,16 @@ namespace ART {
                 // we don't want to do this
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                 size_t temp_fp_path_length = 1;
-                    if (canTailInsert(key, temp_fp_path, temp_fp_path_length)) {
-                        // adjust temp_fp_path and fp_path too
-                        printf("can tail insert\n");
-                        printf("doing tail insert with\n");
-                        // adjust depth too
+                size_t depth = 0;
+                    if (canTailInsert(key, temp_fp_path, temp_fp_path_length, depth)) {
                         printTailPath(temp_fp_path, temp_fp_path_length);
-                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), key, temp_fp_path_length + 1, value, maxPrefixLength, 
+                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), 
+                            key, depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
-                        std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
-                        size_t temp_fp_path_length = 1;
+                        temp_fp_path = {this->root};
+                        temp_fp_path_length = 1;
                         ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
@@ -100,11 +98,26 @@ namespace ART {
             */
 
             bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
-                size_t& temp_fp_path_length) {
+                size_t& temp_fp_path_length, size_t depth) {
 
+                    /*
                     if (this->fp_path_length == 0) {
                         return false; 
                     }
+                    */
+
+                    if (this->root == NULL) {
+                        return false;
+                    }
+
+                    // i = 1
+                    if (isLeaf(this->root)) {
+                        temp_fp_path = {this->root};
+                        temp_fp_path_length = 1;
+                        this->fp = this->root;
+                        return true;
+                    }
+
     
                     int leafVal = getLeafValue(this->fp_leaf);
                     int keyVal = arrToInt(key);
@@ -127,8 +140,32 @@ namespace ART {
                         printf("%u ", leaf[i]);
                     }
                     printf("\n");
-                    int a = 0;
 
+                    // create a copy of key without the last element
+                    std::array<uint8_t, maxPrefixLength> key_copy;
+                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
+                        key_copy[i] = key[i];
+                    }
+                    // create a copy of the leaf without the last element
+                    std::array<uint8_t, maxPrefixLength> leaf_copy;
+                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
+                        leaf_copy[i] = leaf[i];
+                    }
+                    // if all element of key_copy are equal to leaf_copy, return true
+                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
+                        if (key_copy[i] != leaf_copy[i]) {
+                            return false;
+                        }
+                    }
+
+                    temp_fp_path = fp_path; // reset temp_fp_path to root
+                    temp_fp_path_length = fp_path_length; // reset temp_fp_path_length to 1
+                    depth = 3 - this->fp->prefixLength; // depth is the number of elements in the prefix
+                    return true;
+                
+
+                    /*
+                    int a = 0;
                     for (int i = 0; i < this->fp_path_length; i++) {
                         for (int j = 0; j < this->fp_path[i]->prefixLength; j++) {
                             if (key[a] != this->fp_path[i]->prefix[j]) {
@@ -161,6 +198,8 @@ namespace ART {
                         temp_fp_path_length = 0;
                         return false;
                     }
+
+                    */
             
                 }
             
@@ -184,7 +223,7 @@ namespace ART {
                                 return false;
                             }
                         } else {
-                            printf("looking for type: %lu\n", this->fp->type);
+                            //printf("looking for type: %lu\n", this->fp->type);
                             printf("Error: last node in fp_path is not the fp. Expected %p, got %p.\n",
                                 static_cast<void*>(current), static_cast<void*>(this->fp));
                             return false;
@@ -276,8 +315,7 @@ namespace ART {
                     *nodeRef = newNode;
                     // If the changing node was the fp, push it to the temp_fp_path
                     if (tree->fp_leaf == node) { 
-                        temp_fp_path[temp_fp_path_length] = newNode;
-                        temp_fp_path_length++;
+                        temp_fp_path[temp_fp_path_length - 1] = newNode;
                     }
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node, temp_fp_path, temp_fp_path_length);
@@ -373,7 +411,7 @@ namespace ART {
                 // Recurse
                 ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
-                    temp_fp_path[temp_fp_path_length] = node; // add the node to the array before recursion
+                    temp_fp_path[temp_fp_path_length] = *child; // add the node to the array before recursion
                     temp_fp_path_length++; // increase the size of the array    
                     insert(tree, *child, child, key, depth + 1, value, maxKeyLength, 
                         temp_fp_path, temp_fp_path_length);
