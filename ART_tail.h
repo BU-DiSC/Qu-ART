@@ -16,7 +16,7 @@ namespace ART {
                 size_t temp_fp_path_length = 1;
                 size_t depth = 0;
                     if (canTailInsert(key, temp_fp_path, temp_fp_path_length, depth)) {
-                        printTailPath(temp_fp_path, temp_fp_path_length);
+                        printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
                         ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), 
                             key, depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
@@ -98,7 +98,7 @@ namespace ART {
             */
 
             bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
-                size_t& temp_fp_path_length, size_t depth) {
+                size_t& temp_fp_path_length, size_t& depth) {
 
                     /*
                     if (this->fp_path_length == 0) {
@@ -128,6 +128,7 @@ namespace ART {
 
                     std::array<uint8_t, maxPrefixLength> leaf = intToArr(getLeafValue(this->fp_leaf));
 
+                    /*
                     // print key array
                     printf("Key array: ");
                     for (size_t i = 0; i < maxPrefixLength; i++) {
@@ -140,6 +141,7 @@ namespace ART {
                         printf("%u ", leaf[i]);
                     }
                     printf("\n");
+                    */
 
                     // create a copy of key without the last element
                     std::array<uint8_t, maxPrefixLength> key_copy;
@@ -160,7 +162,11 @@ namespace ART {
 
                     temp_fp_path = fp_path; // reset temp_fp_path to root
                     temp_fp_path_length = fp_path_length; // reset temp_fp_path_length to 1
-                    depth = 3 - this->fp->prefixLength; // depth is the number of elements in the prefix
+                    int total_prefix_length = 0;
+                    for (size_t i = 0; i < this->fp_path_length; i++) {
+                        total_prefix_length += this->fp_path[i]->prefixLength;
+                    }
+                    depth = 3 - total_prefix_length;
                     return true;
                 
 
