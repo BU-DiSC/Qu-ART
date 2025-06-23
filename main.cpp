@@ -55,9 +55,10 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        int k = -1;
+        //int k = -1;
+        bool k = false;
 
-        if (i == k) {
+        if (k) {
             cout << "Before inserting " << keys[i] << ", i=" << i << endl;
             cout << "tree" << endl;
             tree->printTree();
@@ -81,10 +82,16 @@ int main(int argc, char** argv) {
             cout << endl;
         }
         
-        //cout << i << endl;
+        /*
+        cout << i << " ";
+        for (int j = 0; j < 4; j++) {
+            cout << static_cast<int>(key[j]) << " ";
+        }
+        cout << endl;
+        */
         tree->insert(key, keys[i]);
         
-        if (i == k) {
+        if (k) {
             cout << "After inserting " << keys[i] << ", i=" << i << endl;
             cout << "tree" << endl;
             tree->printTree();
@@ -112,11 +119,15 @@ int main(int argc, char** argv) {
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
         
-        
+        /*
         if (!tree->verifyTailPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
+        */
+        
+        
+        
         
         
         

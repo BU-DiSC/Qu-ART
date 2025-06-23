@@ -11,12 +11,11 @@ namespace ART {
             ART_tail() : ART() {}
 
             void insert(uint8_t key[], uintptr_t value) {
-                // we don't want to do this
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                 size_t temp_fp_path_length = 1;
                 size_t depth = 0;
                     if (canTailInsert(key, temp_fp_path, temp_fp_path_length, depth)) {
-                        printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
                         ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), 
                             key, depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
