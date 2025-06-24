@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ART_tail* tree = new ART::ART_tail();
+    ART::QuART_tail* tree = new ART::QuART_tail();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];

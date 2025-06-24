@@ -5,10 +5,10 @@
 
 namespace ART {
 
-    class ART_tail : public ART {
+    class QuART_tail : public ART {
         public:
 
-            ART_tail() : ART() {}
+            QuART_tail() : ART() {}
 
             void insert(uint8_t key[], uintptr_t value) {
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
@@ -29,7 +29,7 @@ namespace ART {
 
                         printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
                         //printTailPath(temp_fp_path, temp_fp_path_length);
-                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : 
+                        QuART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : 
                             findChild(this->fp_path[this->fp_path_length - 2], key[depth - 1])), 
                             key, depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
@@ -37,7 +37,7 @@ namespace ART {
                     else {
                         temp_fp_path = {this->root};
                         temp_fp_path_length = 1;
-                        ART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
+                        QuART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                 }
@@ -190,7 +190,7 @@ namespace ART {
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length);
                     return;
                 }
-                            
+
                 // Handle prefix of inner node
                 if (node->prefixLength) {
                     unsigned mismatchPos = prefixMismatch(node, key, depth, maxKeyLength);
