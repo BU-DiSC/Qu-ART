@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "ART.h"
-#include "ART_tail.h"
+#include "QuART_tail.h"
 #include "ArtNode.h"
 #include "ArtNodeTail.cpp"
 #include "Chain.h"
