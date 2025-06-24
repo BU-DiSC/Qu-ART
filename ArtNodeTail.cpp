@@ -51,7 +51,7 @@ namespace ART {
                 // If the new value doesn't create a new fp_leaf, restore the remaining part of the fp_path
                 if (getLeafValue(child) < getLeafValue(tree->fp_leaf)) {
                     // create a deep copy of remainder of fp_path here
-                    std::array<ArtNode*, 4> fp_path_remainder;
+                    std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
                     std::copy(tree->fp_path.begin() + temp_fp_path_length_old, tree->fp_path.end(), fp_path_remainder.begin());
                     tree->fp_path = temp_fp_path; // update fp_path
                     tree->fp_path_length = temp_fp_path_length_old; // update fp_path size
@@ -123,7 +123,7 @@ namespace ART {
                 // If the new value doesn't create a new fp_leaf, restore the remaining part of the fp_path
                 if (getLeafValue(child) < getLeafValue(tree->fp_leaf)) {
                     // create a deep copy of remainder of fp_path here
-                    std::array<ArtNode*, 4> fp_path_remainder;
+                    std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
                     std::copy(tree->fp_path.begin() + temp_fp_path_length_old, tree->fp_path.end(), fp_path_remainder.begin());
                     tree->fp_path = temp_fp_path; // update fp_path
                     tree->fp_path_length = temp_fp_path_length_old; // update fp_path size
@@ -186,7 +186,7 @@ namespace ART {
                // If the new value doesn't create a new fp_leaf, restore the remaining part of the fp_path
                if (getLeafValue(child) < getLeafValue(tree->fp_leaf)) {
                    // create a deep copy of remainder of fp_path here
-                   std::array<ArtNode*, 4> fp_path_remainder;
+                   std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
                    std::copy(tree->fp_path.begin() + temp_fp_path_length_old, tree->fp_path.end(), fp_path_remainder.begin());
                    tree->fp_path = temp_fp_path; // update fp_path
                    tree->fp_path_length = temp_fp_path_length_old; // update fp_path size
