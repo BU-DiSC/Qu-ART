@@ -190,10 +190,7 @@ namespace ART {
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length);
                     return;
                 }
-
-                // before this, nodes was added. now, it is not added yet
-                // this causes an issue probably
-            
+                            
                 // Handle prefix of inner node
                 if (node->prefixLength) {
                     unsigned mismatchPos = prefixMismatch(node, key, depth, maxKeyLength);
