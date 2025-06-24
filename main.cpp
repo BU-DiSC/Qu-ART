@@ -89,7 +89,9 @@ int main(int argc, char** argv) {
         }
         cout << endl;
         */
+        //cout << i << endl;
         tree->insert(key, keys[i]);
+        //printf("fp_leaf: %lu\n", ART::getLeafValue(tree->fp_leaf));
         
         if (k) {
             cout << "After inserting " << keys[i] << ", i=" << i << endl;
@@ -119,12 +121,12 @@ int main(int argc, char** argv) {
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
         
-        /*
+        
         if (!tree->verifyTailPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
-        */
+        
         
         
         

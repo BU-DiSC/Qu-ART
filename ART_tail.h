@@ -16,7 +16,9 @@ namespace ART {
                 size_t depth = 0;
                     if (canTailInsert(key, temp_fp_path, temp_fp_path_length, depth)) {
                         //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
-                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : &this->fp), 
+                        //printTailPath(temp_fp_path, temp_fp_path_length);
+                        ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : 
+                            findChild(this->fp_path[this->fp_path_length - 2], key[depth - 1])), 
                             key, depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
@@ -161,12 +163,29 @@ namespace ART {
 
                     temp_fp_path = fp_path; // reset temp_fp_path to root
                     temp_fp_path_length = fp_path_length; // reset temp_fp_path_length to 1
+                    /*
                     int total_prefix_length = 0;
                     for (size_t i = 0; i < this->fp_path_length; i++) {
                         total_prefix_length += this->fp_path[i]->prefixLength;
                     }
-                    depth = 3 - total_prefix_length;
-                    return true;
+                    for (size_t i = 0; i < this->fp_path_length; i++) {
+                        if (this->fp_path[i] == this->fp) {
+                            // If the prefix length is 0, we can tail insert
+                            depth = i;
+                            return true;
+                        }
+                    }
+                    */
+
+                    for (size_t i = 0; i < this->fp_path_length; i++) {
+                        if (this->fp_path[i] == this->fp) {
+                            return true;
+                        }
+
+                        depth += this->fp_path[i]->prefixLength; // update the depth
+                        depth++;
+                    }
+                    
                 
 
                     /*
@@ -296,6 +315,7 @@ namespace ART {
             void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
                 size_t temp_fp_path_length) {
+                //printf("node= %p, depth = %lu\n", static_cast<void*>(node), depth);
                 // Insert the leaf value into the tree
                 if (node == NULL) {
                     *nodeRef = makeLeaf(value);
