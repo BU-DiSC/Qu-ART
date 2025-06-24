@@ -14,8 +14,20 @@ namespace ART {
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                 size_t temp_fp_path_length = 1;
                 size_t depth = 0;
-                    if (canTailInsert(key, temp_fp_path, temp_fp_path_length, depth)) {
-                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                    if (canTailInsert(key)) {
+                        temp_fp_path = fp_path; 
+                        temp_fp_path_length = fp_path_length;
+                        // Adjust depth
+                        for (size_t i = 0; i < this->fp_path_length; i++) {
+                            if (this->fp_path[i] == this->fp) {
+                                break;
+                            }
+
+                            depth += this->fp_path[i]->prefixLength; 
+                            depth++;
+                        }
+
+                        printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
                         //printTailPath(temp_fp_path, temp_fp_path_length);
                         ART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : 
                             findChild(this->fp_path[this->fp_path_length - 2], key[depth - 1])), 
@@ -30,203 +42,33 @@ namespace ART {
                     }
                 }
             
-            /*
-            bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
-                size_t& temp_fp_path_length) {
+            bool canTailInsert(uint8_t key[]) {
 
-                // print key array
-                printf("Key array: ");
-                for (size_t i = 0; i < maxPrefixLength; i++) {
-                    printf("%u ", key[i]);
-                }
-                printf("\n");
-
-                printf("leeaf value: %lu\n", getLeafValue(this->fp_leaf));
-                std::array<uint8_t, 4> arr = intToArr(getLeafValue(this->fp_leaf));
-
-
-                printf("Leaf array: ");
-                for (size_t i = 0; i < maxPrefixLength; i++) {
-                    printf("%u ", arr[i]);
-                }
-                printf("\n");
-
-
-                
-                if (this->fp_path_length == 0) {
-                    return false; 
-                }
-
-                int leafVal = getLeafValue(this->fp_leaf);
-                int keyVal = arrToInt(key);
-
-                if (leafVal > keyVal) {
+                // if root is null or root is a leaf, we cannot tail insert
+                if (this->root == NULL || isLeaf(this->root)) {
                     return false;
                 }
 
-                
-                ArtNode* ptr = this->fp_path[0];
-                
-                size_t j = 0;
+                int fpLeafValue = getLeafValue(this->fp_leaf);
 
-                for (size_t i = 0; i < this->fp_path_length; i++) {
-                    ptr = this->fp_path[i];
-                    if (ptr->prefixLength != 0) {
-                        for (j; j < ptr->prefixLength; j++) {
-                            if (ptr->prefix[j] != key[i]) {
-                                temp_fp_path = {};
-                                temp_fp_path_length = 0;
-                                return false;
-                            }
-                        }
-                    }
-                    if (ptr == this->fp) {
-                        return true;
-                    }
+                // if new value is less than the value on the leaf node, we cannot tail insert
+                if (fpLeafValue > arrToInt(key)) {
+                    return false;
+                }    
 
-                    temp_fp_path[temp_fp_path_length] = ptr; // update the fp_path
-                    temp_fp_path_length++;
+                // convert int value in fp leaf into byte array
+                std::array<uint8_t, maxPrefixLength> leafArr = intToArr(fpLeafValue);
 
-                    printf("node ptr added to temp_fp_path: %p\n", static_cast<void*>(ptr));
-                } 
-                   
-                
-                temp_fp_path = {};
-                temp_fp_path_length = 0;
-                return false;
-            }
-
-            */
-
-            bool canTailInsert(uint8_t key[], std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
-                size_t& temp_fp_path_length, size_t& depth) {
-
-                    /*
-                    if (this->fp_path_length == 0) {
-                        return false; 
-                    }
-                    */
-
-                    if (this->root == NULL) {
+                // tail insertion check
+                for (size_t i = 0; i < maxPrefixLength - 1; i++) {
+                    if (key[i] != leafArr[i]) {
                         return false;
                     }
-
-                    // i = 1
-                    if (isLeaf(this->root)) {
-                        temp_fp_path = {this->root};
-                        temp_fp_path_length = 1;
-                        this->fp = this->root;
-                        return true;
-                    }
-
-    
-                    int leafVal = getLeafValue(this->fp_leaf);
-                    int keyVal = arrToInt(key);
-    
-                    if (leafVal > keyVal) {
-                        return false;
-                    }    
-
-                    std::array<uint8_t, maxPrefixLength> leaf = intToArr(getLeafValue(this->fp_leaf));
-
-                    /*
-                    // print key array
-                    printf("Key array: ");
-                    for (size_t i = 0; i < maxPrefixLength; i++) {
-                        printf("%u ", key[i]);
-                    }
-                    printf("\n");
-                    printf("Leaf value: %lu\n", getLeafValue(this->fp_leaf));
-                    printf("Leaf array: ");
-                    for (size_t i = 0; i < maxPrefixLength; i++) {
-                        printf("%u ", leaf[i]);
-                    }
-                    printf("\n");
-                    */
-
-                    // create a copy of key without the last element
-                    std::array<uint8_t, maxPrefixLength> key_copy;
-                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
-                        key_copy[i] = key[i];
-                    }
-                    // create a copy of the leaf without the last element
-                    std::array<uint8_t, maxPrefixLength> leaf_copy;
-                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
-                        leaf_copy[i] = leaf[i];
-                    }
-                    // if all element of key_copy are equal to leaf_copy, return true
-                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
-                        if (key_copy[i] != leaf_copy[i]) {
-                            return false;
-                        }
-                    }
-
-                    temp_fp_path = fp_path; // reset temp_fp_path to root
-                    temp_fp_path_length = fp_path_length; // reset temp_fp_path_length to 1
-                    /*
-                    int total_prefix_length = 0;
-                    for (size_t i = 0; i < this->fp_path_length; i++) {
-                        total_prefix_length += this->fp_path[i]->prefixLength;
-                    }
-                    for (size_t i = 0; i < this->fp_path_length; i++) {
-                        if (this->fp_path[i] == this->fp) {
-                            // If the prefix length is 0, we can tail insert
-                            depth = i;
-                            return true;
-                        }
-                    }
-                    */
-
-                    for (size_t i = 0; i < this->fp_path_length; i++) {
-                        if (this->fp_path[i] == this->fp) {
-                            return true;
-                        }
-
-                        depth += this->fp_path[i]->prefixLength; // update the depth
-                        depth++;
-                    }
-                    
-                
-
-                    /*
-                    int a = 0;
-                    for (int i = 0; i < this->fp_path_length; i++) {
-                        for (int j = 0; j < this->fp_path[i]->prefixLength; j++) {
-                            if (key[a] != this->fp_path[i]->prefix[j]) {
-                                temp_fp_path = {};
-                                temp_fp_path_length = 0;
-                                return false;
-                            }
-                            a++;
-                        }
-                        if (fp_path[i]->prefixLength == 0) {
-                            // If the prefix length is 0, we can tail insert
-                            a++;
-                        }
-                        if (a < maxPrefixLength && key[a] != leaf[a]) {
-                            temp_fp_path = {};
-                            temp_fp_path_length = 0;
-                            return false;
-                        }
-
-                        temp_fp_path[temp_fp_path_length] = this->fp_path[i]; // update the fp_path
-                        temp_fp_path_length++;
-                    }
-
-                    if (temp_fp_path[temp_fp_path_length - 1] == this->fp) {
-                        // If the last node in the temp_fp_path is the fp, we can tail insert
-                        return true;
-                    } else {
-                        // If the last node in the temp_fp_path is not the fp, we cannot tail insert
-                        temp_fp_path = {};
-                        temp_fp_path_length = 0;
-                        return false;
-                    }
-
-                    */
-            
                 }
-            
+
+                // if passed all checks, we can tail insert
+                return true;
+            }            
 
             bool verifyTailPath() {
                 if (this->fp_path_length == 0) {
