@@ -216,7 +216,8 @@ namespace ART {
                                 if (value < getLeafValue(tree->fp)) {
                                     // A deep copy of remainder of fp_path 
                                     std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                                    std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
+                                    std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), 
+                                    tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
                                     tree->fp_path = temp_fp_path; // update the fp path
                                     tree->fp_path_length = temp_fp_path_length_old;
                                     // Add the remainder of fp_path to fp_path
@@ -224,7 +225,6 @@ namespace ART {
                                         tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
                                         tree->fp_path_length++;
                                     }
-                                    tree->fp = tree->fp_path[tree->fp_path_length - 1]; // update the fp pointer
                                 }
                             }
                             newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node,
@@ -249,7 +249,8 @@ namespace ART {
                                 if (value < getLeafValue(tree->fp)) {
                                     // A deep copy of remainder of fp_path 
                                     std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                                    std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
+                                    std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), 
+                                    tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
                                     tree->fp_path = temp_fp_path; // update the fp path
                                     tree->fp_path_length = temp_fp_path_length_old;
                                     // Add the remainder of fp_path to fp_path
@@ -257,7 +258,6 @@ namespace ART {
                                         tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
                                         tree->fp_path_length++;
                                     }
-                                    tree->fp = tree->fp_path[tree->fp_path_length - 1]; // update the fp pointer
                                 }
                             }
                             newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos],
