@@ -44,8 +44,19 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // Grow to Node16
         Node16* newNode = new Node16();
         *nodeRef = newNode;
+
+        // swap out child/root for newNode
+        if (tree->fp_path_length == 1) {
+            tree->root = newNode;
+        } else {
+            ArtNode** c =
+                findChild(tree->fp, this->prefix[tree->fp_path_length - 1]);
+            *c = newNode;
+        }
+        // update fast path
         tree->fp = newNode;
         tree->fp_path[tree->fp_path_length - 1] = newNode;
+
         newNode->count = 4;
         copyPrefix(this, newNode);
         for (unsigned i = 0; i < 4; i++)
@@ -78,8 +89,19 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // Grow to Node48
         Node48* newNode = new Node48();
         *nodeRef = newNode;
+
+        // swap out child/root for newNode
+        if (tree->fp_path_length == 1) {
+            tree->root = newNode;
+        } else {
+            ArtNode** c =
+                findChild(tree->fp, this->prefix[tree->fp_path_length - 1]);
+            *c = newNode;
+        }
+        // update fast path
         tree->fp = newNode;
         tree->fp_path[tree->fp_path_length - 1] = newNode;
+
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
         for (unsigned i = 0; i < this->count; i++)
             newNode->childIndex[flipSign(this->key[i])] = i;
@@ -110,8 +132,19 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         newNode->count = this->count;
         copyPrefix(this, newNode);
         *nodeRef = newNode;
+
+        // swap out child/root for newNode
+        if (tree->fp_path_length == 1) {
+            tree->root = newNode;
+        } else {
+            ArtNode** c =
+                findChild(tree->fp, this->prefix[tree->fp_path_length - 1]);
+            *c = newNode;
+        }
+        // update fast path
         tree->fp = newNode;
         tree->fp_path[tree->fp_path_length - 1] = newNode;
+
         delete this;
         return newNode->insertNode256(tree, nodeRef, keyByte, child);
     }

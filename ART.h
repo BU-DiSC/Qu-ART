@@ -45,6 +45,7 @@ class ART {
     ART() {
         root = NULL;
         fp_path_length = 0;
+        fp = NULL;
     }
 
     void insert(uint8_t key[], uintptr_t value) {

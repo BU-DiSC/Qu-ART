@@ -39,14 +39,31 @@ class QuART_lil : ART::ART {
     QuART_lil() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
+        std::cout << "Value inserted: " << value << std::endl;
+        if (value >= 261) {
+            std::cout << "";
+            printTree();
+        }
         // First, check if the new key fits on the fast path.
+        if (fp != NULL) {
+            auto p =
+                prefixMismatch(fp, key, fp_path_length - 1, maxPrefixLength);
+            std::cout << "";
+        }
         bool onFastPath =
-            fp != NULL &&
-            prefixMismatch(fp, key, 0, maxPrefixLength) == fp_path_length;
+            fp != NULL && prefixMismatch(fp, key, fp_path_length - 1,
+                                         maxPrefixLength) == fp->prefixLength;
         if (onFastPath) {  // If so, insert from the end of the fast path.
-            insert(this, fp, &fp, key, fp->prefixLength, value,
+            // fp_path_length--;  // decrement path length by one to avoid
+            //  double-counting the fp node on the path
+            std::cout << "Inserting to fast path" << std::endl;
+            insert(this, fp, &fp, key, fp_path_length - 1, value,
                    maxPrefixLength);
-        } else {  // Else, insert from the root
+        } else {  // Else, reset the fast path and insert from the root
+            fp = NULL;
+            fp_path_length = 0;
+            fp_path.fill(NULL);
+            std::cout << "Inserting to root" << std::endl;
             insert(this, root, &root, key, 0, value, maxPrefixLength);
         }
     }
@@ -96,11 +113,25 @@ class QuART_lil : ART::ART {
 
             newNode->insertNode4(this, nodeRef,
                                  existingKey[depth + newPrefixLength], node);
+            ArtNode* newLeaf = makeLeaf(value);
             newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
-                                 makeLeaf(value));
+                                 newLeaf);
 
+            // Swap out node for newNode in child list of parent node
+            // if (fp_path_length > 0) {
+            //     ArtNode** child =
+            //         findChild(fp, node->prefix[fp_path_length - 1]);
+            //     *child = newNode;
+            // }
+            // update the fast path
             fp = newNode;
             fp_path[fp_path_length++] = newNode;
+            fp_leaf = newLeaf;
+
+            if (fp_path_length == 4) {
+                std::cout << "";
+            }
+
             return;
         }
 
@@ -131,19 +162,40 @@ class QuART_lil : ART::ART {
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
+
                 ArtNode* newLeaf = makeLeaf(value);
                 newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
                                      newLeaf);
 
-                fp_path[fp_path_length++] = newNode;
+                // update the fast path
                 fp = newNode;
+                fp_path[fp_path_length++] = newNode;
                 fp_leaf = newLeaf;
+                // Swap out node for newNode in child list of parent node
+                // ArtNode** child =
+                //     findChild(fp, node->prefix[fp_path_length - 1]);
+                // *child = newNode;
+
+                if (fp_path_length == 4) {
+                    std::cout << "";
+                }
 
                 return;
             }
             depth += node->prefixLength;
         }
-        fp_path[fp_path_length++] = node;
+        std::cout << "Before: " << fp_path_length << std::endl;
+        // using the condition avoids double-counting the end of a fp when
+        // inserting to a fp
+        if (node != fp_path[fp_path_length - 1]) {
+            fp_path[fp_path_length++] = node;
+            fp = node;
+        }
+        std::cout << "After: " << fp_path_length << std::endl;
+
+        if (fp_path_length == 4) {
+            std::cout << "";
+        }
 
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
@@ -341,6 +393,60 @@ class QuART_lil : ART::ART {
         }
         delete queue;
         return result;
+    }
+
+   public:
+    void printTree() { printTree(this->root, 0); }
+
+   private:
+    void printTree(ArtNode* node, int depth) {
+        if (!node) return;
+        // Indent based on depth
+        for (int i = 0; i < depth; i++) {
+            printf("  ");
+        }
+        if (isLeaf(node)) {
+            printf("Leaf(%lu)\n", getLeafValue(node));
+            return;
+        }
+        switch (node->type) {
+            case NodeType4: {
+                Node4* n = static_cast<Node4*>(node);
+                printf("Node4 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < n->count; i++) {
+                    printTree(n->child[i], depth + 1);
+                }
+                break;
+            }
+            case NodeType16: {
+                Node16* n = static_cast<Node16*>(node);
+                printf("Node16 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < n->count; i++) {
+                    printTree(n->child[i], depth + 1);
+                }
+                break;
+            }
+            case NodeType48: {
+                Node48* n = static_cast<Node48*>(node);
+                printf("Node48 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < 256; i++) {
+                    if (n->childIndex[i] != emptyMarker) {
+                        printTree(n->child[n->childIndex[i]], depth + 1);
+                    }
+                }
+                break;
+            }
+            case NodeType256: {
+                Node256* n = static_cast<Node256*>(node);
+                printf("Node256 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < 256; i++) {
+                    if (n->child[i]) {
+                        printTree(n->child[i], depth + 1);
+                    }
+                }
+                break;
+            }
+        }
     }
 };
 }  // namespace ART
