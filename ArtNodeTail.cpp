@@ -148,9 +148,10 @@ namespace ART {
        if (this->count < 48) {
            // Insert element
            unsigned pos = this->count;
-           if (this->child[pos])
+           if (this->child[pos]) {
                for (pos = 0; this->child[pos] != NULL; pos++);
-                   this->child[pos] = child;
+               this->child[pos] = child;
+           }
            this->childIndex[keyByte] = pos;
 
            // If what's being inserted is a leaf
