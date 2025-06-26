@@ -23,8 +23,9 @@ namespace ART {
                             depth++;
                         }
 
+                        // Uncomment the following line to print the tail insert debug information
                         //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
-                        //printTailPath(temp_fp_path, temp_fp_path_length);
+
                         QuART_tail::insert_recursive(this, this->fp, (this->fp == this->root ? &this->root : 
                             findChild(this->fp_path[this->fp_path_length - 2], key[depth - 1])), 
                             key, depth, value, maxPrefixLength, 
@@ -38,6 +39,7 @@ namespace ART {
                     }
                 }
             
+            // Checks if can tail insert
             bool canTailInsert(uint8_t key[]) {
 
                 // if root is null or root is a leaf, we cannot tail insert
@@ -59,6 +61,7 @@ namespace ART {
                 return memcmp(key, leafArr.data(), maxPrefixLength - 1) == 0;
             }            
 
+            // Method to verify the tail path after each insertion
             bool verifyTailPath() {
                 if (this->fp_path_length == 0) {
                     return true;
@@ -78,7 +81,6 @@ namespace ART {
                                 return false;
                             }
                         } else {
-                            //printf("looking for type: %lu\n", this->fp->type);
                             printf("Error: last node in fp_path is not the fp. Expected %p, got %p.\n",
                                 static_cast<void*>(current), static_cast<void*>(this->fp));
                             return false;
@@ -146,7 +148,6 @@ namespace ART {
             void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
                 size_t temp_fp_path_length) {
-                //printf("node= %p, depth = %lu\n", static_cast<void*>(node), depth);
                 // Insert the leaf value into the tree
                 if (node == NULL) {
                     *nodeRef = makeLeaf(value);

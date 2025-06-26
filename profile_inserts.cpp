@@ -14,6 +14,7 @@
 
 using namespace std;
 
+/*
 template <typename key_type>
 std::vector<key_type> read_bin(const char* filename) {
     std::ifstream inputFile(filename, std::ios::binary);
@@ -24,6 +25,7 @@ std::vector<key_type> read_bin(const char* filename) {
     inputFile.read(reinterpret_cast<char*>(data.data()), fileSize);
     return data;
 }
+*/
 
 int main(int argc, char** argv) {
     bool verbose = false;  // optional argument
@@ -37,33 +39,33 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-N") {
             N = atoi(argv[i + 1]);
             i += 2;
-        } else if (string(argv[i]) == "-f") {
+        } 
+        /*else if (string(argv[i]) == "-f") {
             input_file = argv[i + 1];
             i += 2;
-        }
+        }*/
     }
 
     // read data
-    auto keys = read_bin<uint32_t>(input_file.c_str());
+    //auto keys = read_bin<uint32_t>(input_file.c_str());
 
-    // Build tree
+    std::vector<uint32_t> keys(10000000);
+    for (uint32_t i = 0; i < 10000000; ++i) {
+        keys[i] = i + 1;
+    }
+
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::ART* tree = new ART::ART();
 
-    long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
-        auto start = chrono::high_resolution_clock::now();
 
         tree->insert(key, keys[i]);
-        
-        auto stop = chrono::high_resolution_clock::now();
-        auto duration =
-            chrono::duration_cast<chrono::nanoseconds>(stop - start);
-        insertion_time += duration.count();
-        
+
+        //cout << i << endl;
+                
         // Uncomment the following lines to verify the tail path after each insertion
         /*
         if (!tree->verifyTailPath()) {
@@ -73,31 +75,6 @@ int main(int argc, char** argv) {
         */    
     }
 
-    if (verbose) {
-        cout << "Insertion time: " << insertion_time << " ns" << endl;
-    }
-
-    // Query tree
-    long long query_time = 0;
-    for (uint64_t i = 0; i < N; i++) {
-        //cout << i << endl;
-        uint8_t key[4];
-        ART::loadKey(keys[i], key);
-        auto start = chrono::high_resolution_clock::now();
-        ART::ArtNode* leaf = tree->lookup(key);
-        auto stop = chrono::high_resolution_clock::now();
-        auto duration =
-            chrono::duration_cast<chrono::nanoseconds>(stop - start);
-        query_time += duration.count();
-        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
-    }
-
-    if (verbose) {
-        cout << "Query time: " << query_time << " ns" << endl;
-    }
-
-    // simply output the times in csv format
-    cout << insertion_time << "," << query_time << endl;
-
+    //cout << "finished everything" << endl;
     return 0;
 }
