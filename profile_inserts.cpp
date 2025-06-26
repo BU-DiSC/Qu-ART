@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     //auto keys = read_bin<uint32_t>(input_file.c_str());
 
     std::vector<uint32_t> keys(10000000);
-    for (uint32_t i = 0; i < 10000000; ++i) {
+    for (uint32_t i = 0; i < 10000000; i++) {
         keys[i] = i + 1;
     }
 
