@@ -48,84 +48,26 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::ART* tree = new ART::ART();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        //int k = -1;
-        bool k = false;
-
-        if (k) {
-            cout << "Before inserting " << keys[i] << ", i=" << i << endl;
-            cout << "tree" << endl;
-            tree->printTree();
-            
-            cout << "fp_path" << endl;
-            printTailPath(tree->fp_path, tree->fp_path_length);
-            cout << "prefixes" << endl;
-            for (size_t j = 0; j < tree->fp_path_length; j++) {
-                cout << "Node " << j << ": ";
-                if (ART::isLeaf(tree->fp_path[j])) {
-                    cout << "Leaf(" << ART::getLeafValue(tree->fp_path[j]) << ")" << endl;
-                } else {
-                    cout << "Prefix: ";
-                    for (size_t k = 0; k < tree->fp_path[j]->prefixLength; k++) {
-                        cout << static_cast<int>(tree->fp_path[j]->prefix[k]) << " ";
-                    }
-                }   
-            }
-            
-            cout << endl;
-            cout << endl;
-        }
-        
-        /*
-        cout << i << " ";
-        for (int j = 0; j < 4; j++) {
-            cout << static_cast<int>(key[j]) << " ";
-        }
-        cout << endl;
-        */
-        //cout << i << endl;
         tree->insert(key, keys[i]);
-        //printf("fp_leaf: %lu\n", ART::getLeafValue(tree->fp_leaf));
         
-        if (k) {
-            cout << "After inserting " << keys[i] << ", i=" << i << endl;
-            cout << "tree" << endl;
-            tree->printTree();
-            
-            cout << "fp_path" << endl;
-            printTailPath(tree->fp_path, tree->fp_path_length);
-            cout << "prefixes" << endl;
-            for (size_t j = 0; j < tree->fp_path_length; j++) {
-                cout << "Node " << j << ": ";
-                if (ART::isLeaf(tree->fp_path[j])) {
-                    cout << "Leaf(" << ART::getLeafValue(tree->fp_path[j]) << ")" << endl;
-                } else {
-                    cout << "Prefix: ";
-                    for (size_t k = 0; k < tree->fp_path[j]->prefixLength; k++) {
-                        cout << static_cast<int>(tree->fp_path[j]->prefix[k]) << " ";
-                    }
-                }
-            }
-            
-            cout << endl;
-            cout << endl;
-        }
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
         
-        
+        /*
         if (!tree->verifyTailPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
+        */
         
 
         

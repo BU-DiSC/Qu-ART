@@ -18,18 +18,14 @@ namespace ART {
                         temp_fp_path = fp_path; 
                         temp_fp_path_length = fp_path_length;
                         // Adjust depth
-                        for (size_t i = 0; i < this->fp_path_length; i++) {
-                            if (this->fp_path[i] == this->fp) {
-                                break;
-                            }
-
-                            depth += this->fp_path[i]->prefixLength; 
+                        for (size_t i = 0; i < this->fp_path_length - 1; i++) {
+                            depth += this->fp_path[i]->prefixLength;
                             depth++;
                         }
 
-                        printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
                         //printTailPath(temp_fp_path, temp_fp_path_length);
-                        QuART_tail::insert(this, this->fp, (this->fp == this->root ? &this->root : 
+                        QuART_tail::insert_recursive(this, this->fp, (this->fp == this->root ? &this->root : 
                             findChild(this->fp_path[this->fp_path_length - 2], key[depth - 1])), 
                             key, depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
@@ -37,7 +33,7 @@ namespace ART {
                     else {
                         temp_fp_path = {this->root};
                         temp_fp_path_length = 1;
-                        QuART_tail::insert(this, root, &root, key, 0, value, maxPrefixLength, 
+                        QuART_tail::insert_recursive(this, root, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                 }
@@ -59,15 +55,8 @@ namespace ART {
                 // convert int value in fp leaf into byte array
                 std::array<uint8_t, maxPrefixLength> leafArr = intToArr(fpLeafValue);
 
-                // tail insertion check
-                for (size_t i = 0; i < maxPrefixLength - 1; i++) {
-                    if (key[i] != leafArr[i]) {
-                        return false;
-                    }
-                }
-
-                // if passed all checks, we can tail insert
-                return true;
+                // use memcmp for fast comparison
+                return memcmp(key, leafArr.data(), maxPrefixLength - 1) == 0;
             }            
 
             bool verifyTailPath() {
@@ -154,7 +143,7 @@ namespace ART {
             }
         
         private:
-            void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
+            void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
                 size_t temp_fp_path_length) {
                 //printf("node= %p, depth = %lu\n", static_cast<void*>(node), depth);
@@ -277,7 +266,7 @@ namespace ART {
                 if (*child) {
                     temp_fp_path[temp_fp_path_length] = *child; // add the node to the array before recursion
                     temp_fp_path_length++; // increase the size of the array    
-                    insert(tree, *child, child, key, depth + 1, value, maxKeyLength, 
+                    insert_recursive(tree, *child, child, key, depth + 1, value, maxKeyLength, 
                         temp_fp_path, temp_fp_path_length);
                     return;
                 }

@@ -46,7 +46,7 @@ namespace ART {
             }
 
             void insert(uint8_t key[], uintptr_t value) {
-                insert(this, root, &root, key, 0, value, maxPrefixLength);
+                insert_recursive(this, root, &root, key, 0, value, maxPrefixLength);
             }
 
             ArtNode* lookup(uint8_t key[]) {
@@ -65,7 +65,7 @@ namespace ART {
 
         private:
             // Void insert function
-            void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
+            void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                             uintptr_t value, unsigned maxKeyLength) {
                 // Insert the leaf value into the tree
 
@@ -131,7 +131,7 @@ namespace ART {
                 // Recurse
                 ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
-                    insert(tree, *child, child, key, depth + 1, value, maxKeyLength);
+                    insert_recursive(tree, *child, child, key, depth + 1, value, maxKeyLength);
                     return;
                 }
 
