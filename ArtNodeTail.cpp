@@ -19,11 +19,11 @@ namespace ART {
             this->child[pos] = child;
             
             // If what's being inserted is a leaf
-            if (isLeaf(this->child[pos])) {
+            if (isLeaf(child)) {
                 // If the new value is greater than or equal to the current fp_leaf, 
                 // update the fp_leaf, fp and fp_path
                 if (getLeafValue(child) >= getLeafValue(tree->fp_leaf)) {
-                    tree->fp_leaf = this->child[pos];
+                    tree->fp_leaf = child;
                     tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                     tree->fp_path = temp_fp_path;
                     tree->fp_path_length = temp_fp_path_length; // update fp_path size
@@ -91,11 +91,11 @@ namespace ART {
             this->child[pos] = child;
 
             // If what's being inserted is a leaf
-            if (isLeaf(this->child[pos])) {
+            if (isLeaf(child)) {
                 // If the new value is greater than or equal to the current fp_leaf, 
                 // update the fp_leaf, fp and fp_path
                 if (getLeafValue(child) >= getLeafValue(tree->fp_leaf)) {
-                    tree->fp_leaf = this->child[pos];
+                    tree->fp_leaf = child;
                     tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                     tree->fp_path = temp_fp_path;
                     tree->fp_path_length = temp_fp_path_length; // update fp_path size
@@ -148,25 +148,24 @@ namespace ART {
        if (this->count < 48) {
            // Insert element
            unsigned pos = this->count;
-           if (this->child[pos]) {
+           if (this->child[pos]) 
                for (pos = 0; this->child[pos] != NULL; pos++);
-               this->child[pos] = child;
-           }
-           this->childIndex[keyByte] = pos;
+                    this->child[pos] = child;
+                    this->childIndex[keyByte] = pos;
+                    this->count++;
 
            // If what's being inserted is a leaf
-           if (isLeaf(this->child[pos])) {
+           if (isLeaf(child)) {
                // If the new value is greater than or equal to the current fp_leaf, 
                // update the fp_leaf, fp and fp_path
                if (getLeafValue(child) >= getLeafValue(tree->fp_leaf)) {
-                   tree->fp_leaf = this->child[pos];
+                   tree->fp_leaf = child;
                    tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                    tree->fp_path = temp_fp_path;
                    tree->fp_path_length = temp_fp_path_length; // update fp_path size
                }
-           }
-
-           this->count++;
+           }           
+                
        } else {
            // Grow to Node256
            Node256* newNode = new Node256();
@@ -214,11 +213,11 @@ namespace ART {
         this->child[keyByte] = child;
 
         // If what's being inserted is a leaf
-        if (isLeaf(this->child[keyByte])) {
+        if (isLeaf(child)) {
             // If the new value is greater than or equal to the current fp_leaf, 
             // update the fp_leaf, fp and fp_path
             if (getLeafValue(child) >= getLeafValue(tree->fp_leaf)) {
-                tree->fp_leaf = this->child[keyByte];
+                tree->fp_leaf = child;
                 tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                 tree->fp_path = temp_fp_path;
                 tree->fp_path_length = temp_fp_path_length; // update fp_path size
