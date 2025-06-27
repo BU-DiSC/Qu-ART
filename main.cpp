@@ -64,6 +64,8 @@ int main(int argc, char** argv) {
         cout << "Insertion time: " << insertion_time << " ns" << endl;
     }
 
+    tree->printTree();
+
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -75,6 +77,7 @@ int main(int argc, char** argv) {
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         query_time += duration.count();
+        cout << "Query number " << i + 1 << endl;
         assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
     }
 

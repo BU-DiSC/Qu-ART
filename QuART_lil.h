@@ -40,7 +40,7 @@ class QuART_lil : ART::ART {
 
     void insert(uint8_t key[], uintptr_t value) {
         std::cout << "Value inserted: " << value << std::endl;
-        if (value >= 261) {
+        if (value >= 259) {
             std::cout << "";
             printTree();
         }
@@ -171,10 +171,6 @@ class QuART_lil : ART::ART {
                 fp = newNode;
                 fp_path[fp_path_length++] = newNode;
                 fp_leaf = newLeaf;
-                // Swap out node for newNode in child list of parent node
-                // ArtNode** child =
-                //     findChild(fp, node->prefix[fp_path_length - 1]);
-                // *child = newNode;
 
                 if (fp_path_length == 4) {
                     std::cout << "";
@@ -207,22 +203,31 @@ class QuART_lil : ART::ART {
         // Insert leaf into inner node
         ArtNode* newNode = makeLeaf(value);
         fp_leaf = newNode;
+
+        ArtNode** parentPointer =
+            (fp_path_length == 1)
+                ? &root
+                : findChild(fp_path[fp_path_length - 2], key[depth]);
         switch (node->type) {
             case NodeType4:
                 static_cast<Node4*>(node)->insertNode4(this, nodeRef,
                                                        key[depth], newNode);
+                *parentPointer = *nodeRef;
                 break;
             case NodeType16:
                 static_cast<Node16*>(node)->insertNode16(this, nodeRef,
                                                          key[depth], newNode);
+                *parentPointer = *nodeRef;
                 break;
             case NodeType48:
                 static_cast<Node48*>(node)->insertNode48(this, nodeRef,
                                                          key[depth], newNode);
+                *parentPointer = *nodeRef;
                 break;
             case NodeType256:
                 static_cast<Node256*>(node)->insertNode256(this, nodeRef,
                                                            key[depth], newNode);
+                *parentPointer = *nodeRef;
                 break;
         }
     }
