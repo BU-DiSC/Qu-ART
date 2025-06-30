@@ -41,7 +41,7 @@ namespace ART {
                         */
 
                         // Uncomment the following line to print the tail insert debug information
-                        // printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
                         QuART_tail::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
@@ -60,20 +60,21 @@ namespace ART {
 
                 // if root is null or root is a leaf, we cannot tail insert
                 ArtNode* root = this->root;
-                if (root == NULL || isLeaf(root)) {
+                if (root == nullptr || isLeaf(root)) {
                     return false;
                 }
 
-                // convert int value in fp leaf into byte array
-                std::array<uint8_t, maxPrefixLength> leafArr = intToArr(getLeafValue(this->fp_leaf));
+                int leafValue = getLeafValue(this->fp_leaf);
 
-                // if new value is less than the value on the leaf node, we cannot tail insert
-                if (memcmp(leafArr.data(), key, maxPrefixLength - 1) > 0) {
-                    return false;
+                // Compare all but the last byte
+                for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
+                    uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
+                    if (leafByte > key[i]) return false;
+                    if (leafByte < key[i]) break;
                 }
-                
-                // use memcmp for fast comparison
-                return leafArr[maxPrefixLength - 1] <= key[maxPrefixLength - 1];
+                // Compare the last byte
+                uint8_t leafLast = leafValue & 0xFF;
+                return leafLast <= key[maxPrefixLength - 1];
             }               
 
             // Method to verify the tail path after each insertion
