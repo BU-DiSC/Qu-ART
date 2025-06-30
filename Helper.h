@@ -75,10 +75,10 @@ int arrToInt(const uint8_t key[4]) {
 
 std::array<uint8_t, 4> intToArr(int value) {
     return {
-        static_cast<uint8_t>((value / 16777216) % 256), // 2^24
-        static_cast<uint8_t>((value / 65536) % 256),    // 2^16
-        static_cast<uint8_t>((value / 256) % 256),      // 2^8
-        static_cast<uint8_t>(value % 256)               // 2^0
+        static_cast<uint8_t>((value / 16777216)), 
+        static_cast<uint8_t>(value / 65536),  
+        static_cast<uint8_t>(value / 256),    
+        static_cast<uint8_t>(value % 256)      
     };
 }
 

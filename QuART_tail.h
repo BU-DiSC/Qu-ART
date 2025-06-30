@@ -60,8 +60,8 @@ namespace ART {
                 // if new value is less than the value on the leaf node, we cannot tail insert
                 if (fpLeafValue > arrToInt(key)) {
                     return false;
-                }    
-
+                } 
+                
                 // convert int value in fp leaf into byte array
                 std::array<uint8_t, maxPrefixLength> leafArr = intToArr(fpLeafValue);
 
