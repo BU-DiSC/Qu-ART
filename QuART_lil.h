@@ -38,32 +38,42 @@ class QuART_lil : ART::ART {
     // constructor
     QuART_lil() : ART() {}
 
+    bool canLilInsert(uint8_t key[]) {
+        // if root is null or root is a leaf, we cannot tail insert
+        if (this->root == NULL || isLeaf(this->root)) {
+            return false;
+        }
+        int fpLeafValue = getLeafValue(this->fp_leaf);
+        // convert int value in fp leaf into byte array
+        std::array<uint8_t, maxPrefixLength> leafArr = intToArr(fpLeafValue);
+        // use memcmp for fast comparison
+        return memcmp(key, leafArr.data(), maxPrefixLength - 1) == 0;
+    }
+
     void insert(uint8_t key[], uintptr_t value) {
-        std::cout << "Value inserted: " << value << std::endl;
-        if (value >= 259) {
-            std::cout << "";
-            printTree();
-        }
+        // std::cout << "Value inserted: " << value << std::endl;
+        //  if (value >= 512) {
+        //      std::cout << "";
+        //      printTree();
+        //  }
+
         // First, check if the new key fits on the fast path.
+        int depth = 0;
         if (fp != NULL) {
-            auto p =
-                prefixMismatch(fp, key, fp_path_length - 1, maxPrefixLength);
-            std::cout << "";
+            for (size_t i = 0; i < fp_path_length - 1; i++) {
+                depth += fp_path[i]->prefixLength;
+                depth++;
+            }
         }
-        bool onFastPath =
-            fp != NULL && prefixMismatch(fp, key, fp_path_length - 1,
-                                         maxPrefixLength) == fp->prefixLength;
+        bool onFastPath = canLilInsert(key);
         if (onFastPath) {  // If so, insert from the end of the fast path.
-            // fp_path_length--;  // decrement path length by one to avoid
-            //  double-counting the fp node on the path
-            std::cout << "Inserting to fast path" << std::endl;
-            insert(this, fp, &fp, key, fp_path_length - 1, value,
-                   maxPrefixLength);
+            // std::cout << "Inserting to fast path" << std::endl;
+            insert(this, fp, &fp, key, depth, value, maxPrefixLength);
         } else {  // Else, reset the fast path and insert from the root
             fp = NULL;
             fp_path_length = 0;
             fp_path.fill(NULL);
-            std::cout << "Inserting to root" << std::endl;
+            // std::cout << "Inserting to root" << std::endl;
             insert(this, root, &root, key, 0, value, maxPrefixLength);
         }
     }
@@ -117,20 +127,10 @@ class QuART_lil : ART::ART {
             newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
                                  newLeaf);
 
-            // Swap out node for newNode in child list of parent node
-            // if (fp_path_length > 0) {
-            //     ArtNode** child =
-            //         findChild(fp, node->prefix[fp_path_length - 1]);
-            //     *child = newNode;
-            // }
             // update the fast path
             fp = newNode;
             fp_path[fp_path_length++] = newNode;
             fp_leaf = newLeaf;
-
-            if (fp_path_length == 4) {
-                std::cout << "";
-            }
 
             return;
         }
@@ -172,25 +172,15 @@ class QuART_lil : ART::ART {
                 fp_path[fp_path_length++] = newNode;
                 fp_leaf = newLeaf;
 
-                if (fp_path_length == 4) {
-                    std::cout << "";
-                }
-
                 return;
             }
             depth += node->prefixLength;
         }
-        std::cout << "Before: " << fp_path_length << std::endl;
         // using the condition avoids double-counting the end of a fp when
         // inserting to a fp
         if (node != fp_path[fp_path_length - 1]) {
             fp_path[fp_path_length++] = node;
             fp = node;
-        }
-        std::cout << "After: " << fp_path_length << std::endl;
-
-        if (fp_path_length == 4) {
-            std::cout << "";
         }
 
         // Recurse
@@ -207,28 +197,27 @@ class QuART_lil : ART::ART {
         ArtNode** parentPointer =
             (fp_path_length == 1)
                 ? &root
-                : findChild(fp_path[fp_path_length - 2], key[depth]);
+                : findChild(fp_path[fp_path_length - 2], key[depth - 1]);
         switch (node->type) {
             case NodeType4:
                 static_cast<Node4*>(node)->insertNode4(this, nodeRef,
                                                        key[depth], newNode);
-                *parentPointer = *nodeRef;
                 break;
             case NodeType16:
                 static_cast<Node16*>(node)->insertNode16(this, nodeRef,
                                                          key[depth], newNode);
-                *parentPointer = *nodeRef;
                 break;
             case NodeType48:
                 static_cast<Node48*>(node)->insertNode48(this, nodeRef,
                                                          key[depth], newNode);
-                *parentPointer = *nodeRef;
                 break;
             case NodeType256:
                 static_cast<Node256*>(node)->insertNode256(this, nodeRef,
                                                            key[depth], newNode);
-                *parentPointer = *nodeRef;
                 break;
+        }
+        if (*parentPointer != *nodeRef) {
+            *parentPointer = *nodeRef;
         }
     }
 
