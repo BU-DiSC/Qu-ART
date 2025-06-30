@@ -31,11 +31,21 @@ namespace ART {
                         }
                         */
 
+                        /*
+                        ArtNode** ref = (this->fp == this->root ? &this->root : 
+                            findChild2(this->fp_path[this->fp_path_length - 2], key[fp_depth - 1]));
+
+                        if (ref != this->fp_ref) {
+                                printf("Error: fp_ref mismatch. Expected %p, got %p.\n",
+                                    static_cast<void*>(ref), 
+                                    static_cast<void*>(this->fp_ref));
+                        }
+                        */
+
                         // Uncomment the following line to print the tail insert debug information
                         //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
-                        QuART_tail::insert_recursive(this, this->fp, (this->fp == this->root ? &this->root : 
-                            findChild(this->fp_path[this->fp_path_length - 2], key[fp_depth - 1])), 
+                        QuART_tail::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
@@ -48,7 +58,7 @@ namespace ART {
                 }
             
             // Checks if can tail insert
-            bool canTailInsert(uint8_t key[]) {
+            inline bool canTailInsert(uint8_t key[]) {
 
                 // if root is null or root is a leaf, we cannot tail insert
                 if (this->root == NULL || isLeaf(this->root)) {
@@ -164,6 +174,7 @@ namespace ART {
                     *nodeRef = makeLeaf(value);
                     // Adjust only fp_leaf (fp will still be null)
                     tree->fp_leaf = *nodeRef;
+                    tree->fp_ref = nodeRef;
                     return;
                 }
 
@@ -274,7 +285,7 @@ namespace ART {
                 }
 
                 // Recurse
-                ArtNode** child = findChild(node, key[depth]);
+                ArtNode** child = findChild1(node, key[depth]);
                 if (*child) {
                     temp_fp_path[temp_fp_path_length] = *child; // add the node to the array before recursion
                     temp_fp_path_length++; // increase the size of the array    

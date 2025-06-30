@@ -40,6 +40,7 @@ namespace ART {
             size_t fp_path_length; // stores real length of fp path
             ArtNode* fp_leaf; 
             size_t fp_depth;
+            ArtNode** fp_ref;
 
             //constructor
             ART() {
@@ -130,7 +131,7 @@ namespace ART {
                 }
 
                 // Recurse
-                ArtNode** child = findChild(node, key[depth]);
+                ArtNode** child = findChild1(node, key[depth]);
                 if (*child) {
                     insert_recursive(tree, *child, child, key, depth + 1, value, maxKeyLength);
                     return;
@@ -191,7 +192,7 @@ namespace ART {
                         depth += node->prefixLength;
                     }
 
-                    node = *findChild(node, key[depth]);
+                    node = *findChild1(node, key[depth]);
                     depth++;
                 }
 
@@ -220,7 +221,7 @@ namespace ART {
                     depth += node->prefixLength;
                 }
 
-                ArtNode** child = findChild(node, key[depth]);
+                ArtNode** child = findChild1(node, key[depth]);
                 if (isLeaf(*child) &&
                     leafMatches(*child, key, keyLength, depth, maxKeyLength)) {
                     // Leaf found, delete it in inner node

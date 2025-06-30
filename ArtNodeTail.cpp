@@ -28,6 +28,7 @@ namespace ART {
                     tree->fp_path = temp_fp_path;
                     tree->fp_path_length = temp_fp_path_length; // update fp_path size
                     tree->fp_depth = depth_prev;
+                    tree->fp_ref = nodeRef;
                 }
             }
             
@@ -101,6 +102,7 @@ namespace ART {
                     tree->fp_path = temp_fp_path;
                     tree->fp_path_length = temp_fp_path_length; // update fp_path size
                     tree->fp_depth = depth_prev;
+                    tree->fp_ref = nodeRef;
                 }
             }
 
@@ -166,6 +168,7 @@ namespace ART {
                    tree->fp_path = temp_fp_path;
                    tree->fp_path_length = temp_fp_path_length; // update fp_path size
                    tree->fp_depth = depth_prev;
+                   tree->fp_ref = nodeRef;
                }
            }           
                 
@@ -225,6 +228,7 @@ namespace ART {
                 tree->fp_path = temp_fp_path;
                 tree->fp_path_length = temp_fp_path_length; // update fp_path size
                 tree->fp_depth = depth_prev;
+                tree->fp_ref = nodeRef;
             }
         }
 
