@@ -61,7 +61,8 @@ namespace ART {
             inline bool canTailInsert(uint8_t key[]) {
 
                 // if root is null or root is a leaf, we cannot tail insert
-                if (this->root == NULL || isLeaf(this->root)) {
+                ArtNode* root = this->root;
+                if (root == NULL || isLeaf(root)) {
                     return false;
                 }
 
