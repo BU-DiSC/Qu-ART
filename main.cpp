@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
     // Build tree
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::ART* tree = new ART::ART();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -72,6 +72,7 @@ int main(int argc, char** argv) {
             break;
         }
         */
+        
         
     }
 

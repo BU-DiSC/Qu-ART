@@ -74,8 +74,8 @@
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
-             size_t temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+             size_t& temp_fp_path_length, size_t depth_prev);
          void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
      };
@@ -93,8 +93,8 @@
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
-             size_t temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+             size_t& temp_fp_path_length, size_t depth_prev);
          void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
      };
@@ -112,8 +112,8 @@
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
-             size_t temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+             size_t& temp_fp_path_length, size_t depth_prev);
          void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
      };
@@ -127,8 +127,8 @@
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-            ArtNode* child, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
-            size_t temp_fp_path_length, size_t depth_prev);
+            ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+            size_t& temp_fp_path_length, size_t depth_prev);
          void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
      };

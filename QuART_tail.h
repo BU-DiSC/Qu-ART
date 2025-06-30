@@ -165,8 +165,8 @@ namespace ART {
         
         private:
             void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
-                uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
-                size_t temp_fp_path_length) {
+                uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                size_t& temp_fp_path_length) {
 
                 size_t depth_prev = depth;
 
