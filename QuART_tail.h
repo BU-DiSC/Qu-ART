@@ -13,22 +13,30 @@ namespace ART {
             void insert(uint8_t key[], uintptr_t value) {
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                 size_t temp_fp_path_length = 1;
-                size_t depth = 0;
                     if (canTailInsert(key)) {
                         temp_fp_path = fp_path; 
                         temp_fp_path_length = fp_path_length;
                         // Adjust depth
+                        /*
                         for (size_t i = 0; i < this->fp_path_length - 1; i++) {
                             depth += this->fp_path[i]->prefixLength;
                             depth++;
                         }
+                        */
+
+                        /*
+                        if (this->fp_depth != depth) {
+                            printf("Error: fp_depth mismatch. Expected %lu, got %lu.\n",
+                                this->fp_depth, depth);
+                        }
+                        */
 
                         // Uncomment the following line to print the tail insert debug information
                         //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
                         QuART_tail::insert_recursive(this, this->fp, (this->fp == this->root ? &this->root : 
-                            findChild(this->fp_path[this->fp_path_length - 2], key[depth - 1])), 
-                            key, depth, value, maxPrefixLength, 
+                            findChild(this->fp_path[this->fp_path_length - 2], key[fp_depth - 1])), 
+                            key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
@@ -148,6 +156,9 @@ namespace ART {
             void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength> temp_fp_path,
                 size_t temp_fp_path_length) {
+
+                size_t depth_prev = depth;
+
                 // Insert the leaf value into the tree
                 if (node == NULL) {
                     *nodeRef = makeLeaf(value);
@@ -175,9 +186,9 @@ namespace ART {
                         temp_fp_path[temp_fp_path_length - 1] = newNode;
                     }
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
-                                node, temp_fp_path, temp_fp_path_length);
+                                node, temp_fp_path, temp_fp_path_length, depth_prev);
                     newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
-                                makeLeaf(value), temp_fp_path, temp_fp_path_length);
+                                makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                     return;
                 }
 
@@ -218,7 +229,7 @@ namespace ART {
                                 }
                             }
                             newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node,
-                                    temp_fp_path, temp_fp_path_length);
+                                    temp_fp_path, temp_fp_path_length, depth_prev);
                             node->prefixLength -= (mismatchPos + 1);
                             memmove(node->prefix, node->prefix + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
@@ -251,12 +262,12 @@ namespace ART {
                                 }
                             }
                             newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos],
-                                        node, temp_fp_path, temp_fp_path_length);
+                                        node, temp_fp_path, temp_fp_path_length, depth_prev);
                             memmove(node->prefix, minKey + depth + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
                         }
                         newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
-                                    makeLeaf(value), temp_fp_path, temp_fp_path_length);
+                                    makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                         return;
                     }
                     depth += node->prefixLength;
@@ -277,19 +288,19 @@ namespace ART {
                 switch (node->type) {
                     case NodeType4:
                         static_cast<Node4*>(node)->insertNode4(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length);
+                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType16:
                         static_cast<Node16*>(node)->insertNode16(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length);
+                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType48:
                         static_cast<Node48*>(node)->insertNode48(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length);
+                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType256:
                         static_cast<Node256*>(node)->insertNode256(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length);
+                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                 }
             }            

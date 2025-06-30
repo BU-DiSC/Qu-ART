@@ -39,6 +39,7 @@ namespace ART {
             std::array<ArtNode*, maxPrefixLength> fp_path; // fp path
             size_t fp_path_length; // stores real length of fp path
             ArtNode* fp_leaf; 
+            size_t fp_depth;
 
             //constructor
             ART() {
