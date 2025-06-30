@@ -11,11 +11,9 @@ namespace ART {
             QuART_tail() : ART() {}
 
             void insert(uint8_t key[], uintptr_t value) {
-                std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
-                size_t temp_fp_path_length = 1;
                     if (canTailInsert(key)) {
-                        temp_fp_path = fp_path; 
-                        temp_fp_path_length = fp_path_length;
+                        std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
+                        size_t temp_fp_path_length = fp_path_length;
                         // Adjust depth
                         /*
                         for (size_t i = 0; i < this->fp_path_length - 1; i++) {
@@ -50,8 +48,8 @@ namespace ART {
                             temp_fp_path, temp_fp_path_length);
                     }
                     else {
-                        temp_fp_path = {this->root};
-                        temp_fp_path_length = 1;
+                        std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
+                        size_t temp_fp_path_length = 1;
                         QuART_tail::insert_recursive(this, root, &root, key, 0, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
