@@ -41,7 +41,7 @@ namespace ART {
                         */
 
                         // Uncomment the following line to print the tail insert debug information
-                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                        // printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
                         QuART_tail::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
@@ -64,19 +64,17 @@ namespace ART {
                     return false;
                 }
 
-                int fpLeafValue = getLeafValue(this->fp_leaf);
+                // convert int value in fp leaf into byte array
+                std::array<uint8_t, maxPrefixLength> leafArr = intToArr(getLeafValue(this->fp_leaf));
 
                 // if new value is less than the value on the leaf node, we cannot tail insert
-                if (fpLeafValue > arrToInt(key)) {
+                if (memcmp(leafArr.data(), key, maxPrefixLength - 1) > 0) {
                     return false;
-                } 
+                }
                 
-                // convert int value in fp leaf into byte array
-                std::array<uint8_t, maxPrefixLength> leafArr = intToArr(fpLeafValue);
-
                 // use memcmp for fast comparison
-                return memcmp(key, leafArr.data(), maxPrefixLength - 1) == 0;
-            }            
+                return leafArr[maxPrefixLength - 1] <= key[maxPrefixLength - 1];
+            }               
 
             // Method to verify the tail path after each insertion
             bool verifyTailPath() {
