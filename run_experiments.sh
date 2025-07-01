@@ -1,3 +1,4 @@
+#!/bin/bash
 SUFFIX=$(date +"%Y%m%d_%H%M%S")
 RESULTSDIR="results"
 RESULTS="${RESULTSDIR}/results_${SUFFIX}.txt"
