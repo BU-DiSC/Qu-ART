@@ -34,13 +34,13 @@ namespace ART {
 
     class ART {
         public:
-            ArtNode* root;  // pointer to root node
-            ArtNode* fp; // fast path
-            std::array<ArtNode*, maxPrefixLength> fp_path; // fp path
-            size_t fp_path_length; // stores real length of fp path
-            ArtNode* fp_leaf; 
-            size_t fp_depth;
-            ArtNode** fp_ref;
+            ArtNode* root = nullptr;
+            ArtNode* fp = nullptr; 
+            std::array<ArtNode*, maxPrefixLength> fp_path = {nullptr};
+            size_t fp_path_length = 0; 
+            ArtNode* fp_leaf = nullptr;  
+            size_t fp_depth = 0; 
+            ArtNode** fp_ref = nullptr; 
 
             //constructor
             ART() {
