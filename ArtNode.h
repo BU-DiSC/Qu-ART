@@ -344,7 +344,7 @@
      }   
  
  
-     ArtNode** findChild1(ArtNode* n, uint8_t keyByte) {
+     ArtNode** findChild(ArtNode* n, uint8_t keyByte) {
          // Find the next child for the keyByte
          switch (n->type) {
              case NodeType4: {
@@ -378,45 +378,7 @@
              }
          }
          throw;  // Unreachable
-     }
-
-     ArtNode** findChild2(ArtNode* n, uint8_t keyByte) {
-        // Find the next child for the keyByte
-        switch (n->type) {
-            case NodeType4: {
-                Node4* node = static_cast<Node4*>(n);
-                for (unsigned i = 0; i < node->count; i++)
-                    if (node->key[i] == keyByte) return &node->child[i];
-                return &nullNode;
-            }
-            case NodeType16: {
-                Node16* node = static_cast<Node16*>(n);
-                __m128i cmp = _mm_cmpeq_epi8(
-                    _mm_set1_epi8(flipSign(keyByte)),
-                    _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
-                unsigned bitfield =
-                    _mm_movemask_epi8(cmp) & ((1 << node->count) - 1);
-                if (bitfield)
-                    return &node->child[ctz(bitfield)];
-                else
-                    return &nullNode;
-            }
-            case NodeType48: {
-                Node48* node = static_cast<Node48*>(n);
-                if (node->childIndex[keyByte] != emptyMarker)
-                    return &node->child[node->childIndex[keyByte]];
-                else
-                    return &nullNode;
-            }
-            case NodeType256: {
-                Node256* node = static_cast<Node256*>(n);
-                return &(node->child[keyByte]);
-            }
-        }
-        throw;  // Unreachable
-    }
-
-     
+     }     
      
      ArtNode* minimum(ArtNode* node) {
          // Find the leaf with smallest key
@@ -528,7 +490,7 @@
              else
                  depth += node->prefixLength;
      
-             node = *findChild1(node, key[depth]);
+             node = *findChild(node, key[depth]);
              depth++;
          }
      

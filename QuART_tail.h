@@ -264,7 +264,7 @@ namespace ART {
                 }
 
                 // Recurse
-                ArtNode** child = findChild1(node, key[depth]);
+                ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
                     temp_fp_path[temp_fp_path_length] = *child; // add the node to the array before recursion
                     temp_fp_path_length++; // increase the size of the array    

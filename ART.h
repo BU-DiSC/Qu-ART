@@ -131,7 +131,7 @@ namespace ART {
                 }
 
                 // Recurse
-                ArtNode** child = findChild1(node, key[depth]);
+                ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
                     insert_recursive(tree, *child, child, key, depth + 1, value, maxKeyLength);
                     return;
@@ -192,7 +192,7 @@ namespace ART {
                         depth += node->prefixLength;
                     }
 
-                    node = *findChild1(node, key[depth]);
+                    node = *findChild(node, key[depth]);
                     depth++;
                 }
 
@@ -221,7 +221,7 @@ namespace ART {
                     depth += node->prefixLength;
                 }
 
-                ArtNode** child = findChild1(node, key[depth]);
+                ArtNode** child = findChild(node, key[depth]);
                 if (isLeaf(*child) &&
                     leafMatches(*child, key, keyLength, depth, maxKeyLength)) {
                     // Leaf found, delete it in inner node
