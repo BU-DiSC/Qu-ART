@@ -20,7 +20,10 @@ namespace ART {
                     can_tail_insert = true;
                     for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
-                        if (leafByte != key[i]) { can_tail_insert = false; break; }
+                        if (leafByte != key[i]) {
+                            can_tail_insert = false;
+                            break;
+                        }
                     }
                     if (can_tail_insert) {
                         uint8_t leafLast = leafValue & 0xFF;
@@ -31,13 +34,13 @@ namespace ART {
                 if (can_tail_insert) {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
                     size_t temp_fp_path_length = fp_path_length;
-                        // Uncomment the following line to print the tail insert debug information
-                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                    // Uncomment the following line to print the tail insert debug information
+                    //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
                     QuART_tail::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
-                    }
+                }
                 else {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
@@ -46,28 +49,6 @@ namespace ART {
                 }
             }
             
-            // Checks if can tail insert
-            inline bool canTailInsert(uint8_t key[]) {
-
-                // if root is null or root is a leaf, we cannot tail insert
-                ArtNode* root = this->root;
-                if (root == nullptr || isLeaf(root)) {
-                    return false;
-                }
-
-                int leafValue = getLeafValue(this->fp_leaf);
-
-                // Compare all but the last byte
-                for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
-                    uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
-                    if (leafByte > key[i]) return false;
-                    if (leafByte < key[i]) break;
-                }
-                // Compare the last byte
-                uint8_t leafLast = leafValue & 0xFF;
-                return leafLast <= key[maxPrefixLength - 1];
-            }               
-
             // Method to verify the tail path after each insertion
             bool verifyTailPath() {
                 if (this->fp_path_length == 0) {

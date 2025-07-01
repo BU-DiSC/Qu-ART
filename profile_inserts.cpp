@@ -27,8 +27,6 @@ int main(int argc, char** argv) {
     }
 
     // read data
-    //auto keys = read_bin<uint32_t>(input_file.c_str());
-
     std::vector<uint32_t> keys(10000000);
     for (uint32_t i = 0; i < 10000000; i++) {
         keys[i] = i + 1;
@@ -36,7 +34,7 @@ int main(int argc, char** argv) {
 
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::ART* tree = new ART::ART();
 
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
