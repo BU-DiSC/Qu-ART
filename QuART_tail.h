@@ -15,9 +15,13 @@ namespace ART {
                 // Check if we can tail insert
                 ArtNode* root = this->root;
                 bool can_tail_insert = false;
+                // Check if the root is not null and is not a leaf
                 if (root != nullptr && !isLeaf(root)) {
                     int leafValue = getLeafValue(this->fp_leaf);
                     can_tail_insert = true;
+                    // For each byte in the key excluding the last byte,
+                    // check if it matches the corresponding byte in the leaf value
+                    // If any byte does not match, set can_tail_insert to false
                     for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                         if (leafByte != key[i]) {
@@ -25,15 +29,19 @@ namespace ART {
                             break;
                         }
                     }
+                    // Check if the last byte of the leaf value is less 
+                    // than or equal to the last byte of the key
                     if (can_tail_insert) {
                         uint8_t leafLast = leafValue & 0xFF;
                         can_tail_insert = (leafLast <= key[maxPrefixLength - 1]);
                     }
                 }
 
+                // If we can tail insert, use the fast path
                 if (can_tail_insert) {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
                     size_t temp_fp_path_length = fp_path_length;
+
                     // Uncomment the following line to print the tail insert debug information
                     //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
@@ -41,6 +49,7 @@ namespace ART {
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                 }
+                // If we cannot tail insert, use the regular insert
                 else {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
