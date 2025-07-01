@@ -11,49 +11,40 @@ namespace ART {
             QuART_tail() : ART() {}
 
             void insert(uint8_t key[], uintptr_t value) {
-                    if (canTailInsert(key)) {
-                        std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
-                        size_t temp_fp_path_length = fp_path_length;
-                        // Adjust depth
-                        /*
-                        for (size_t i = 0; i < this->fp_path_length - 1; i++) {
-                            depth += this->fp_path[i]->prefixLength;
-                            depth++;
-                        }
-                        */
 
-                        /*
-                        if (this->fp_depth != depth) {
-                            printf("Error: fp_depth mismatch. Expected %lu, got %lu.\n",
-                                this->fp_depth, depth);
-                        }
-                        */
+                // Check if we can tail insert
+                ArtNode* root = this->root;
+                bool can_tail_insert = false;
+                if (root != nullptr && !isLeaf(root)) {
+                    int leafValue = getLeafValue(this->fp_leaf);
+                    can_tail_insert = true;
+                    for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
+                        uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
+                        if (leafByte != key[i]) { can_tail_insert = false; break; }
+                    }
+                    if (can_tail_insert) {
+                        uint8_t leafLast = leafValue & 0xFF;
+                        can_tail_insert = (leafLast <= key[maxPrefixLength - 1]);
+                    }
+                }
 
-                        /*
-                        ArtNode** ref = (this->fp == this->root ? &this->root : 
-                            findChild2(this->fp_path[this->fp_path_length - 2], key[fp_depth - 1]));
-
-                        if (ref != this->fp_ref) {
-                                printf("Error: fp_ref mismatch. Expected %p, got %p.\n",
-                                    static_cast<void*>(ref), 
-                                    static_cast<void*>(this->fp_ref));
-                        }
-                        */
-
+                if (can_tail_insert) {
+                    std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
+                    size_t temp_fp_path_length = fp_path_length;
                         // Uncomment the following line to print the tail insert debug information
                         //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
-                        QuART_tail::insert_recursive(this, this->fp, this->fp_ref, 
+                    QuART_tail::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                     }
-                    else {
-                        std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
-                        size_t temp_fp_path_length = 1;
-                        QuART_tail::insert_recursive(this, root, &root, key, 0, value, maxPrefixLength, 
-                            temp_fp_path, temp_fp_path_length);
-                    }
+                else {
+                    std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
+                    size_t temp_fp_path_length = 1;
+                    QuART_tail::insert_recursive(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
+                        temp_fp_path, temp_fp_path_length);
                 }
+            }
             
             // Checks if can tail insert
             inline bool canTailInsert(uint8_t key[]) {
