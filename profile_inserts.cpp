@@ -15,7 +15,7 @@ using namespace std;
 
 int main(int argc, char** argv) {
     int N = 10000000;       // default value
-    string input_file;     // required argument
+    // Removed unused variable `input_file`
     // Parse only -N argument
     for (int i = 1; i < argc;) {
         if (string(argv[i]) == "-N" && i + 1 < argc) {
