@@ -39,7 +39,7 @@ class QuART_lil : ART::ART {
     QuART_lil() : ART() {}
 
     bool canLilInsert(uint8_t key[]) {
-        // if root is null or root is a leaf, we cannot tail insert
+        // if root is null or root is a leaf, we cannot lil insert
         if (this->root == NULL || isLeaf(this->root)) {
             return false;
         }
@@ -52,10 +52,10 @@ class QuART_lil : ART::ART {
 
     void insert(uint8_t key[], uintptr_t value) {
         // std::cout << "Value inserted: " << value << std::endl;
-        //  if (value >= 512) {
-        //      std::cout << "";
-        //      printTree();
-        //  }
+        if (value >= 65538) {
+            std::cout << std::endl;
+            // printTree();
+        }
 
         // First, check if the new key fits on the fast path.
         int depth = 0;
@@ -176,8 +176,9 @@ class QuART_lil : ART::ART {
             }
             depth += node->prefixLength;
         }
-        // using the condition avoids double-counting the end of a fp when
-        // inserting to a fp
+        // If the last node on the fp is the same as the current internal node
+        // then an insert to fp must be occurring. Avoid adding another pointer
+        // to that node to fp_path.
         if (node != fp_path[fp_path_length - 1]) {
             fp_path[fp_path_length++] = node;
             fp = node;
@@ -194,6 +195,7 @@ class QuART_lil : ART::ART {
         ArtNode* newNode = makeLeaf(value);
         fp_leaf = newNode;
 
+        // find the pointer to the current internal node in the tree
         ArtNode** parentPointer =
             (fp_path_length == 1)
                 ? &root
@@ -216,6 +218,9 @@ class QuART_lil : ART::ART {
                                                            key[depth], newNode);
                 break;
         }
+        // If the identified node pointer no longer points to the same node as
+        // that of the fp pointer, the node must have upscaled. Update the tree
+        // pointer.
         if (*parentPointer != *nodeRef) {
             *parentPointer = *nodeRef;
         }
