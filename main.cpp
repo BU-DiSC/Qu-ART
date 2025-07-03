@@ -78,11 +78,12 @@ int main(int argc, char** argv) {
         
         // Uncomment the following lines to verify the tail path after each insertion
         
-        
+        /*
         if (!tree->verifyTailPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
+        */
         
         
     }

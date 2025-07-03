@@ -218,11 +218,7 @@ namespace ART {
                             if (it != fp_path.begin() + fp_path_length) {
                                 // Find the position of node in fp_path
                                 size_t pos = std::distance(fp_path.begin(), it);
-                                // Shift nodes (including node) to the right by one position
-                                for (size_t i = fp_path_length; i > pos; --i) {
-                                    fp_path[i] = fp_path[i - 1];
-                                }
-                                // Insert newNode at the position of node
+                                std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
                             }
@@ -239,11 +235,7 @@ namespace ART {
                             if (it != fp_path.begin() + fp_path_length) {
                                 // Find the position of node in fp_path
                                 size_t pos = std::distance(fp_path.begin(), it);
-                                // Shift nodes (including node) to the right by one position
-                                for (size_t i = fp_path_length; i > pos; --i) {
-                                    fp_path[i] = fp_path[i - 1];
-                                }
-                                // Insert newNode at the position of node
+                                std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
                             }
