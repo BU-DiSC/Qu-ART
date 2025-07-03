@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        int k = 7718558;
+        int k = -1;
         if (i==k) {
             cout << "Before insertion at i=" << i << ", keys=" << keys[i] << endl;
             tree->printTree();
