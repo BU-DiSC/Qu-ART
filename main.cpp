@@ -7,6 +7,7 @@
 
 #include "ART.h"
 #include "QuART_tail.h"
+#include "QuART_xtail.h" // Ensure this header file defines QuART_xtail
 #include "ArtNode.h"
 #include "ArtNodeTail.cpp"
 #include "Chain.h"
@@ -49,7 +50,7 @@ int main(int argc, char** argv) {
     // Build tree
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::QuART_xtail* tree = new ART::QuART_xtail();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
