@@ -218,7 +218,7 @@ namespace ART {
                             // In all cases, newNode should be added to fp_path
                             temp_fp_path[temp_fp_path_length_old - 1] = newNode;    
                             // If the nodes that being changed is in fp_path
-                            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[fp_path_length_old-1] == node) { 
+                            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == node) { 
                                 // If the new value is less than the current fp_leaf,
                                 // restore fp_path to what it before the change with the
                                 // newNode added
@@ -251,7 +251,7 @@ namespace ART {
                             // In all cases, newNode should be added to fp_path
                             temp_fp_path[temp_fp_path_length_old - 1] = newNode;    
                             // If the nodes that being changed is in fp_path
-                            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[fp_path_length_old-1] == node) { 
+                            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == node) { 
                                 // If the new value is less than the current fp_leaf,
                                 // restore fp_path to what it before the change with the
                                 // newNode added
