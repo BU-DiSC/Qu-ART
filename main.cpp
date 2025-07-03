@@ -59,13 +59,15 @@ int main(int argc, char** argv) {
         int k = 1047004;
         if (keys[i] == 6033727) {
             cout << "Before insertion at i=" << i << ", keys=" << keys[i] << endl;
-            tree->printTree();
+            //tree->printTree();
+            cout << getLeafValue(tree->fp_leaf) << endl;
             printTailPath(tree->fp_path, tree->fp_path_length);
         }
         tree->insert(key, keys[i]);
         if (keys[i] == 6033727) {
             cout << "After insertion at i=" << i << ", keys=" << keys[i] << endl;
-            tree->printTree();
+            cout << getLeafValue(tree->fp_leaf) << endl;
+            //tree->printTree();
             printTailPath(tree->fp_path, tree->fp_path_length);
         }
         auto stop = chrono::high_resolution_clock::now();
