@@ -7,6 +7,7 @@
 
 #include "ART.h"
 #include "QuART_tail.h"
+#include "QuART_xtail.h"
 #include "ArtNode.h"
 #include "ArtNodeTail.cpp"
 #include "Chain.h"
@@ -43,7 +44,7 @@ int main(int argc, char** argv) {
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
     // Build tree
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::QuART_xtail* tree = new ART::QuART_xtail();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -59,8 +60,6 @@ int main(int argc, char** argv) {
         insertion_time += duration.count();
     }
 
-    cout << "Insertion time: " << insertion_time << " ns" << endl;
-
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -75,8 +74,6 @@ int main(int argc, char** argv) {
         query_time += duration.count();
         assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
     }
-
-    cout << "Query time: " << query_time << " ns" << endl;
     
     // simply output the times in csv format
     cout << insertion_time << "," << query_time << endl;
