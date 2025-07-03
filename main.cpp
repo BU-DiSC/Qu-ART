@@ -56,9 +56,18 @@ int main(int argc, char** argv) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-
+        int k = 1047004;
+        if (keys[i] == 6033727) {
+            cout << "Before insertion at i=" << i << ", keys=" << keys[i] << endl;
+            tree->printTree();
+            printTailPath(tree->fp_path, tree->fp_path_length);
+        }
         tree->insert(key, keys[i]);
-        
+        if (keys[i] == 6033727) {
+            cout << "After insertion at i=" << i << ", keys=" << keys[i] << endl;
+            tree->printTree();
+            printTailPath(tree->fp_path, tree->fp_path_length);
+        }
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);

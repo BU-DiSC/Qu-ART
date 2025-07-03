@@ -418,19 +418,19 @@ namespace ART {
                 ArtNode* newNode = makeLeaf(value);
                 switch (node->type) {
                     case NodeType4:
-                        static_cast<Node4*>(node)->insertNode4(this, nodeRef, key[depth],
+                        static_cast<Node4*>(node)->insertNode4New(this, nodeRef, key[depth],
                                     newNode);
                         break;
                     case NodeType16:
-                        static_cast<Node16*>(node)->insertNode16(this, nodeRef, key[depth],
+                        static_cast<Node16*>(node)->insertNode16New(this, nodeRef, key[depth],
                                     newNode);
                         break;
                     case NodeType48:
-                        static_cast<Node48*>(node)->insertNode48(this, nodeRef, key[depth],
+                        static_cast<Node48*>(node)->insertNode48New(this, nodeRef, key[depth],
                                     newNode);
                         break;
                     case NodeType256:
-                        static_cast<Node256*>(node)->insertNode256(this, nodeRef, key[depth],
+                        static_cast<Node256*>(node)->insertNode256New(this, nodeRef, key[depth],
                                     newNode);
                         break;
                 }

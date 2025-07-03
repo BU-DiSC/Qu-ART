@@ -73,6 +73,8 @@
  
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         void insertNode4New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child);
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
@@ -91,6 +93,8 @@
          }
  
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child);
+         void insertNode16New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
@@ -111,6 +115,8 @@
  
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         void insertNode48New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child);
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
@@ -125,6 +131,8 @@
          Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
  
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child);
+         void insertNode256New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
