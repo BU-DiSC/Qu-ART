@@ -11,10 +11,15 @@ namespace ART {
             QuART_tail() : ART() {}
 
             void insert(uint8_t key[], uintptr_t value) {
-
+                /*
+                 * tail insert status map:
+                 * 0 -> can tail insert
+                 * 1 -> can't tail insert, but key > leaf value
+                 * 2 -> can't tail insert  since key < leaf value"
+                 */
                 // Check if we can tail insert
                 ArtNode* root = this->root;
-                bool can_tail_insert = false;
+                int tail_insert_status = 0;
                 // Check if the root is not null and is not a leaf
                 if (root != nullptr && !isLeaf(root)) {
                     int leafValue = getLeafValue(this->fp_leaf);
@@ -22,19 +27,24 @@ namespace ART {
                     // For each byte in the key excluding the last byte,
                     // check if it matches the corresponding byte in the leaf value
                     // If any byte does not match, set can_tail_insert to false
-                    for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
+                    size_t i = 0;
+                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
-                        if (leafByte != key[i]) {
-                            can_tail_insert = false;
-                            break;
+                        if (key[i] > leafByte) {
+                            // do normal insert with fp path tracking
+                            // call the insert here
+                        }
+                        else if (key[i] < leafByte) {
+                            // do the normal insert without fp path tracking
+                            // call the insert here
                         }
                     }
-                    // Check if the last byte of the leaf value is less 
-                    // than or equal to the last byte of the key
-                    if (can_tail_insert) {
-                        uint8_t leafLast = leafValue & 0xFF;
-                        can_tail_insert = (leafLast <= key[maxPrefixLength - 1]);
+                    // buraya gelirse hepsi eşittir
+                    uint8_t leafLast = leafValue & 0xFF;
+                    if (key[i] > leafLast) {
+
                     }
+                    
                 }
 
                 // If we can tail insert, use the fast path
