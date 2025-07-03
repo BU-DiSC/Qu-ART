@@ -324,6 +324,7 @@ namespace ART {
                 }
 
                 if (isLeaf(node)) {
+
                     // Replace leaf with Node4 and store both leaves in it
                     uint8_t existingKey[maxKeyLength];
                     loadKey(getLeafValue(node), existingKey);
@@ -340,7 +341,9 @@ namespace ART {
 
                     // If the changing node was the fp just straight change the node
                     if (tree->fp_leaf == node) { 
-                        this->fp_path[this->fp_path_length - 1] = newNode;
+                        this->fp_path[this->fp_path_length] = newNode;
+                        this->fp_path_length++;
+                        this->fp = newNode;
                     }
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node);

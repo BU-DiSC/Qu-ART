@@ -56,18 +56,18 @@ int main(int argc, char** argv) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        int k = 1047004;
-        if (keys[i] == 6033727) {
+        int k = -1;
+        if (keys[i] == -1) {
             cout << "Before insertion at i=" << i << ", keys=" << keys[i] << endl;
-            //tree->printTree();
+            tree->printTree();
             cout << getLeafValue(tree->fp_leaf) << endl;
             printTailPath(tree->fp_path, tree->fp_path_length);
         }
         tree->insert(key, keys[i]);
-        if (keys[i] == 6033727) {
+        if (keys[i] == -1) {
             cout << "After insertion at i=" << i << ", keys=" << keys[i] << endl;
             cout << getLeafValue(tree->fp_leaf) << endl;
-            //tree->printTree();
+            tree->printTree();
             printTailPath(tree->fp_path, tree->fp_path_length);
         }
         auto stop = chrono::high_resolution_clock::now();
@@ -77,11 +77,12 @@ int main(int argc, char** argv) {
         
         // Uncomment the following lines to verify the tail path after each insertion
         
-        
+        /*
         if (!tree->verifyTailPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
+        */
         
     }
 
