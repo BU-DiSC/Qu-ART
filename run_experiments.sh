@@ -8,7 +8,7 @@ mkdir -p "$LOGDIR"
 
 echo "N,K,L,type_of_tree,avg_insert_time,avg_query_time" > "$RESULTS"
 
-REPEAT=7
+REPEAT=10
 
 for FILE in ../bods/workloads/workload_N*_K*_L*.txt; do
     [ -f "$FILE" ] || continue
@@ -19,7 +19,7 @@ for FILE in ../bods/workloads/workload_N*_K*_L*.txt; do
     L=$(echo "$BASENAME" | sed -n 's/.*_N[0-9]*_K[0-9]*_L\([0-9]*\).txt/\1/p')
     LOGFILE="${LOGDIR}/log_${BASENAME%.txt}_${SUFFIX}.txt"
 
-    for TREE in ART QuART_tail QuART_xtail; do
+    for TREE in ART QuART_tail QuART_xtail QuART_lil; do
         INSERT_SUM=0
         QUERY_SUM=0
 
