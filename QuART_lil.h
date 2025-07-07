@@ -37,7 +37,7 @@ namespace ART {
                     size_t temp_fp_path_length = fp_path_length;
 
                     // Uncomment the following line to print the lil insert debug information
-                    //printf("doing lil insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                    printf("doing lil insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
                     QuART_lil::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
@@ -168,9 +168,9 @@ namespace ART {
                     if (tree->fp_leaf == node) { 
                         temp_fp_path[temp_fp_path_length - 1] = newNode;
                     }
-                    newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
+                    newNode->insertNode4Lil(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node, temp_fp_path, temp_fp_path_length, depth_prev);
-                    newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
+                    newNode->insertNode4Lil(this, nodeRef, key[depth + newPrefixLength],
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                     return;
                 }
@@ -206,7 +206,7 @@ namespace ART {
                                     tree->fp_path_length++;
                                 }
                             }
-                            newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node,
+                            newNode->insertNode4Lil(this, nodeRef, node->prefix[mismatchPos], node,
                                     temp_fp_path, temp_fp_path_length, depth_prev);
                             node->prefixLength -= (mismatchPos + 1);
                             memmove(node->prefix, node->prefix + mismatchPos + 1,
@@ -234,12 +234,12 @@ namespace ART {
                                     tree->fp_path_length++;
                                 }
                             }
-                            newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos],
+                            newNode->insertNode4Lil(this, nodeRef, minKey[depth + mismatchPos],
                                         node, temp_fp_path, temp_fp_path_length, depth_prev);
                             memmove(node->prefix, minKey + depth + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
                         }
-                        newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
+                        newNode->insertNode4Lil(this, nodeRef, key[depth + mismatchPos],
                                     makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                         return;
                     }
@@ -260,19 +260,19 @@ namespace ART {
                 ArtNode* newNode = makeLeaf(value);
                 switch (node->type) {
                     case NodeType4:
-                        static_cast<Node4*>(node)->insertNode4(this, nodeRef, key[depth],
+                        static_cast<Node4*>(node)->insertNode4Lil(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType16:
-                        static_cast<Node16*>(node)->insertNode16(this, nodeRef, key[depth],
+                        static_cast<Node16*>(node)->insertNode16Lil(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType48:
-                        static_cast<Node48*>(node)->insertNode48(this, nodeRef, key[depth],
+                        static_cast<Node48*>(node)->insertNode48Lil(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType256:
-                        static_cast<Node256*>(node)->insertNode256(this, nodeRef, key[depth],
+                        static_cast<Node256*>(node)->insertNode256Lil(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                 }
