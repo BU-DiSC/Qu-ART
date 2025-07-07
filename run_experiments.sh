@@ -6,7 +6,9 @@ LOGDIR="${RESULTSDIR}/logs"
 
 mkdir -p "$LOGDIR"
 
-echo "N,K,L,type_of_tree,insert_time,query_time" > "$RESULTS"
+echo "N,K,L,type_of_tree,avg_insert_time,avg_query_time" > "$RESULTS"
+
+REPEAT=7
 
 for FILE in ../bods/workloads/workload_N*_K*_L*.txt; do
     [ -f "$FILE" ] || continue
@@ -17,30 +19,23 @@ for FILE in ../bods/workloads/workload_N*_K*_L*.txt; do
     L=$(echo "$BASENAME" | sed -n 's/.*_N[0-9]*_K[0-9]*_L\([0-9]*\).txt/\1/p')
     LOGFILE="${LOGDIR}/log_${BASENAME%.txt}_${SUFFIX}.txt"
 
-    # Run ART
-    echo "Running art on $FILE" >> "$LOGFILE"
-    ART_OUTPUT=$(./build/art -f "$FILE" 2>>"$LOGFILE")
-    echo "$ART_OUTPUT" >> "$LOGFILE"
-    CSV_LINE=$(echo "$ART_OUTPUT" | tail -1)
-    INSERT_TIME=$(echo "$CSV_LINE" | cut -d',' -f1 | xargs)
-    QUERY_TIME=$(echo "$CSV_LINE" | cut -d',' -f2 | xargs)
-    echo "$N,$K,$L,ART,$INSERT_TIME,$QUERY_TIME" >> "$RESULTS"
+    for TREE in ART QuART_tail QuART_xtail; do
+        INSERT_SUM=0
+        QUERY_SUM=0
 
-    # Run QuART_tail
-    echo "Running quart tail on $FILE" >> "$LOGFILE"
-    QUART_OUTPUT=$(./build/quart_tail -f "$FILE" 2>>"$LOGFILE")
-    echo "$QUART_OUTPUT" >> "$LOGFILE"
-    CSV_LINE=$(echo "$QUART_OUTPUT" | tail -1)
-    INSERT_TIME=$(echo "$CSV_LINE" | cut -d',' -f1 | xargs)
-    QUERY_TIME=$(echo "$CSV_LINE" | cut -d',' -f2 | xargs)
-    echo "$N,$K,$L,QuART_tail,$INSERT_TIME,$QUERY_TIME" >> "$RESULTS"
+        for ((i=1; i<=REPEAT; i++)); do
+            echo "Running $TREE on $FILE (run $i/$REPEAT)" >> "$LOGFILE"
+            OUTPUT=$(./build/$(echo $TREE | tr '[:upper:]' '[:lower:]') -f "$FILE" 2>>"$LOGFILE")
+            echo "$OUTPUT" >> "$LOGFILE"
+            CSV_LINE=$(echo "$OUTPUT" | tail -1)
+            INSERT_TIME=$(echo "$CSV_LINE" | cut -d',' -f1 | xargs)
+            QUERY_TIME=$(echo "$CSV_LINE" | cut -d',' -f2 | xargs)
+            INSERT_SUM=$((INSERT_SUM + INSERT_TIME))
+            QUERY_SUM=$((QUERY_SUM + QUERY_TIME))
+        done
 
-    # Run QuART_tail
-    echo "Running quart xtail on $FILE" >> "$LOGFILE"
-    QUART_OUTPUT=$(./build/quart_xtail -f "$FILE" 2>>"$LOGFILE")
-    echo "$QUART_OUTPUT" >> "$LOGFILE"
-    CSV_LINE=$(echo "$QUART_OUTPUT" | tail -1)
-    INSERT_TIME=$(echo "$CSV_LINE" | cut -d',' -f1 | xargs)
-    QUERY_TIME=$(echo "$CSV_LINE" | cut -d',' -f2 | xargs)
-    echo "$N,$K,$L,QuART_xtail,$INSERT_TIME,$QUERY_TIME" >> "$RESULTS"
+        AVG_INSERT_TIME=$((INSERT_SUM / REPEAT))
+        AVG_QUERY_TIME=$((QUERY_SUM / REPEAT))
+        echo "$N,$K,$L,$TREE,$AVG_INSERT_TIME,$AVG_QUERY_TIME" >> "$RESULTS"
+    done
 done

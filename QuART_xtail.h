@@ -11,12 +11,6 @@ namespace ART {
             QuART_xtail() : QuART_tail() {}
 
             void insert(uint8_t key[], uintptr_t value) {
-                /*
-                 * tail insert status map:
-                 * 0 -> can tail insert
-                 * 1 -> can't tail insert, but key > leaf value
-                 * 2 -> can't tail insert  since key < leaf value"
-                 */
                 // Check if we can tail insert
                 ArtNode* root = this->root;
                 bool flag = false;
@@ -30,16 +24,8 @@ namespace ART {
                     size_t i = 0;
                     for (size_t i = 0; i < maxPrefixLength - 1; i++) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
-                        if (key[i] > leafByte) {
-                            // do normal insert with fp path tracking
-                            // call the insert here
-                            //printf("normal insert\n");
-                            std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
-                            size_t temp_fp_path_length = 1;
-                            flag = false;
-                            QuART_tail::insert_recursive(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
-                                temp_fp_path, temp_fp_path_length);
-                            break;
+                        if (key[i] == leafByte) {
+                            continue;
                         }
                         else if (key[i] < leafByte) {
                             // do the normal insert without fp path tracking
@@ -47,6 +33,16 @@ namespace ART {
                             //printf("calling insert_recursive_new for value: %lu, leaf value: %lu\n", value, getLeafValue(this->fp_leaf));
                             flag = false;
                             QuART_xtail::insert_recursive(this, this->root, &this->root, key, 0, value, maxPrefixLength);
+                            break;
+                        }
+                        else { 
+                            // do normal insert with fp path tracking
+                            //printf("normal insert\n");
+                            std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
+                            size_t temp_fp_path_length = 1;
+                            flag = false;
+                            QuART_tail::insert_recursive(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
+                                temp_fp_path, temp_fp_path_length);
                             break;
                         }
                     }                    
