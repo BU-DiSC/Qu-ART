@@ -58,20 +58,43 @@ int main(int argc, char** argv) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
+        bool k = false;
+        if (k) {
+            cout << "Before insertion at i=" << i << ", keys=" << keys[i] << endl;
+            cout << "tree" << endl;
+            tree->printTree();
+            cout << "fp path" << endl;
+            printTailPath(tree->fp_path, tree->fp_path_length);
+            cout << "fp node" << endl;
+            cout << tree->fp << endl;
+            cout << "fp leaf value: " << ART::getLeafValue(tree->fp_leaf) << endl;
+        }
         tree->insert(key, keys[i]);
+        if (k) {
+            cout << "After insertion at i=" << i << ", keys=" << keys[i] << endl;
+            cout << "tree" << endl;
+            tree->printTree();
+            cout << "fp path" << endl;
+            printTailPath(tree->fp_path, tree->fp_path_length);
+            cout << "fp path length: " << tree->fp_path_length << endl;
+            cout << "fp node" << endl;
+            cout << tree->fp << endl;
+            cout << "fp leaf value: " << ART::getLeafValue(tree->fp_leaf) << endl;
+        }
+
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
         
         // Uncomment the following lines to verify the tail path after each insertion
-        
         /*
-        if (!tree->verifyTailPath()) {
+        if (!tree->verifyLilPath()) {
             cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
             break;
         }
         */
+        
         
         
     }
@@ -80,6 +103,7 @@ int main(int argc, char** argv) {
         cout << "Insertion time: " << insertion_time << " ns" << endl;
     }
 
+    
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -101,6 +125,8 @@ int main(int argc, char** argv) {
 
     // simply output the times in csv format
     cout << insertion_time << "," << query_time << endl;
+
+    
 
     return 0;
 }

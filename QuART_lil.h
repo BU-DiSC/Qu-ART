@@ -37,7 +37,7 @@ namespace ART {
                     size_t temp_fp_path_length = fp_path_length;
 
                     // Uncomment the following line to print the lil insert debug information
-                    printf("doing lil insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
+                    // printf("doing lil insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
                     QuART_lil::insert_recursive(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
@@ -45,6 +45,7 @@ namespace ART {
                 }
                 // If we cannot lil insert, use the regular insert
                 else {
+                    //printf("doing regular insert for value: %lu\n", value);
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
                     QuART_lil::insert_recursive(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
@@ -134,6 +135,86 @@ namespace ART {
                 printf("Error: fp_path does not lead to the fp.\n");
                 return false;
             }
+
+            // Method to verify the lil path after each insertion
+            bool verifyLilPath() {
+                if (this->fp_path_length == 0) {
+                    return true;
+                }
+
+                ArtNode* current = this->root;
+                // Traverse the tree following the fp_path
+                for (size_t i = 0; i < this->fp_path_length; i++) {
+                    if (i == this->fp_path_length - 1) {
+                        if (current == this->fp) {
+                            return true;
+                        } 
+                        else {
+                            printf("Error: last node in fp_path is not the fp. Expected %p, got %p.\n",
+                                static_cast<void*>(this->fp), static_cast<void*>(current));
+                            printf("Index: %zu\n", i);
+                            printf("%lu\n", static_cast<unsigned long>(getLeafValue(current)));
+                            return false;
+                        }
+                    }
+
+                    // Move to the rightmost child
+                    switch (current->type) {
+                        case NodeType4: {
+                            Node4* node = static_cast<Node4*>(current);
+                            if (node->count > 0) {
+                                current = node->child[node->count - 1];
+                            } else {
+                                printf("Error: NodeType4 has no children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        case NodeType16: {
+                            Node16* node = static_cast<Node16*>(current);
+                            if (node->count > 0) {
+                                current = node->child[node->count - 1];
+                            } else {
+                                printf("Error: NodeType16 has no children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        case NodeType48: {
+                            Node48* node = static_cast<Node48*>(current);
+                            unsigned pos = 255;
+                            while (pos > 0 && node->childIndex[pos] == emptyMarker) pos--;
+                            if (node->childIndex[pos] != emptyMarker) {
+                                current = node->child[node->childIndex[pos]];
+                            } else {
+                                printf("Error: NodeType48 has no valid children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        case NodeType256: {
+                            Node256* node = static_cast<Node256*>(current);
+                            unsigned pos = 255;
+                            while (pos > 0 && !node->child[pos]) pos--;
+                            if (node->child[pos]) {
+                                current = node->child[pos];
+                            } else {
+                                printf("Error: NodeType256 has no valid children.\n");
+                                return false;
+                            }
+                            break;
+                        }
+                        default:
+                            printf("Error: Unknown node type.\n");
+                            return false;
+                    }
+                }
+
+                // If we exit the loop without returning, the path is incorrect
+                printf("Error: fp_path does not lead to the fp.\n");
+                return false;
+            }
+
         
             void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
@@ -164,12 +245,11 @@ namespace ART {
                     memcpy(newNode->prefix, key + depth,
                         min(newPrefixLength, maxPrefixLength));
                     *nodeRef = newNode;
-                    // If the changing node was the fp, push it to the temp_fp_path
-                    if (tree->fp_leaf == node) { 
-                        temp_fp_path[temp_fp_path_length - 1] = newNode;
-                    }
-                    newNode->insertNode4Lil(this, nodeRef, existingKey[depth + newPrefixLength],
-                                node, temp_fp_path, temp_fp_path_length, depth_prev);
+
+                    temp_fp_path[temp_fp_path_length - 1] = newNode;
+
+                    newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
+                                node);
                     newNode->insertNode4Lil(this, nodeRef, key[depth + newPrefixLength],
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                     return;
@@ -187,27 +267,10 @@ namespace ART {
                             min(mismatchPos, maxPrefixLength));
                         // Break up prefix
                         if (node->prefixLength < maxPrefixLength) {
-                            // Stores the temp_fp_path and fp_path sizes before operations
-                            size_t temp_fp_path_length_old = temp_fp_path_length;
-                            size_t fp_path_length_old = tree->fp_path_length;
                             // In all cases, newNode should be added to fp_path
-                            temp_fp_path[temp_fp_path_length_old - 1] = newNode;    
+                            temp_fp_path[temp_fp_path_length - 1] = newNode;    
                             // If the nodes that being changed is in fp_path
-                            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == node) { 
-                                // A deep copy of remainder of fp_path 
-                                std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                                std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), 
-                                tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
-                                tree->fp_path = temp_fp_path; // update the fp path
-                                tree->fp_path_length = temp_fp_path_length_old;
-                                // Add the remainder of fp_path to fp_path
-                                for (int i = 0; i < fp_path_length_old - temp_fp_path_length_old + 1; i++) {
-                                    tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
-                                    tree->fp_path_length++;
-                                }
-                            }
-                            newNode->insertNode4Lil(this, nodeRef, node->prefix[mismatchPos], node,
-                                    temp_fp_path, temp_fp_path_length, depth_prev);
+                            newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node);
                             node->prefixLength -= (mismatchPos + 1);
                             memmove(node->prefix, node->prefix + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
@@ -215,27 +278,9 @@ namespace ART {
                             node->prefixLength -= (mismatchPos + 1);
                             uint8_t minKey[maxKeyLength];
                             loadKey(getLeafValue(minimum(node)), minKey);
-                            // Stores the temp_fp_path and fp_path sizes before operations
-                            size_t temp_fp_path_length_old = temp_fp_path_length;
-                            size_t fp_path_length_old = tree->fp_path_length;
                             // In all cases, newNode should be added to fp_path
-                            temp_fp_path[temp_fp_path_length_old - 1] = newNode;    
-                            // If the nodes that being changed is in fp_path
-                            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == node) { 
-                                // A deep copy of remainder of fp_path 
-                                std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                                std::copy(tree->fp_path.begin() + (temp_fp_path_length_old - 1), 
-                                tree->fp_path.begin() + fp_path_length_old, fp_path_remainder.begin());
-                                tree->fp_path = temp_fp_path; // update the fp path
-                                tree->fp_path_length = temp_fp_path_length_old;
-                                // Add the remainder of fp_path to fp_path
-                                for (int i = 0; i < fp_path_length_old - temp_fp_path_length_old + 1; i++) {
-                                    tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
-                                    tree->fp_path_length++;
-                                }
-                            }
-                            newNode->insertNode4Lil(this, nodeRef, minKey[depth + mismatchPos],
-                                        node, temp_fp_path, temp_fp_path_length, depth_prev);
+                            temp_fp_path[temp_fp_path_length - 1] = newNode;    
+                            newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos], node);
                             memmove(node->prefix, minKey + depth + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
                         }

@@ -355,15 +355,13 @@ namespace ART {
             this->key[pos] = keyByte;
             this->child[pos] = child;
             
-            // If what's being inserted is a leaf
-            if (isLeaf(child)) {
                     tree->fp_leaf = child;
                     tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                     tree->fp_path = temp_fp_path;
                     tree->fp_path_length = temp_fp_path_length; // update fp_path size
                     tree->fp_depth = depth_prev;
                     tree->fp_ref = nodeRef;
-            }
+            
             
             this->count++;
         } else {
@@ -376,26 +374,7 @@ namespace ART {
                 newNode->key[i] = flipSign(this->key[i]);
             memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
 
-            // The sizes of temp_fp_path and fp_path before operations
-            int temp_fp_path_length_old = temp_fp_path_length;
-            int fp_path_length_old = tree->fp_path_length;
-            // If the changing node is on the fp_path
-            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == this) {
-                // Change the node to the newNode which has a greater capacity
-                temp_fp_path[temp_fp_path_length_old - 1] = newNode;
-                    // create a deep copy of remainder of fp_path here
-                    std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                    std::copy(tree->fp_path.begin() + temp_fp_path_length_old, tree->fp_path.end(), fp_path_remainder.begin());
-                    tree->fp_path = temp_fp_path; // update fp_path
-                    tree->fp_path_length = temp_fp_path_length_old; // update fp_path size
-                    // Add the remaining part of the fp_path
-                    for (int i = 0; i < fp_path_length_old - temp_fp_path_length_old; i++) {
-                        tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
-                        tree->fp_path_length++;
-                    }
-                    tree->fp = tree->fp_path[tree->fp_path_length - 1]; // update the fp pointer
-                
-            }
+            temp_fp_path[temp_fp_path_length - 1] = newNode;
 
             delete this;
             return newNode->insertNode16Lil(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
@@ -423,8 +402,6 @@ namespace ART {
             this->key[pos] = keyByteFlipped;
             this->child[pos] = child;
 
-            // If what's being inserted is a leaf
-            if (isLeaf(child)) {
                     tree->fp_leaf = child;
                     tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                     tree->fp_path = temp_fp_path;
@@ -432,7 +409,7 @@ namespace ART {
                     tree->fp_depth = depth_prev;
                     tree->fp_ref = nodeRef;
                 
-            }
+            
 
             this->count++;
         } else {
@@ -445,26 +422,7 @@ namespace ART {
             copyPrefix(this, newNode);
             newNode->count = this->count;
 
-            // The sizes of temp_fp_path and fp_path before operations
-            int temp_fp_path_length_old = temp_fp_path_length;
-            int fp_path_length_old = tree->fp_path_length;
-            // If the changing node is on the fp_path
-            if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == this) {
-                // Change the node to the newNode which has a greater capacity
-                temp_fp_path[temp_fp_path_length_old - 1] = newNode;
-                    // create a deep copy of remainder of fp_path here
-                    std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                    std::copy(tree->fp_path.begin() + temp_fp_path_length_old, tree->fp_path.end(), fp_path_remainder.begin());
-                    tree->fp_path = temp_fp_path; // update fp_path
-                    tree->fp_path_length = temp_fp_path_length_old; // update fp_path size
-                    // Add the remaining part of the fp_path
-                    for (int i = 0; i < fp_path_length_old - temp_fp_path_length_old; i++) {
-                        tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
-                        tree->fp_path_length++;
-                    }
-                    tree->fp = tree->fp_path[tree->fp_path_length - 1]; // update the fp pointer
-                
-            }
+            temp_fp_path[temp_fp_path_length - 1] = newNode;
 
             delete this;
             return newNode->insertNode48Lil(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
@@ -484,8 +442,6 @@ namespace ART {
                     this->childIndex[keyByte] = pos;
                     this->count++;
 
-           // If what's being inserted is a leaf
-           if (isLeaf(child)) {
                    tree->fp_leaf = child;
                    tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                    tree->fp_path = temp_fp_path;
@@ -493,7 +449,7 @@ namespace ART {
                    tree->fp_depth = depth_prev;
                    tree->fp_ref = nodeRef;
                
-           }           
+                      
                 
        } else {
            // Grow to Node256
@@ -505,27 +461,7 @@ namespace ART {
            copyPrefix(this, newNode);
            *nodeRef = newNode;
 
-           // The sizes of temp_fp_path and fp_path before operations
-           int temp_fp_path_length_old = temp_fp_path_length;
-           int fp_path_length_old = tree->fp_path_length;
-           // If the changing node is on the fp_path
-           if (temp_fp_path_length_old <= fp_path_length_old && tree->fp_path[temp_fp_path_length_old-1] == this) {
-               // Change the node to the newNode which has a greater capacity
-               temp_fp_path[temp_fp_path_length_old - 1] = newNode;
-               // If the new value doesn't create a new fp_leaf, restore the remaining part of the fp_path
-                   // create a deep copy of remainder of fp_path here
-                   std::array<ArtNode*, maxPrefixLength> fp_path_remainder;
-                   std::copy(tree->fp_path.begin() + temp_fp_path_length_old, tree->fp_path.end(), fp_path_remainder.begin());
-                   tree->fp_path = temp_fp_path; // update fp_path
-                   tree->fp_path_length = temp_fp_path_length_old; // update fp_path size
-                   // Add the remaining part of the fp_path
-                   for (int i = 0; i < fp_path_length_old - temp_fp_path_length_old; i++) {
-                       tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
-                       tree->fp_path_length++;
-                   }
-                   tree->fp = tree->fp_path[tree->fp_path_length - 1]; // update the fp pointer
-               
-           }
+           temp_fp_path[temp_fp_path_length - 1] = newNode;
 
            delete this;
            return newNode->insertNode256Lil(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
@@ -540,15 +476,13 @@ namespace ART {
         this->count++;
         this->child[keyByte] = child;
 
-        // If what's being inserted is a leaf
-        if (isLeaf(child)) {
             tree->fp_leaf = child;
             tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
             tree->fp_path = temp_fp_path;
             tree->fp_path_length = temp_fp_path_length; // update fp_path size
             tree->fp_depth = depth_prev;
             tree->fp_ref = nodeRef; 
-        }
+        
 
     }  
 
