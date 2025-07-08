@@ -10,7 +10,7 @@
 #include "QuART_xtail.h" 
 #include "QuART_lil.h"
 #include "ArtNode.h"
-#include "ArtNodeTail.cpp"
+#include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
 #include "Helper.h"
 
@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
     // Build tree
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_lil* tree = new ART::QuART_lil();
+    ART::QuART_tail* tree = new ART::QuART_tail();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {

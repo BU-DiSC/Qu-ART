@@ -31,7 +31,7 @@ namespace ART {
                     }
                 }
 
-                // If we can lil insert, use the fast path
+                // If we can insert from fp, insert from fp
                 if (can_lil_insert) {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
                     size_t temp_fp_path_length = fp_path_length;
@@ -39,16 +39,15 @@ namespace ART {
                     // Uncomment the following line to print the lil insert debug information
                     // printf("doing lil insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
 
-                    QuART_lil::insert_recursive(this, this->fp, this->fp_ref, 
+                    QuART_lil::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                 }
-                // If we cannot lil insert, use the regular insert
+                // If we cannot insert from fp, insert fromr root but still change fp
                 else {
-                    //printf("doing regular insert for value: %lu\n", value);
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
-                    QuART_lil::insert_recursive(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
+                    QuART_lil::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
                         temp_fp_path, temp_fp_path_length);
                 }
             }
@@ -135,88 +134,10 @@ namespace ART {
                 printf("Error: fp_path does not lead to the fp.\n");
                 return false;
             }
+            
+        private:
 
-            // Method to verify the lil path after each insertion
-            bool verifyLilPath() {
-                if (this->fp_path_length == 0) {
-                    return true;
-                }
-
-                ArtNode* current = this->root;
-                // Traverse the tree following the fp_path
-                for (size_t i = 0; i < this->fp_path_length; i++) {
-                    if (i == this->fp_path_length - 1) {
-                        if (current == this->fp) {
-                            return true;
-                        } 
-                        else {
-                            printf("Error: last node in fp_path is not the fp. Expected %p, got %p.\n",
-                                static_cast<void*>(this->fp), static_cast<void*>(current));
-                            printf("Index: %zu\n", i);
-                            printf("%lu\n", static_cast<unsigned long>(getLeafValue(current)));
-                            return false;
-                        }
-                    }
-
-                    // Move to the rightmost child
-                    switch (current->type) {
-                        case NodeType4: {
-                            Node4* node = static_cast<Node4*>(current);
-                            if (node->count > 0) {
-                                current = node->child[node->count - 1];
-                            } else {
-                                printf("Error: NodeType4 has no children.\n");
-                                return false;
-                            }
-                            break;
-                        }
-                        case NodeType16: {
-                            Node16* node = static_cast<Node16*>(current);
-                            if (node->count > 0) {
-                                current = node->child[node->count - 1];
-                            } else {
-                                printf("Error: NodeType16 has no children.\n");
-                                return false;
-                            }
-                            break;
-                        }
-                        case NodeType48: {
-                            Node48* node = static_cast<Node48*>(current);
-                            unsigned pos = 255;
-                            while (pos > 0 && node->childIndex[pos] == emptyMarker) pos--;
-                            if (node->childIndex[pos] != emptyMarker) {
-                                current = node->child[node->childIndex[pos]];
-                            } else {
-                                printf("Error: NodeType48 has no valid children.\n");
-                                return false;
-                            }
-                            break;
-                        }
-                        case NodeType256: {
-                            Node256* node = static_cast<Node256*>(current);
-                            unsigned pos = 255;
-                            while (pos > 0 && !node->child[pos]) pos--;
-                            if (node->child[pos]) {
-                                current = node->child[pos];
-                            } else {
-                                printf("Error: NodeType256 has no valid children.\n");
-                                return false;
-                            }
-                            break;
-                        }
-                        default:
-                            printf("Error: Unknown node type.\n");
-                            return false;
-                    }
-                }
-
-                // If we exit the loop without returning, the path is incorrect
-                printf("Error: fp_path does not lead to the fp.\n");
-                return false;
-            }
-
-        
-            void insert_recursive(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
+            void insert_recursive_always_change_fp(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
                 size_t& temp_fp_path_length) {
 
@@ -250,7 +171,7 @@ namespace ART {
 
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node);
-                    newNode->insertNode4Lil(this, nodeRef, key[depth + newPrefixLength],
+                    newNode->insertNode4AlwaysChangeFp(this, nodeRef, key[depth + newPrefixLength],
                                 makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                     return;
                 }
@@ -284,7 +205,7 @@ namespace ART {
                             memmove(node->prefix, minKey + depth + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
                         }
-                        newNode->insertNode4Lil(this, nodeRef, key[depth + mismatchPos],
+                        newNode->insertNode4AlwaysChangeFp(this, nodeRef, key[depth + mismatchPos],
                                     makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
                         return;
                     }
@@ -296,8 +217,7 @@ namespace ART {
                 if (*child) {
                     temp_fp_path[temp_fp_path_length] = *child; // add the node to the array before recursion
                     temp_fp_path_length++; // increase the size of the array    
-                    insert_recursive(tree, *child, child, key, depth + 1, value, maxKeyLength, 
-                        temp_fp_path, temp_fp_path_length);
+                    insert_recursive_always_change_fp(tree, *child, child, key, depth + 1, value, maxKeyLength, temp_fp_path, temp_fp_path_length);
                     return;
                 }
                 
@@ -305,19 +225,19 @@ namespace ART {
                 ArtNode* newNode = makeLeaf(value);
                 switch (node->type) {
                     case NodeType4:
-                        static_cast<Node4*>(node)->insertNode4Lil(this, nodeRef, key[depth],
+                        static_cast<Node4*>(node)->insertNode4AlwaysChangeFp(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType16:
-                        static_cast<Node16*>(node)->insertNode16Lil(this, nodeRef, key[depth],
+                        static_cast<Node16*>(node)->insertNode16AlwaysChangeFp(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType48:
-                        static_cast<Node48*>(node)->insertNode48Lil(this, nodeRef, key[depth],
+                        static_cast<Node48*>(node)->insertNode48AlwaysChangeFp(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                     case NodeType256:
-                        static_cast<Node256*>(node)->insertNode256Lil(this, nodeRef, key[depth],
+                        static_cast<Node256*>(node)->insertNode256AlwaysChangeFp(this, nodeRef, key[depth],
                                     newNode, temp_fp_path, temp_fp_path_length, depth_prev);
                         break;
                 }

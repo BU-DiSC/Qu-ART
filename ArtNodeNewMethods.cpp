@@ -4,7 +4,7 @@
 // Insert methods for structs Node4, Node16, Node48, and Node256
 namespace ART {
     // fp insert method for Node4
-    void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node4::insertNode4Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -67,12 +67,12 @@ namespace ART {
             }
 
             delete this;
-            return newNode->insertNode16(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+            return newNode->insertNode16Tail(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
         }
     }
 
     // fp insert method for Node16
-    void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node16::insertNode16Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -141,12 +141,12 @@ namespace ART {
             }
 
             delete this;
-            return newNode->insertNode48(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+            return newNode->insertNode48Tail(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
         }
     }
 
     // fp insert method for Node48
-    void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
+    void Node48::insertNode48Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
         std::array<ArtNode*, maxPrefixLength>& temp_fp_path, size_t& temp_fp_path_length, size_t depth_prev) {
        // Insert leaf into inner node
        if (this->count < 48) {
@@ -206,12 +206,12 @@ namespace ART {
            }
 
            delete this;
-           return newNode->insertNode256(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+           return newNode->insertNode256Tail(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
        }
     }
 
     // fp insert method for Node256
-    void Node256::insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node256::insertNode256Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -235,7 +235,7 @@ namespace ART {
     }  
 
 
-    void Node4::insertNode4New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node4::insertNode4OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child) {
         // Insert leaf into inner node
         if (this->count < 4) {
@@ -263,11 +263,11 @@ namespace ART {
                 newNode->key[i] = flipSign(this->key[i]);
             memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
             delete this;
-            return newNode->insertNode16New(tree, nodeRef, keyByte, child);
+            return newNode->insertNode16OnlyUpdateFp(tree, nodeRef, keyByte, child);
         }
     }
 
-    void Node16::insertNode16New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node16::insertNode16OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child) {
         // Insert leaf into inner node
         if (this->count < 16) {
@@ -300,11 +300,11 @@ namespace ART {
             copyPrefix(this, newNode);
             newNode->count = this->count;
             delete this;
-            return newNode->insertNode48New(tree, nodeRef, keyByte, child);
+            return newNode->insertNode48OnlyUpdateFp(tree, nodeRef, keyByte, child);
         }
     }
 
-    void Node48::insertNode48New(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child) {
+    void Node48::insertNode48OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child) {
         // Insert leaf into inner node
         if (this->count < 48) {
             // Insert element
@@ -329,11 +329,11 @@ namespace ART {
                 tree->fp = newNode; // update the fp pointer
             }
             delete this;
-            return newNode->insertNode256New(tree, nodeRef, keyByte, child);
+            return newNode->insertNode256OnlyUpdateFp(tree, nodeRef, keyByte, child);
         }
     }
 
-    void Node256::insertNode256New(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node256::insertNode256OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child) {
         // Insert leaf into inner node
         this->count++;
@@ -341,7 +341,7 @@ namespace ART {
     }  
 
         // fp insert method for Node4
-    void Node4::insertNode4Lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node4::insertNode4AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -355,13 +355,12 @@ namespace ART {
             this->key[pos] = keyByte;
             this->child[pos] = child;
             
-                    tree->fp_leaf = child;
-                    tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
-                    tree->fp_path = temp_fp_path;
-                    tree->fp_path_length = temp_fp_path_length; // update fp_path size
-                    tree->fp_depth = depth_prev;
-                    tree->fp_ref = nodeRef;
-            
+            tree->fp_leaf = child;
+            tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
+            tree->fp_path = temp_fp_path;
+            tree->fp_path_length = temp_fp_path_length; 
+            tree->fp_depth = depth_prev;
+            tree->fp_ref = nodeRef;
             
             this->count++;
         } else {
@@ -377,12 +376,12 @@ namespace ART {
             temp_fp_path[temp_fp_path_length - 1] = newNode;
 
             delete this;
-            return newNode->insertNode16Lil(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+            return newNode->insertNode16AlwaysChangeFp(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
         }
     }
 
     // fp insert method for Node16
-    void Node16::insertNode16Lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node16::insertNode16AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -402,14 +401,12 @@ namespace ART {
             this->key[pos] = keyByteFlipped;
             this->child[pos] = child;
 
-                    tree->fp_leaf = child;
-                    tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
-                    tree->fp_path = temp_fp_path;
-                    tree->fp_path_length = temp_fp_path_length; // update fp_path size
-                    tree->fp_depth = depth_prev;
-                    tree->fp_ref = nodeRef;
-                
-            
+            tree->fp_leaf = child;
+            tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
+            tree->fp_path = temp_fp_path;
+            tree->fp_path_length = temp_fp_path_length;
+            tree->fp_depth = depth_prev;
+            tree->fp_ref = nodeRef;
 
             this->count++;
         } else {
@@ -425,12 +422,12 @@ namespace ART {
             temp_fp_path[temp_fp_path_length - 1] = newNode;
 
             delete this;
-            return newNode->insertNode48Lil(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+            return newNode->insertNode48AlwaysChangeFp(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
         }
     }
 
     // fp insert method for Node48
-    void Node48::insertNode48Lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
+    void Node48::insertNode48AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
         std::array<ArtNode*, maxPrefixLength>& temp_fp_path, size_t& temp_fp_path_length, size_t depth_prev) {
        // Insert leaf into inner node
        if (this->count < 48) {
@@ -442,14 +439,12 @@ namespace ART {
                     this->childIndex[keyByte] = pos;
                     this->count++;
 
-                   tree->fp_leaf = child;
-                   tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
-                   tree->fp_path = temp_fp_path;
-                   tree->fp_path_length = temp_fp_path_length; // update fp_path size
-                   tree->fp_depth = depth_prev;
-                   tree->fp_ref = nodeRef;
-               
-                      
+            tree->fp_leaf = child;
+            tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
+            tree->fp_path = temp_fp_path;
+            tree->fp_path_length = temp_fp_path_length;
+            tree->fp_depth = depth_prev;
+            tree->fp_ref = nodeRef;            
                 
        } else {
            // Grow to Node256
@@ -464,28 +459,25 @@ namespace ART {
            temp_fp_path[temp_fp_path_length - 1] = newNode;
 
            delete this;
-           return newNode->insertNode256Lil(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+           return newNode->insertNode256AlwaysChangeFp(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
        }
     }
 
     // fp insert method for Node256
-    void Node256::insertNode256Lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node256::insertNode256AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
         this->count++;
         this->child[keyByte] = child;
 
-            tree->fp_leaf = child;
-            tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
-            tree->fp_path = temp_fp_path;
-            tree->fp_path_length = temp_fp_path_length; // update fp_path size
-            tree->fp_depth = depth_prev;
-            tree->fp_ref = nodeRef; 
-        
+        tree->fp_leaf = child;
+        tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
+        tree->fp_path = temp_fp_path;
+        tree->fp_path_length = temp_fp_path_length; 
+        tree->fp_depth = depth_prev;
+        tree->fp_ref = nodeRef; 
 
     }  
-
-
 
 }

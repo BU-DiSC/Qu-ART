@@ -8,7 +8,7 @@
 #include "QuART_tail.h"
 #include "QuART_xtail.h" 
 #include "ArtNode.h"
-#include "ArtNodeTail.cpp"
+#include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
 #include "Helper.h"
 
