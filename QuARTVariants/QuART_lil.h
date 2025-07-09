@@ -136,8 +136,6 @@ namespace ART {
             void insert_recursive_only_update_fp(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength) {
 
-                size_t depth_prev = depth;
-
                 // Insert the leaf value into the tree
                 if (node == NULL) {
                     *nodeRef = makeLeaf(value);

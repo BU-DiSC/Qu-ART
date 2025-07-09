@@ -13,9 +13,9 @@ namespace ART {
             void insert(uint8_t key[], uintptr_t value) {
                 // Check if we can tail insert
                 ArtNode* root = this->root;
-                int leafValue = getLeafValue(this->fp_leaf);
                 // Check if the root is not null and is not a leaf
                 if (root != nullptr && !isLeaf(root)) {
+                    int leafValue = getLeafValue(this->fp_leaf);
                     // For each byte in the key excluding the last byte,
                     // check if it matches the corresponding byte in the leaf value
                     // If any byte does not match, set can_tail_insert to false
@@ -60,8 +60,6 @@ namespace ART {
 
             void insert_recursive_only_update_fp(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                 uintptr_t value, unsigned maxKeyLength) {
-
-                size_t depth_prev = depth;
 
                 // Insert the leaf value into the tree
                 if (node == NULL) {
