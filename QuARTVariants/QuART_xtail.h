@@ -13,16 +13,13 @@ namespace ART {
             void insert(uint8_t key[], uintptr_t value) {
                 // Check if we can tail insert
                 ArtNode* root = this->root;
-                bool flag = false;
-                size_t i = 0;
                 int leafValue = getLeafValue(this->fp_leaf);
                 // Check if the root is not null and is not a leaf
                 if (root != nullptr && !isLeaf(root)) {
-                    flag = true;
                     // For each byte in the key excluding the last byte,
                     // check if it matches the corresponding byte in the leaf value
                     // If any byte does not match, set can_tail_insert to false
-                    for (i; i < maxPrefixLength - 1; i++) {
+                    for (size_t i = 0; i < maxPrefixLength - 1; i++) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                         if (key[i] == leafByte) {
                             continue;
@@ -31,19 +28,17 @@ namespace ART {
                             // If the key is less than the leaf value, we do insert without 
                             // tracking the path, as this will never be the new fp path. We only
                             // update the current fp information if it changes. 
-                            flag = false;
                             QuART_xtail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
-                            break;
+                            return;
                         }
                         else { 
                             // If the key is greater than the leaf value, we do tail insert with 
                             // tracking the path and updating fp information in the end
                             std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                             size_t temp_fp_path_length = 1;
-                            flag = false;
                             QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
                                 temp_fp_path, temp_fp_path_length);
-                            break;
+                            return;
                         }
                     }                    
                 }
@@ -53,23 +48,14 @@ namespace ART {
                     size_t temp_fp_path_length = 1;
                     QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
                         temp_fp_path, temp_fp_path_length);
+                    return;
                 }   
-                // If we got here, it means that we can tail insert
-                if (flag == true) {
-                    std::array<ArtNode*, maxPrefixLength> temp_fp_path = fp_path; 
-                    size_t temp_fp_path_length = fp_path_length;
-                    if (key[i] >= ((leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF)) {
-                        QuART_xtail::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
-                            key, fp_depth, value, maxPrefixLength, 
-                            temp_fp_path, temp_fp_path_length);
-                    }
-                    else {
-                        // If the key is less than the leaf value, we do insert without 
-                        // tracking the path, as this will never be the new fp path. We only
-                        // update the current fp information if it changes. 
-                        QuART_xtail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
-                    }
-                }
+
+                std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
+                size_t temp_fp_path_length = fp_path_length;
+                QuART_xtail::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
+                    key, fp_depth, value, maxPrefixLength, temp_fp_path, temp_fp_path_length);
+                return;
             }
             
         private:
