@@ -378,7 +378,6 @@ namespace ART {
                     if (i == this->fp_path_length - 1) {
                         if (current == this->fp) {
                             if (getLeafValue(maximum(current)) == getLeafValue(this->fp_leaf)) {
-                                //printf("Success: fp_path is correct.\n");
                                 return true;
                             } else {
                                 printf("Error: fp_leaf mismatch. Expected %lu, got %lu.\n",
