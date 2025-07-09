@@ -51,10 +51,8 @@ namespace ART {
                     return;
                 }   
 
-                std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
-                size_t temp_fp_path_length = fp_path_length;
-                QuART_xtail::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
-                    key, fp_depth, value, maxPrefixLength, temp_fp_path, temp_fp_path_length);
+                QuART_xtail::insert_recursive_only_update_fp(this, this->fp, this->fp_ref, 
+                    key, fp_depth, value, maxPrefixLength);
                 return;
             }
             
