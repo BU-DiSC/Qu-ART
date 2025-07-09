@@ -1,4 +1,4 @@
-# ART (Adaptive Radix Tree) - QuART Variants
+# QuART
 
 This repository contains an implementation of the Adaptive Radix Tree (ART) and several QuART (Quotient Adaptive Radix Tree) variants with different fast-path strategies.
 
