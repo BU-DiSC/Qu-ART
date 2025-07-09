@@ -1,3 +1,15 @@
+#!/bin/bash
+SUFFIX=$(date +"%Y%m%d_%H%M%S")
+RESULTSDIR="results"
+RESULTS="${RESULTSDIR}/results_${SUFFIX}.txt"
+LOGDIR="${RESULTSDIR}/logs"
+
+mkdir -p "$LOGDIR"
+
+echo "N,K,L,type_of_tree,avg_insert_time,avg_query_time" > "$RESULTS"
+
+REPEAT=5
+
 for FILE in ../bods/workloads/workload_N*_K*_L*.bin; do
     [ -f "$FILE" ] || continue
 
@@ -5,7 +17,7 @@ for FILE in ../bods/workloads/workload_N*_K*_L*.bin; do
     N=$(echo "$BASENAME" | sed -n 's/.*_N\([0-9]*\)_K[0-9]*_L[0-9]*.bin/\1/p')
     K=$(echo "$BASENAME" | sed -n 's/.*_N[0-9]*_K\([0-9]*\)_L[0-9]*.bin/\1/p')
     L=$(echo "$BASENAME" | sed -n 's/.*_N[0-9]*_K[0-9]*_L\([0-9]*\).bin/\1/p')
-    LOGFILE="${LOGDIR}/log_${BASENAME%.bin}_${SUFFIX}.txt"
+    LOGFILE="${LOGDIR}/log_${BASENAME%.txt}_${SUFFIX}.txt"
 
     for TREE in ART QuART_tail QuART_xtail QuART_lil; do
         INSERT_SUM=0
