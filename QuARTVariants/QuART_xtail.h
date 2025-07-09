@@ -59,8 +59,6 @@ namespace ART {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = fp_path; 
                     size_t temp_fp_path_length = fp_path_length;
                     if (key[i] >= ((leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF)) {
-                        // Uncomment the following line to print the tail insert debug information
-                        //printf("doing tail insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
                         QuART_xtail::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
