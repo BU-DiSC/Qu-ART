@@ -7,7 +7,7 @@
 
 namespace ART {
     // fp insert method for Node4
-    void Node4::insertNode4Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node4::tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -70,12 +70,12 @@ namespace ART {
             }
 
             delete this;
-            return newNode->insertNode16Tail(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+            return newNode->tailInsertNode16(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
         }
     }
 
     // fp insert method for Node16
-    void Node16::insertNode16Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node16::tailInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node
@@ -144,12 +144,12 @@ namespace ART {
             }
 
             delete this;
-            return newNode->insertNode48Tail(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+            return newNode->tailInsertNode48(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
         }
     }
 
     // fp insert method for Node48
-    void Node48::insertNode48Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
+    void Node48::tailInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
         std::array<ArtNode*, maxPrefixLength>& temp_fp_path, size_t& temp_fp_path_length, size_t depth_prev) {
        // Insert leaf into inner node
        if (this->count < 48) {
@@ -209,12 +209,12 @@ namespace ART {
            }
 
            delete this;
-           return newNode->insertNode256Tail(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
+           return newNode->tailInsertNode256(tree, nodeRef, keyByte, child, temp_fp_path, temp_fp_path_length, depth_prev);
        }
     }
 
     // fp insert method for Node256
-    void Node256::insertNode256Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void Node256::tailInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path, 
         size_t& temp_fp_path_length, size_t depth_prev) {
         // Insert leaf into inner node

@@ -73,7 +73,7 @@
  
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
-         void insertNode4Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+         void tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
          void insertNode4OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -97,7 +97,7 @@
  
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
-         void insertNode16Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+         void tailInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
          void insertNode16OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -121,7 +121,7 @@
  
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
-         void insertNode48Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+         void tailInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
          void insertNode48OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -141,7 +141,7 @@
  
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
-         void insertNode256Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+         void tailInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
             size_t& temp_fp_path_length, size_t depth_prev);
          void insertNode256OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
