@@ -14,39 +14,37 @@ namespace ART {
 
                 // Check if we can lil insert
                 ArtNode* root = this->root;
-                bool can_lil_insert = false;
                 // Check if the root is not null and is not a leaf
                 if (root != nullptr && !isLeaf(root)) {
                     int leafValue = getLeafValue(this->fp_leaf);
-                    can_lil_insert = true;
                     // For each byte in the key excluding the last byte,
                     // check if it matches the corresponding byte in the leaf value
                     // If any byte does not match, set can_lil_insert to false
                     for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                         if (leafByte != key[i]) {
-                            can_lil_insert = false;
-                            break;
+                            std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
+                            size_t temp_fp_path_length = 1;
+                            QuART_lil::insert_recursive_always_change_fp(this,this->root, &this->root, key, 0, value, maxPrefixLength, 
+                                temp_fp_path, temp_fp_path_length);
+                            return;
                         }
                     }
                 }
-
-                // If we can insert from fp, insert from fp
-                if (can_lil_insert) {
-                    std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
-                    size_t temp_fp_path_length = fp_path_length;
-
-                    QuART_lil::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
-                            key, fp_depth, value, maxPrefixLength, 
-                            temp_fp_path, temp_fp_path_length);
-                }
-                // If we cannot insert from fp, insert from root but still change fp
                 else {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
                     QuART_lil::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
                         temp_fp_path, temp_fp_path_length);
+                    return;
                 }
+
+                std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
+                size_t temp_fp_path_length = fp_path_length;
+                QuART_lil::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
+                            key, fp_depth, value, maxPrefixLength, 
+                            temp_fp_path, temp_fp_path_length);
+                return;
             }
             
             // Method to verify the lil path after each insertion
