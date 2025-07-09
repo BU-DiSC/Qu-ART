@@ -23,6 +23,7 @@ namespace ART {
                     for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                         if (leafByte != key[i]) {
+                            // If the key defers from leafByte earlier, we lil insert from root
                             std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                             size_t temp_fp_path_length = 1;
                             QuART_lil::insert_recursive_always_change_fp(this,this->root, &this->root, key, 0, value, maxPrefixLength, 
@@ -32,6 +33,7 @@ namespace ART {
                     }
                 }
                 else {
+                    // If the root is null or is a leaf, we cannot lil insert
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
                     QuART_lil::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
@@ -39,6 +41,7 @@ namespace ART {
                     return;
                 }
 
+                // We reached the last byte of the key, we can lil insert
                 std::array<ArtNode*, maxPrefixLength> temp_fp_path  = fp_path; 
                 size_t temp_fp_path_length = fp_path_length;
                 QuART_lil::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
