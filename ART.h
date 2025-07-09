@@ -34,18 +34,24 @@ namespace ART {
 
     class ART {
         public:
-            ArtNode* root = nullptr;
-            ArtNode* fp = nullptr; 
-            std::array<ArtNode*, maxPrefixLength> fp_path = {nullptr};
-            size_t fp_path_length = 0; 
-            ArtNode* fp_leaf = nullptr;  
-            size_t fp_depth = 0; 
-            ArtNode** fp_ref = nullptr; 
+            ArtNode* root;
+            ArtNode* fp;
+            std::array<ArtNode*, maxPrefixLength> fp_path;
+            size_t fp_path_length;
+            ArtNode* fp_leaf;
+            size_t fp_depth;
+            ArtNode** fp_ref;
 
-            //constructor
-            ART() {
-                root = NULL;
-            }
+            // constructor
+            ART()
+                : root(nullptr),
+                  fp(nullptr),
+                  fp_path{nullptr},
+                  fp_path_length(0),
+                  fp_leaf(nullptr),
+                  fp_depth(0),
+                  fp_ref(nullptr)
+            {}
 
             void insert(uint8_t key[], uintptr_t value) {
                 insert_recursive(this, root, &root, key, 0, value, maxPrefixLength);
