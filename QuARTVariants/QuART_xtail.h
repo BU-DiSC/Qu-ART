@@ -18,7 +18,6 @@ namespace ART {
                 int leafValue = getLeafValue(this->fp_leaf);
                 // Check if the root is not null and is not a leaf
                 if (root != nullptr && !isLeaf(root)) {
-                    int leafValue = getLeafValue(this->fp_leaf);
                     flag = true;
                     // For each byte in the key excluding the last byte,
                     // check if it matches the corresponding byte in the leaf value

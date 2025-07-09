@@ -43,7 +43,7 @@ namespace ART {
                             key, fp_depth, value, maxPrefixLength, 
                             temp_fp_path, temp_fp_path_length);
                 }
-                // If we cannot insert from fp, insert fromr root but still change fp
+                // If we cannot insert from fp, insert from root but still change fp
                 else {
                     std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                     size_t temp_fp_path_length = 1;
