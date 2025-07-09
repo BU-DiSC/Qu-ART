@@ -70,17 +70,25 @@
              memset(key, 0, sizeof(key));
              memset(child, 0, sizeof(child));
          }
- 
+         
+         // Base ART insert function for Node4
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         // Insert function used in base tail insert. Checks if fp structures need
+         // to be updated and updates if necessary 
          void tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
          void insertNode4OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         // Insert function used in xtail insert when key is greater than the leaf value
+         // and always in lil insert. Always updates the existing fp structures.
          void insertNode4AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Erase function for Node4
          void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
      };
@@ -94,17 +102,24 @@
              memset(key, 0, sizeof(key));
              memset(child, 0, sizeof(child));
          }
- 
+         // Base ART insert function for Node16
          void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         // Insert function used in base tail insert. Checks if fp structures need
+         // to be updated and updates if necessary.
          void tailInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
          void insertNode16OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
-        void insertNode16AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+         // Insert function used in xtail insert when key is greater than the leaf value
+         // and always in lil insert. Always updates the existing fp structures.
+         void insertNode16AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Erase function for Node16
          void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
      };
@@ -118,17 +133,25 @@
              memset(childIndex, emptyMarker, sizeof(childIndex));
              memset(child, 0, sizeof(child));
          }    
- 
+         
+         // Base ART insert function for Node48
          void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+          // Insert function used in base tail insert. Checks if fp structures need
+         // to be updated and updates if necessary.
          void tailInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
          void insertNode48OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         // Insert function used in xtail insert when key is greater than the leaf value
+         // and always in lil insert. Always updates the existing fp structures.
          void insertNode48AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Erase function for Node48
          void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
      };
@@ -138,17 +161,25 @@
          ArtNode* child[256];
  
          Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
- 
+        
+         // Base ART insert function for Node256
          void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         // Insert function used in base tail insert. Checks if fp structures need
+         // to be updated and updates if necessary.
          void tailInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
             size_t& temp_fp_path_length, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
          void insertNode256OnlyUpdateFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child);
+         // Insert function used in xtail insert when key is greater than the leaf value
+         // and always in lil insert. Always updates the existing fp structures.
          void insertNode256AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
              size_t& temp_fp_path_length, size_t depth_prev);
+         // Erase function for Node256
          void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
      };
