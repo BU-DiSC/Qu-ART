@@ -6,8 +6,7 @@
 #include <vector>
 
 #include "ART.h"
-#include "QuART_tail.h"
-#include "QuART_lil.h"
+#include "QuARTVariants/QuART_lil.h"
 #include "ArtNode.h"
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"

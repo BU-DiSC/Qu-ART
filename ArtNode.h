@@ -517,7 +517,7 @@
          return NULL;
      }    
 
-     void printTailPath(std::array<ArtNode*, maxPrefixLength> path, size_t path_length) {
+     void printFpPath(std::array<ArtNode*, maxPrefixLength> path, size_t path_length) {
         // Print the fp path for debugging
         for (size_t i = 0; i < path_length; i++) {
             if (isLeaf(path[i])) {

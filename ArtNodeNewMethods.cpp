@@ -1,7 +1,10 @@
 #include "ArtNode.h"
 #include "ART.h"
 
-// Insert methods for structs Node4, Node16, Node48, and Node256
+/*
+ * QuART related insertNodeX methods
+ */ 
+
 namespace ART {
     // fp insert method for Node4
     void Node4::insertNode4Tail(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -62,7 +65,7 @@ namespace ART {
                         tree->fp_path[i + temp_fp_path_length_old] = fp_path_remainder[i];
                         tree->fp_path_length++;
                     }
-                    tree->fp = tree->fp_path[tree->fp_path_length - 1]; // update the fp pointer
+                    tree->fp = tree->fp_path[tree->fp_path_length - 1]; 
                 }
             }
 
@@ -100,7 +103,7 @@ namespace ART {
                     tree->fp_leaf = child;
                     tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                     tree->fp_path = temp_fp_path;
-                    tree->fp_path_length = temp_fp_path_length; // update fp_path size
+                    tree->fp_path_length = temp_fp_path_length;
                     tree->fp_depth = depth_prev;
                     tree->fp_ref = nodeRef;
                 }
@@ -166,7 +169,7 @@ namespace ART {
                    tree->fp_leaf = child;
                    tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                    tree->fp_path = temp_fp_path;
-                   tree->fp_path_length = temp_fp_path_length; // update fp_path size
+                   tree->fp_path_length = temp_fp_path_length;
                    tree->fp_depth = depth_prev;
                    tree->fp_ref = nodeRef;
                }
@@ -226,7 +229,7 @@ namespace ART {
                 tree->fp_leaf = child;
                 tree->fp = temp_fp_path[temp_fp_path_length - 1]; 
                 tree->fp_path = temp_fp_path;
-                tree->fp_path_length = temp_fp_path_length; // update fp_path size
+                tree->fp_path_length = temp_fp_path_length;
                 tree->fp_depth = depth_prev;
                 tree->fp_ref = nodeRef;
             }
@@ -252,11 +255,13 @@ namespace ART {
             // Grow to Node16
             Node16* newNode = new Node16();
             *nodeRef = newNode;
+
+            // If the changing node is on the fp_path
             if (tree->fp_path[tree->fp_path_length - 1] == this) {
-                // Change the node to the newNode which has a greater capacity
                 tree->fp_path[tree->fp_path_length - 1] = newNode;
-                tree->fp = newNode; // update the fp pointer
+                tree->fp = newNode; 
             }
+
             newNode->count = 4;
             copyPrefix(this, newNode);
             for (unsigned i = 0; i < 4; i++)
@@ -289,11 +294,13 @@ namespace ART {
             // Grow to Node48
             Node48* newNode = new Node48();
             *nodeRef = newNode;
+
+            // If the changing node is on the fp_path
             if (tree->fp_path[tree->fp_path_length - 1] == this) {
-                // Change the node to the newNode which has a greater capacity
                 tree->fp_path[tree->fp_path_length - 1] = newNode;
-                tree->fp = newNode; // update the fp pointer
+                tree->fp = newNode; 
             }
+
             memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
             for (unsigned i = 0; i < this->count; i++)
                 newNode->childIndex[flipSign(this->key[i])] = i;
@@ -323,10 +330,11 @@ namespace ART {
             newNode->count = this->count;
             copyPrefix(this, newNode);
             *nodeRef = newNode;
+
+            // If the changing node is on the fp_path
             if (tree->fp_path[tree->fp_path_length - 1] == this) {
-                // Change the node to the newNode which has a greater capacity
                 tree->fp_path[tree->fp_path_length - 1] = newNode;
-                tree->fp = newNode; // update the fp pointer
+                tree->fp = newNode; 
             }
             delete this;
             return newNode->insertNode256OnlyUpdateFp(tree, nodeRef, keyByte, child);

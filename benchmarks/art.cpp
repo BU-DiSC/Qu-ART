@@ -6,9 +6,6 @@
 #include <vector>
 
 #include "ART.h"
-#include "QuART_tail.h"
-#include "QuART_xtail.h" 
-#include "QuART_lil.h"
 #include "ArtNode.h"
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
@@ -28,15 +25,11 @@ std::vector<key_type> read_bin(const char* filename) {
 }
 
 int main(int argc, char** argv) {
-    bool verbose = false;  // optional argument
-    int N = 5000000;       // optional argument
+    int N = 10000000;       // optional argument
     string input_file;     // required argument
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
-        if (string(argv[i]) == "-v") {
-            verbose = true;
-            i++;
-        } else if (string(argv[i]) == "-N") {
+        if (string(argv[i]) == "-N") {
             N = atoi(argv[i + 1]);
             i += 2;
         } else if (string(argv[i]) == "-f") {
@@ -49,61 +42,22 @@ int main(int argc, char** argv) {
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
     // Build tree
-
-    // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_tail* tree = new ART::QuART_tail();
+    ART::ART* tree = new ART::ART();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
-        bool k = false;
-        if (k) {
-            cout << "Before insertion at i=" << i << ", keys=" << keys[i] << endl;
-            cout << "tree" << endl;
-            tree->printTree();
-            cout << "fp path" << endl;
-            printTailPath(tree->fp_path, tree->fp_path_length);
-            cout << "fp node" << endl;
-            cout << tree->fp << endl;
-            cout << "fp leaf value: " << ART::getLeafValue(tree->fp_leaf) << endl;
-        }
-        tree->insert(key, keys[i]);
-        if (k) {
-            cout << "After insertion at i=" << i << ", keys=" << keys[i] << endl;
-            cout << "tree" << endl;
-            tree->printTree();
-            cout << "fp path" << endl;
-            printTailPath(tree->fp_path, tree->fp_path_length);
-            cout << "fp path length: " << tree->fp_path_length << endl;
-            cout << "fp node" << endl;
-            cout << tree->fp << endl;
-            cout << "fp leaf value: " << ART::getLeafValue(tree->fp_leaf) << endl;
-        }
 
+        tree->insert(key, keys[i]);
+        
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
-        
-        // Uncomment the following lines to verify the tail path after each insertion
-        /*
-        if (!tree->verifyLilPath()) {
-            cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
-            break;
-        }
-        */
-        
-        
-        
     }
 
-    if (verbose) {
-        cout << "Insertion time: " << insertion_time << " ns" << endl;
-    }
-
-    
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -118,15 +72,9 @@ int main(int argc, char** argv) {
         query_time += duration.count();
         assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
     }
-
-    if (verbose) {
-        cout << "Query time: " << query_time << " ns" << endl;
-    }
-
+    
     // simply output the times in csv format
     cout << insertion_time << "," << query_time << endl;
-
-    
 
     return 0;
 }

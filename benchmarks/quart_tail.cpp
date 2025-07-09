@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "ART.h"
-#include "QuART_tail.h"
+#include "QuARTVariants/QuART_tail.h"
 #include "ArtNode.h"
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
     // Build tree
-    ART::ART* tree = new ART::ART();
+    ART::QuART_tail* tree = new ART::QuART_tail();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
