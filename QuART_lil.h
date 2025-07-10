@@ -200,6 +200,7 @@ class QuART_lil : ART::ART {
             (fp_path_length == 1)
                 ? &root
                 : findChild(fp_path[fp_path_length - 2], key[depth - 1]);
+        int8_t nodeType = node->type;
         switch (node->type) {
             case NodeType4:
                 static_cast<Node4*>(node)->insertNode4(this, nodeRef,
@@ -221,7 +222,10 @@ class QuART_lil : ART::ART {
         // If the identified node pointer no longer points to the same node as
         // that of the fp pointer, the node must have upscaled. Update the tree
         // pointer.
-        if (*parentPointer != *nodeRef) {
+        // if (*parentPointer != *nodeRef) {
+        //     *parentPointer = *nodeRef;
+        // }
+        if (nodeType != (*nodeRef)->type) {
             *parentPointer = *nodeRef;
         }
     }
