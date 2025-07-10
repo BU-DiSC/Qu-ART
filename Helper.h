@@ -66,6 +66,7 @@ unsigned min(unsigned a, unsigned b) {
     return (a < b) ? a : b;
 }
 
+<<<<<<< HEAD
 int arrToInt(const uint8_t key[4]) {
     return (int32_t(key[0]) << 24) | (int32_t(key[1]) << 16) |
            (int32_t(key[2]) << 8) | (int32_t(key[3]));
@@ -79,4 +80,6 @@ std::array<uint8_t, 4> intToArr(int value) {
     };
 }
 
+=======
+>>>>>>> 0e2cf35ed3686e77cc20b784e1bc99184a02bbc6
 }  // namespace ART

@@ -27,9 +27,14 @@
 #include <stdexcept>
 
 #include "ArtNode.h"  // ArtNode definitions
+<<<<<<< HEAD
 #include "ArtNode_lil.h"
 #include "Chain.h"   // Chain definitions
 #include "Helper.h"  // Helper functions
+=======
+#include "Chain.h"    // Chain definitions
+#include "Helper.h"   // Helper functions
+>>>>>>> 0e2cf35ed3686e77cc20b784e1bc99184a02bbc6
 
 namespace ART {
 
@@ -42,11 +47,15 @@ class ART {
     ArtNode* fp_leaf;
 
     // constructor
+<<<<<<< HEAD
     ART() {
         root = NULL;
         fp_path_length = 0;
         fp = NULL;
     }
+=======
+    ART() { root = NULL; }
+>>>>>>> 0e2cf35ed3686e77cc20b784e1bc99184a02bbc6
 
     void insert(uint8_t key[], uintptr_t value) {
         insert(this, root, &root, key, 0, value, maxPrefixLength);
