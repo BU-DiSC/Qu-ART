@@ -23,7 +23,6 @@
 #include <stdexcept>
 #include <vector>
 
-
 namespace ART {
 
 uint8_t flipSign(uint8_t keyByte) {
