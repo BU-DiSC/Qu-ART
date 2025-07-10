@@ -94,54 +94,59 @@ class Chain {
         }
     }
 
-    Chain* findChildbyRange(ArtNode* n, uint8_t lkeyByte, uint8_t hkeyByte,
-                        int depth, bool lequ, bool hequ) {
+    Chain *findChildbyRange(ArtNode *n, uint8_t lkeyByte, uint8_t hkeyByte,
+                            int depth, bool lequ, bool hequ) {
         // Find the next child for the keyByte
-        Chain* ret = new Chain();
+        Chain *ret = new Chain();
         switch (n->type) {
             case NodeType4: {
-                Node4* node = static_cast<Node4*>(n);
+                Node4 *node = static_cast<Node4 *>(n);
                 for (unsigned i = 0; i < node->count; i++)
                     if (node->key[i] >= lkeyByte && node->key[i] <= hkeyByte)
-                        ret->extend_item((ChainItem*)new ChainItemWithDepth(
+                        ret->extend_item((ChainItem *)new ChainItemWithDepth(
                             node->child[i], depth + 1,
                             (node->key[i] == lkeyByte) & lequ,
                             (node->key[i] == hkeyByte) * hequ));
             } break;
             case NodeType16: {
-                Node16* node = static_cast<Node16*>(n);
-                __m128i ld = _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key));
+                Node16 *node = static_cast<Node16 *>(n);
+                __m128i ld =
+                    _mm_loadu_si128(reinterpret_cast<__m128i *>(node->key));
                 __m128i cmp = _mm_or_si128(
-                    _mm_cmplt_epi8(ld,
-                                _mm_set1_epi8(flipSign(lkeyByte))), /* ld < l */
+                    _mm_cmplt_epi8(
+                        ld, _mm_set1_epi8(flipSign(lkeyByte))), /* ld < l */
                     _mm_cmplt_epi8(_mm_set1_epi8(flipSign(hkeyByte)),
-                                ld) /* r > ld */
+                                   ld) /* r > ld */
                 );
                 unsigned bitfield =
                     (~_mm_movemask_epi8(cmp)) & ((1 << node->count) - 1);
                 // uint32_t cmp =
-                //     _mm_cmple_epi8_mask(_mm_set1_epi8(flipSign(lkeyByte)), ld)
-                //     & _mm_cmple_epi8_mask(_mm_set1_epi8(flipSign(hkeyByte)), ld);
+                //     _mm_cmple_epi8_mask(_mm_set1_epi8(flipSign(lkeyByte)),
+                //     ld) &
+                //     _mm_cmple_epi8_mask(_mm_set1_epi8(flipSign(hkeyByte)),
+                //     ld);
                 // uint32_t bitfield = cmp & ((1 << node->count) - 1);
                 if (bitfield) {
                     int idx = ctz(bitfield);
-                    ret->extend_item((ChainItem*)new ChainItemWithDepth(
-                        node->child[idx], depth + 1, lequ, (bitfield == 0) & hequ));
+                    ret->extend_item((ChainItem *)new ChainItemWithDepth(
+                        node->child[idx], depth + 1, lequ,
+                        (bitfield == 0) & hequ));
                     bitfield = bitfield & (bitfield - 1);
                 }
                 while (bitfield) {
                     int idx = ctz(bitfield);
-                    ret->extend_item((ChainItem*)new ChainItemWithDepth(
+                    ret->extend_item((ChainItem *)new ChainItemWithDepth(
                         node->child[idx], depth + 1, false,
                         (bitfield == 0) & hequ));
                     bitfield = bitfield & (bitfield - 1);
                 }
             } break;
             case NodeType48: {
-                Node48* node = static_cast<Node48*>(n);
-                for (uint16_t keyByte = lkeyByte; keyByte <= hkeyByte; keyByte++)
+                Node48 *node = static_cast<Node48 *>(n);
+                for (uint16_t keyByte = lkeyByte; keyByte <= hkeyByte;
+                     keyByte++)
                     if (node->childIndex[keyByte] != emptyMarker)
-                        ret->extend_item((ChainItem*)new ChainItemWithDepth(
+                        ret->extend_item((ChainItem *)new ChainItemWithDepth(
                             node->child[node->childIndex[keyByte]], depth + 1,
                             (keyByte == lkeyByte) & lequ,
                             (keyByte == hkeyByte) & hequ));
@@ -150,9 +155,10 @@ class Chain {
                 // TODO: optimize this part
             } break;
             case NodeType256: {
-                Node256* node = static_cast<Node256*>(n);
-                for (uint16_t keyByte = lkeyByte; keyByte <= hkeyByte; keyByte++) {
-                    ret->extend_item((ChainItem*)new ChainItemWithDepth(
+                Node256 *node = static_cast<Node256 *>(n);
+                for (uint16_t keyByte = lkeyByte; keyByte <= hkeyByte;
+                     keyByte++) {
+                    ret->extend_item((ChainItem *)new ChainItemWithDepth(
                         node->child[keyByte], depth + 1,
                         (keyByte == lkeyByte) & lequ,
                         (keyByte == hkeyByte) & hequ));
