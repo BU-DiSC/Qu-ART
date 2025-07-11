@@ -126,7 +126,10 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     }
 }
 
-void Node256::insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+// suppress warnings about unused parameters to ensure consistency
+
+void Node256::insertNode256(ART* tree [[maybe_unused]],
+                            ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
                             ArtNode* child) {
     // Insert leaf into inner node
     this->count++;

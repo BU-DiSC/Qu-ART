@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 
     ART::QuART_lil* tree = new ART::QuART_lil();
     long long insertion_time = 0;
-    for (uint64_t i = 0; i < N; i++) {
+    for (auto i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
 
     // Query tree
     long long query_time = 0;
-    for (uint64_t i = 0; i < N; i++) {
+    for (auto i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();

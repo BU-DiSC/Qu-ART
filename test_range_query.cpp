@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         ART::loadKey(std::min((uint64_t)N - 1, keys[i] + 133), key2);
         auto start = chrono::high_resolution_clock::now();
-        ART::Chain* ch = tree->rangelookup(key, 8, key2, 8, 0, 8);
+        ART::Chain* ch = tree->rangelookup(key, 8, key2, 8, 8);
 
         auto stop = chrono::high_resolution_clock::now();
         auto duration =

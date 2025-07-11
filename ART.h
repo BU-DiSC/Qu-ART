@@ -53,14 +53,13 @@ class ART {
     }
 
     ArtNode* lookup(uint8_t key[]) {
-        return lookup(this, root, key, maxPrefixLength, 0, maxPrefixLength);
+        return lookup(root, key, maxPrefixLength, 0, maxPrefixLength);
     }
 
     Chain* rangelookup(uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[],
-                       uint8_t h_keyLength, unsigned depth,
-                       unsigned maxKeyLength) {
-        return rangelookup(this, root, l_key, l_keyLength, h_key, h_keyLength,
-                           depth, maxKeyLength);
+                       uint8_t h_keyLength, unsigned maxKeyLength) {
+        return rangelookup(root, l_key, l_keyLength, h_key, h_keyLength,
+                           maxKeyLength);
     }
 
    private:
@@ -160,7 +159,7 @@ class ART {
     }
 
     // Lookup function, returns ArtNode
-    ArtNode* lookup(ART* tree, ArtNode* node, uint8_t key[], unsigned keyLength,
+    ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
                     unsigned depth, unsigned maxKeyLength) {
         // Find the node with a matching key, optimistic version
 
@@ -227,18 +226,17 @@ class ART {
             // Leaf found, delete it in inner node
             switch (node->type) {
                 case NodeType4:
-                    static_cast<Node4*>(node)->eraseNode4(this, nodeRef, child);
+                    static_cast<Node4*>(node)->eraseNode4(nodeRef, child);
                     break;
                 case NodeType16:
-                    static_cast<Node16*>(node)->eraseNode16(this, nodeRef,
-                                                            child);
+                    static_cast<Node16*>(node)->eraseNode16(nodeRef, child);
                     break;
                 case NodeType48:
-                    static_cast<Node48*>(node)->eraseNode48(this, nodeRef,
+                    static_cast<Node48*>(node)->eraseNode48(nodeRef,
                                                             key[depth]);
                     break;
                 case NodeType256:
-                    static_cast<Node256*>(node)->eraseNode256(this, nodeRef,
+                    static_cast<Node256*>(node)->eraseNode256(nodeRef,
                                                               key[depth]);
                     break;
             }
@@ -249,9 +247,8 @@ class ART {
     }
 
     // Range lookup function, returns a Chain of ArtNode
-    Chain* rangelookup(ART* tree, ArtNode* node, uint8_t l_key[],
-                       unsigned l_keyLength, uint8_t h_key[],
-                       uint8_t h_keyLength, unsigned depth,
+    Chain* rangelookup(ArtNode* node, uint8_t l_key[], unsigned l_keyLength,
+                       uint8_t h_key[], uint8_t h_keyLength,
                        unsigned maxKeyLength) {
         // Find the node with a matching key, optimistic version
         Chain* queue =

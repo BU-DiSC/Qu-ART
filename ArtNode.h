@@ -71,7 +71,7 @@ struct Node4 : ArtNode {
 
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                      ArtNode* child);
-    void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
+    void eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace);
 };
 
 // Node with up to 16 children
@@ -86,7 +86,7 @@ struct Node16 : ArtNode {
 
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
-    void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
+    void eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace);
 };
 
 // Node with up to 48 children
@@ -101,7 +101,7 @@ struct Node48 : ArtNode {
 
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
-    void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
+    void eraseNode48(ArtNode** nodeRef, uint8_t keyByte);
 };
 
 // Node with up to 256 children
@@ -112,7 +112,7 @@ struct Node256 : ArtNode {
 
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                        ArtNode* child);
-    void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
+    void eraseNode256(ArtNode** nodeRef, uint8_t keyByte);
 };
 
 void copyPrefix(ArtNode* src, ArtNode* dst) {
@@ -137,7 +137,7 @@ inline bool isLeaf(ArtNode* node) {
     return reinterpret_cast<uintptr_t>(node) & 1;
 }
 
-void Node4::eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
+void Node4::eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
     memmove(this->key + pos, this->key + pos + 1, this->count - pos - 1);
@@ -169,7 +169,7 @@ void Node4::eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
     }
 }
 
-void Node16::eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
+void Node16::eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
     memmove(this->key + pos, this->key + pos + 1, this->count - pos - 1);
@@ -190,7 +190,7 @@ void Node16::eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
     }
 }
 
-void Node48::eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
+void Node48::eraseNode48(ArtNode** nodeRef, uint8_t keyByte) {
     // Delete leaf from inner node
     this->child[this->childIndex[keyByte]] = NULL;
     this->childIndex[keyByte] = emptyMarker;
@@ -213,7 +213,7 @@ void Node48::eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
     }
 }
 
-void Node256::eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
+void Node256::eraseNode256(ArtNode** nodeRef, uint8_t keyByte) {
     // Delete leaf from inner node
     this->child[keyByte] = NULL;
     this->count--;
