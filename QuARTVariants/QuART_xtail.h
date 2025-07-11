@@ -34,20 +34,18 @@ namespace ART {
                         else { 
                             // If the key is greater than the leaf value, we do tail insert with 
                             // tracking the path and updating fp information in the end
-                            std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
-                            size_t temp_fp_path_length = 1;
-                            QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
-                                temp_fp_path, temp_fp_path_length);
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
+                            QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                             return;
                         }
                     }                    
                 }
                 else {
                     // If the root is null or is a leaf, we cannot tail insert
-                    std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
-                    size_t temp_fp_path_length = 1;
-                    QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
-                        temp_fp_path, temp_fp_path_length);
+                    this->fp_path = {this->root};
+                    this->fp_path_length = 1;
+                    QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                     return;
                 }   
 
@@ -177,8 +175,7 @@ namespace ART {
             }    
             
             void insert_recursive_always_change_fp(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
-                uintptr_t value, unsigned maxKeyLength, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-                size_t& temp_fp_path_length) {
+                uintptr_t value, unsigned maxKeyLength) {
 
                 size_t depth_prev = depth;
 
@@ -206,12 +203,12 @@ namespace ART {
                         min(newPrefixLength, maxPrefixLength));
                     *nodeRef = newNode;
 
-                    temp_fp_path[temp_fp_path_length - 1] = newNode;
+                    fp_path[fp_path_length - 1] = newNode;
 
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node);
                     newNode->insertNode4AlwaysChangeFp(this, nodeRef, key[depth + newPrefixLength],
-                                makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
+                                makeLeaf(value), depth_prev);
                     return;
                 }
 
@@ -228,7 +225,7 @@ namespace ART {
                         // Break up prefix
                         if (node->prefixLength < maxPrefixLength) {
                             // In all cases, newNode should be added to fp_path
-                            temp_fp_path[temp_fp_path_length - 1] = newNode;    
+                            fp_path[fp_path_length - 1] = newNode;    
                             // If the nodes that being changed is in fp_path
                             newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node);
                             node->prefixLength -= (mismatchPos + 1);
@@ -239,13 +236,13 @@ namespace ART {
                             uint8_t minKey[maxKeyLength];
                             loadKey(getLeafValue(minimum(node)), minKey);
                             // In all cases, newNode should be added to fp_path
-                            temp_fp_path[temp_fp_path_length - 1] = newNode;    
+                            fp_path[fp_path_length - 1] = newNode;    
                             newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos], node);
                             memmove(node->prefix, minKey + depth + mismatchPos + 1,
                                     min(node->prefixLength, maxPrefixLength));
                         }
                         newNode->insertNode4AlwaysChangeFp(this, nodeRef, key[depth + mismatchPos],
-                                    makeLeaf(value), temp_fp_path, temp_fp_path_length, depth_prev);
+                                    makeLeaf(value), depth_prev);
                         return;
                     }
                     depth += node->prefixLength;
@@ -254,9 +251,9 @@ namespace ART {
                 // Recurse
                 ArtNode** child = findChild(node, key[depth]);
                 if (*child) {
-                    temp_fp_path[temp_fp_path_length] = *child; // add the node to the array before recursion
-                    temp_fp_path_length++; // increase the size of the array    
-                    insert_recursive_always_change_fp(tree, *child, child, key, depth + 1, value, maxKeyLength, temp_fp_path, temp_fp_path_length);
+                    fp_path[fp_path_length] = *child; // add the node to the array before recursion
+                    fp_path_length++; // increase the size of the array    
+                    insert_recursive_always_change_fp(tree, *child, child, key, depth + 1, value, maxKeyLength);
                     return;
                 }
                 
@@ -265,19 +262,19 @@ namespace ART {
                 switch (node->type) {
                     case NodeType4:
                         static_cast<Node4*>(node)->insertNode4AlwaysChangeFp(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
+                                    newNode, depth_prev);
                         break;
                     case NodeType16:
                         static_cast<Node16*>(node)->insertNode16AlwaysChangeFp(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
+                                    newNode, depth_prev);
                         break;
                     case NodeType48:
                         static_cast<Node48*>(node)->insertNode48AlwaysChangeFp(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
+                                    newNode, depth_prev);
                         break;
                     case NodeType256:
                         static_cast<Node256*>(node)->insertNode256AlwaysChangeFp(this, nodeRef, key[depth],
-                                    newNode, temp_fp_path, temp_fp_path_length, depth_prev);
+                                    newNode, depth_prev);
                         break;
                 }
             }            

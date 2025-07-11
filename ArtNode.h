@@ -86,8 +86,7 @@
          // Insert function used in xtail insert when key is greater than the leaf value
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode4AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-             size_t& temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, size_t depth_prev);
          // Erase function for Node4
          void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
@@ -117,8 +116,7 @@
          // Insert function used in xtail insert when key is greater than the leaf value
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode16AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-             size_t& temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, size_t depth_prev);
          // Erase function for Node16
          void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
@@ -149,8 +147,7 @@
          // Insert function used in xtail insert when key is greater than the leaf value
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode48AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-             size_t& temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, size_t depth_prev);
          // Erase function for Node48
          void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
@@ -177,8 +174,7 @@
          // Insert function used in xtail insert when key is greater than the leaf value
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode256AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-             ArtNode* child, std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-             size_t& temp_fp_path_length, size_t depth_prev);
+             ArtNode* child, size_t depth_prev);
          // Erase function for Node256
          void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 

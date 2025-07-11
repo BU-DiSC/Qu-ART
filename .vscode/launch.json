@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug main.cpp",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/profile_inserts_with_file",
+            "args": ["-N", "50000000", "-f", "../bods/workloads/workload_N50000000_K10_L10.bin"],
+            "environment": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
