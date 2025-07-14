@@ -16,7 +16,7 @@
 using namespace std;
 
 int main(int argc, char** argv) {
-    int N = 10000000;       // default value
+    int N = 50000000;       // default value
     // Removed unused variable `input_file`
     // Parse only -N argument
     for (int i = 1; i < argc;) {

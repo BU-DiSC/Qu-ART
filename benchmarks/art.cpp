@@ -25,7 +25,7 @@ std::vector<key_type> read_bin(const char* filename) {
 }
 
 int main(int argc, char** argv) {
-    int N = 10000000;       // optional argument
+    int N = 50000000;       // optional argument
     string input_file;     // required argument
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {

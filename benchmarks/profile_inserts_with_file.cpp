@@ -28,7 +28,7 @@ std::vector<key_type> read_bin(const char* filename) {
 
 
 int main(int argc, char** argv) {
-    int N = 10000000;       // default value
+    int N = 50000000;       // default value
     string input_file;      // required argument
     
     for (int i = 1; i < argc;) {
