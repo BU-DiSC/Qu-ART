@@ -1,4 +1,3 @@
-
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -51,12 +50,33 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        tree->insert(key, keys[i]);
+        //if (41487881 <= keys[i] && keys[i] <= 41488107) {
+        //if (keys[i] == 41487916) {
+        if (keys[i] == 41488038) {
+
+            cout << "we got here debugger" << endl;
+            cout << "before insert: ";
+            //tree->printTree();
+            tree->insert(key, keys[i]);
+            cout << "after insert: ";
+            //tree->printTree();
+        }
+        else {
+            tree->insert(key, keys[i]);
+        }
         
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
+
+        if (i != 0 && i != 1) {
+            if (!tree->verifyTailPath()) {
+                cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
+                break;
+            }
+        }
+
     }
 
     // Query tree
@@ -71,7 +91,27 @@ int main(int argc, char** argv) {
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         query_time += duration.count();
-        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+        
+        if (!(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i])) {
+            std::cerr << "Assertion failed at i=" << i << std::endl;
+            std::cerr << "Expected key (uint32_t): " << keys[i] << std::endl;
+            std::cerr << "Expected key bytes: ";
+            for (int j = 3; j >= 0; --j) std::cerr << ((keys[i] >> (8*j)) & 0xFF) << " ";
+            std::cerr << std::endl;
+
+            uint32_t leafval = ART::getLeafValue(leaf);
+            std::cerr << "Actual leaf value (uint32_t): " << leafval << std::endl;
+            std::cerr << "Actual leaf bytes: ";
+            for (int j = 3; j >= 0; --j) std::cerr << ((leafval >> (8*j)) & 0xFF) << " ";
+            std::cerr << std::endl;
+
+            std::cerr << "Key used for lookup: ";
+            for (int j = 0; j < 4; ++j) std::cerr << (int)key[j] << " ";
+            std::cerr << std::endl;
+
+            //tree->printTree();
+            abort();
+        }
     }
     
     // simply output the times in csv format

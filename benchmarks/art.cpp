@@ -50,7 +50,18 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        tree->insert(key, keys[i]);
+        if (keys[i] == 41488038) {
+
+            cout << "we got here debugger" << endl;
+            cout << "before insert: ";
+            //tree->printTree();
+            tree->insert(key, keys[i]);
+            cout << "after insert: ";
+            //tree->printTree();
+        }
+        else {
+            tree->insert(key, keys[i]);
+        }
         
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
