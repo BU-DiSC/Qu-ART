@@ -88,18 +88,15 @@ class ART {
                         getLeafValue(this->fp_leaf)) {
                         return true;
                     } else {
-                        printf(
-                            "Error: fp_leaf mismatch. Expected %lu, got %lu.\n",
-                            getLeafValue(maximum(current)),
-                            getLeafValue(this->fp_leaf));
+                        std::cerr << "Error: fp_leaf mismatch. Expected "
+                                  << getLeafValue(maximum(current)) << ", got "
+                                  << getLeafValue(this->fp_leaf) << "." << std::endl;
                         return false;
                     }
                 } else {
-                    printf(
-                        "Error: last node in fp_path is not the fp. Expected "
-                        "%p, got %p.\n",
-                        static_cast<void*>(current),
-                        static_cast<void*>(this->fp));
+                    std::cerr << "Error: last node in fp_path is not the fp. Expected "
+                              << static_cast<void*>(current) << ", got "
+                              << static_cast<void*>(this->fp) << "." << std::endl;
                     return false;
                 }
             }
@@ -112,7 +109,7 @@ class ART {
                         // Move to the last child (rightmost)
                         current = node->child[node->count - 1];
                     } else {
-                        printf("Error: NodeType4 has no children.\n");
+                        std::cerr << "Error: NodeType4 has no children." << std::endl;
                         return false;
                     }
                     break;
@@ -123,7 +120,7 @@ class ART {
                         // Move to the last child (rightmost)
                         current = node->child[node->count - 1];
                     } else {
-                        printf("Error: NodeType16 has no children.\n");
+                        std::cerr << "Error: NodeType16 has no children." << std::endl;
                         return false;
                     }
                     break;
@@ -137,7 +134,7 @@ class ART {
                     if (node->childIndex[pos] != emptyMarker) {
                         current = node->child[node->childIndex[pos]];
                     } else {
-                        printf("Error: NodeType48 has no valid children.\n");
+                        std::cerr << "Error: NodeType48 has no valid children." << std::endl;
                         return false;
                     }
                     break;
@@ -150,19 +147,19 @@ class ART {
                     if (node->child[pos]) {
                         current = node->child[pos];
                     } else {
-                        printf("Error: NodeType256 has no valid children.\n");
+                        std::cerr << "Error: NodeType256 has no valid children." << std::endl;
                         return false;
                     }
                     break;
                 }
                 default:
-                    printf("Error: Unknown node type.\n");
+                    std::cerr << "Error: Unknown node type." << std::endl;
                     return false;
             }
         }
 
         // If we exit the loop without returning, the path is incorrect
-        printf("Error: fp_path does not lead to the fp.\n");
+        std::cerr << "Error: fp_path does not lead to the fp." << std::endl;
         return false;
     }
 
