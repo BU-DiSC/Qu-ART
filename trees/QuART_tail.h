@@ -19,7 +19,7 @@ namespace ART {
                     for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                         if (leafByte != key[i]) {
-                            // If the key defers from leafByte earlier, we tail insert from root
+                            // If the key differs from leafByte earlier, we tail insert from root
                             std::array<ArtNode*, maxPrefixLength> temp_fp_path = {this->root};
                             size_t temp_fp_path_length = 1;
                             QuART_tail::insert_recursive_tail(this, this->root, &this->root, key, 0, value, maxPrefixLength, 
