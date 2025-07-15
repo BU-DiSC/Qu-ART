@@ -48,6 +48,7 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // update fast path
         tree->fp = newNode;
         tree->fp_path[tree->fp_path_length - 1] = newNode;
+        tree->fp_path_ref[tree->fp_path_length - 1] = nodeRef;
 
         newNode->count = 4;
         copyPrefix(this, newNode);
@@ -85,6 +86,7 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // update fast path
         tree->fp = newNode;
         tree->fp_path[tree->fp_path_length - 1] = newNode;
+        tree->fp_path_ref[tree->fp_path_length - 1] = nodeRef;
 
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
         for (unsigned i = 0; i < this->count; i++)
@@ -120,6 +122,7 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // update fast path
         tree->fp = newNode;
         tree->fp_path[tree->fp_path_length - 1] = newNode;
+        tree->fp_path_ref[tree->fp_path_length - 1] = nodeRef;
 
         delete this;
         return newNode->insertNode256(tree, nodeRef, keyByte, child);

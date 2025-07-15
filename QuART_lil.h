@@ -52,29 +52,47 @@ class QuART_lil : ART::ART {
 
     void insert(uint8_t key[], uintptr_t value) {
         // std::cout << "Value inserted: " << value << std::endl;
-        if (value >= 65538) {
+        if (value >= 1) {
             std::cout << std::endl;
             // printTree();
         }
 
-        // First, check if the new key fits on the fast path.
-        int depth = 0;
+        // Check if the fast path exists and if the new key fits on the fast
+        // path.
         if (fp != NULL) {
-            for (size_t i = 0; i < fp_path_length - 1; i++) {
-                depth += fp_path[i]->prefixLength;
-                depth++;
+            bool onFastPath = canLilInsert(key);
+            bool isFull;
+            switch (fp->type) {
+                case NodeType4:
+                    isFull = fp->count == 4;
+                    break;
+                case NodeType16:
+                    isFull = fp->count == 16;
+                    break;
+                case NodeType48:
+                    isFull = fp->count == 48;
+                    break;
+                case NodeType256:
+                    isFull = fp->count == 256;
+                    break;
+            };
+            if (onFastPath && !isFull) {
+                // If so, insert from the end of the fast path.
+                insertRecursive(this, fp, fp_ref, key, fp_depth, value,
+                                maxPrefixLength, true);
             }
-        }
-        bool onFastPath = canLilInsert(key);
-        if (onFastPath) {  // If so, insert from the end of the fast path.
-            // std::cout << "Inserting to fast path" << std::endl;
-            insert(this, fp, &fp, key, depth, value, maxPrefixLength);
         } else {  // Else, reset the fast path and insert from the root
-            fp = NULL;
-            fp_path_length = 0;
+            fp = root;
+            fp_ref = &root;
+            fp_path_length = 1;
+            fp_depth = (root != NULL && !isLeaf(root)) ? root->prefixLength : 0;
             fp_path.fill(NULL);
-            // std::cout << "Inserting to root" << std::endl;
-            insert(this, root, &root, key, 0, value, maxPrefixLength);
+            fp_path_ref.fill(NULL);
+            fp_path[0] = root;
+            fp_path_ref[0] = &root;
+            fp_leaf = NULL;
+            insertRecursive(this, root, &root, key, fp_depth, value,
+                            maxPrefixLength, true);
         }
     }
 
@@ -90,14 +108,14 @@ class QuART_lil : ART::ART {
 
    private:
     // Void insert function
-    void insert(QuART_lil* tree, ArtNode* node, ArtNode** nodeRef,
-                uint8_t key[], unsigned depth, uintptr_t value,
-                unsigned maxKeyLength) {
+    void insertRecursive(QuART_lil* tree, ArtNode* node, ArtNode** nodeRef,
+                         uint8_t key[], unsigned depth, uintptr_t value,
+                         unsigned maxKeyLength, bool firstCall) {
         // Insert the leaf value into the tree
 
         // If tree is empty, populate with a single node.
-        // Do not alter fp values; fp should only refer to internal nodes, not
-        // leaf nodes
+        // Do not alter fp values; fp should only refer to internal nodes,
+        // not leaf nodes
         if (node == NULL) {
             ArtNode* newLeaf = makeLeaf(value);
             *nodeRef = newLeaf;
@@ -128,7 +146,11 @@ class QuART_lil : ART::ART {
 
             // update the fast path
             fp = newNode;
-            fp_path[fp_path_length++] = newNode;
+            fp_ref = nodeRef;
+            fp_path[0] = newNode;
+            fp_path_ref[0] = nodeRef;
+            fp_path_length = 1;
+            fp_depth = newNode->prefixLength;
             fp_leaf = newLeaf;
 
             return;
@@ -168,64 +190,58 @@ class QuART_lil : ART::ART {
 
                 // update the fast path
                 fp = newNode;
-                fp_path[fp_path_length++] = newNode;
+                fp_ref = nodeRef;
+                fp_path[fp_path_length] = newNode;
+                fp_path_ref[fp_path_length] = nodeRef;
+                fp_path_length++;
+                fp_depth += newNode->prefixLength;
                 fp_leaf = newLeaf;
 
                 return;
             }
             depth += node->prefixLength;
         }
-        // If the last node on the fp is the same as the current internal node
-        // then an insert to fp must be occurring. Avoid adding another pointer
-        // to that node to fp_path.
-        if (node != fp_path[fp_path_length - 1]) {
-            fp_path[fp_path_length++] = node;
+        // The first call in the recursive loop always starts on a node
+        // already in the fast path. To avoid double-counting it, only
+        // update these values on subsequent calls.
+        if (!firstCall) {
             fp = node;
+            fp_ref = nodeRef;
+            fp_path[fp_path_length] = node;
+            fp_path_ref[fp_path_length] = nodeRef;
+            fp_path_length++;
+            fp_depth += node->prefixLength;
         }
 
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
-            insert(tree, *child, child, key, depth + 1, value, maxKeyLength);
+            insertRecursive(tree, *child, child, key, depth + 1, value,
+                            maxKeyLength, false);
             return;
         }
 
         // Insert leaf into inner node
-        ArtNode* newNode = makeLeaf(value);
-        fp_leaf = newNode;
+        ArtNode* newLeaf = makeLeaf(value);
+        fp_leaf = newLeaf;
 
-        // find the pointer to the current internal node in the tree
-        ArtNode** parentPointer =
-            (fp_path_length == 1)
-                ? &root
-                : findChild(fp_path[fp_path_length - 2], key[depth - 1]);
-        int8_t nodeType = node->type;
         switch (node->type) {
             case NodeType4:
                 static_cast<Node4*>(node)->insertNode4(this, nodeRef,
-                                                       key[depth], newNode);
+                                                       key[depth], newLeaf);
                 break;
             case NodeType16:
                 static_cast<Node16*>(node)->insertNode16(this, nodeRef,
-                                                         key[depth], newNode);
+                                                         key[depth], newLeaf);
                 break;
             case NodeType48:
                 static_cast<Node48*>(node)->insertNode48(this, nodeRef,
-                                                         key[depth], newNode);
+                                                         key[depth], newLeaf);
                 break;
             case NodeType256:
                 static_cast<Node256*>(node)->insertNode256(this, nodeRef,
-                                                           key[depth], newNode);
+                                                           key[depth], newLeaf);
                 break;
-        }
-        // If the identified node pointer no longer points to the same node as
-        // that of the fp pointer, the node must have upscaled. Update the tree
-        // pointer.
-        // if (*parentPointer != *nodeRef) {
-        //     *parentPointer = *nodeRef;
-        // }
-        if (nodeType != (*nodeRef)->type) {
-            *parentPointer = *nodeRef;
         }
     }
 
@@ -234,8 +250,8 @@ class QuART_lil : ART::ART {
                     unsigned depth, unsigned maxKeyLength) {
         // Find the node with a matching key, optimistic version
 
-        bool skippedPrefix = false;  // Did we optimistically skip some prefix
-                                     // without checking it?
+        bool skippedPrefix = false;  // Did we optimistically skip some
+                                     // prefix without checking it?
 
         while (node != NULL) {
             if (isLeaf(node)) {

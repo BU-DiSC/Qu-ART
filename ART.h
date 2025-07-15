@@ -37,7 +37,11 @@ class ART {
    public:
     ArtNode* root;                                  // pointer to root node
     ArtNode* fp;                                    // fast path
+    ArtNode** fp_ref;                               // pointer to fp
+    unsigned fp_depth;                              // depth of fp
     std::array<ArtNode*, maxPrefixLength> fp_path;  // fp path
+    std::array<ArtNode**, maxPrefixLength>
+        fp_path_ref;        // references to nodes on fp_path
     size_t fp_path_length;  // stores real length of fp path
     ArtNode* fp_leaf;
 
