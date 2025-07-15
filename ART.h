@@ -70,16 +70,20 @@ class ART {
     void printTree() { printTree(this->root, 0); }
 
     // Method to verify the tail path after each insertion
+    // Returns true if the fast path (fp_path) leads to the correct fp and fp_leaf
     bool verifyTailPath() {
         if (this->fp_path_length == 0) {
+            // No fast path to verify
             return true;
         }
 
         ArtNode* current = this->root;
         // Traverse the tree following the fp_path
         for (size_t i = 0; i < this->fp_path_length; i++) {
+            // If we're at the last node in the fp_path, check if it's the fp node
             if (i == this->fp_path_length - 1) {
                 if (current == this->fp) {
+                    // Check if the leaf value matches the expected fp_leaf
                     if (getLeafValue(maximum(current)) ==
                         getLeafValue(this->fp_leaf)) {
                         return true;
@@ -100,11 +104,12 @@ class ART {
                 }
             }
 
-            // Move to the rightmost child
+            // Move to the rightmost child for each node type
             switch (current->type) {
                 case NodeType4: {
                     Node4* node = static_cast<Node4*>(current);
                     if (node->count > 0) {
+                        // Move to the last child (rightmost)
                         current = node->child[node->count - 1];
                     } else {
                         printf("Error: NodeType4 has no children.\n");
@@ -115,6 +120,7 @@ class ART {
                 case NodeType16: {
                     Node16* node = static_cast<Node16*>(current);
                     if (node->count > 0) {
+                        // Move to the last child (rightmost)
                         current = node->child[node->count - 1];
                     } else {
                         printf("Error: NodeType16 has no children.\n");
@@ -125,6 +131,7 @@ class ART {
                 case NodeType48: {
                     Node48* node = static_cast<Node48*>(current);
                     unsigned pos = 255;
+                    // Find the rightmost valid child
                     while (pos > 0 && node->childIndex[pos] == emptyMarker)
                         pos--;
                     if (node->childIndex[pos] != emptyMarker) {
@@ -138,6 +145,7 @@ class ART {
                 case NodeType256: {
                     Node256* node = static_cast<Node256*>(current);
                     unsigned pos = 255;
+                    // Find the rightmost valid child
                     while (pos > 0 && !node->child[pos]) pos--;
                     if (node->child[pos]) {
                         current = node->child[pos];
