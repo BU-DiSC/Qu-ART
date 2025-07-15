@@ -512,4 +512,32 @@ ArtNode* lookupPessimistic(ArtNode* node, uint8_t key[], unsigned keyLength,
     return NULL;
 }
 
+void printFpPath(std::array<ArtNode*, maxPrefixLength> path,
+                 size_t path_length) {
+    // Print the fp path for debugging
+    for (size_t i = 0; i < path_length; i++) {
+        if (isLeaf(path[i])) {
+            printf("Leaf(%lu)\n", getLeafValue(path[i]));
+        } else {
+            switch (path[i]->type) {
+                case NodeType4:
+                    printf("Node4 %p\n", path[i]);
+                    break;
+                case NodeType16:
+                    printf("Node16 %p\n", path[i]);
+                    break;
+                case NodeType48:
+                    printf("Node48 %p\n", path[i]);
+                    break;
+                case NodeType256:
+                    printf("Node256 %p\n", path[i]);
+                    break;
+                default:
+                    printf("Unknown NodeType %p\n", path[i]);
+                    break;
+            }
+        }
+    }
+}
+
 }  // namespace ART
