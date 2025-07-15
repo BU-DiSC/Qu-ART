@@ -69,8 +69,16 @@ struct Node4 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    // Base ART insert function for Node4
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                      ArtNode* child);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary
+    void tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child,
+                         std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                         size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node4
     void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 };
 
@@ -84,8 +92,16 @@ struct Node16 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    // Base ART insert function for Node16
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary.
+    void tailInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child,
+                          std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                          size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node16
     void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 };
 
@@ -99,8 +115,16 @@ struct Node48 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    // Base ART insert function for Node48
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary.
+    void tailInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child,
+                          std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                          size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node48
     void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 };
 
@@ -110,8 +134,16 @@ struct Node256 : ArtNode {
 
     Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
 
+    // Base ART insert function for Node256
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                        ArtNode* child);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary.
+    void tailInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                           ArtNode* child,
+                           std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                           size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node256
     void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 };
 
@@ -143,7 +175,8 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     if (this->count < 4) {
         // Insert element
         unsigned pos;
-        for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++);
+        for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++)
+            ;
         memmove(this->key + pos + 1, this->key + pos, this->count - pos);
         memmove(this->child + pos + 1, this->child + pos,
                 (this->count - pos) * sizeof(uintptr_t));
@@ -256,7 +289,8 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // Insert element
         unsigned pos = this->count;
         if (this->child[pos])
-            for (pos = 0; this->child[pos] != NULL; pos++);
+            for (pos = 0; this->child[pos] != NULL; pos++)
+                ;
         this->child[pos] = child;
         this->childIndex[keyByte] = pos;
         this->count++;
