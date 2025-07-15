@@ -34,13 +34,13 @@ namespace ART {
 
 class ART {
    public:
-    ArtNode* root; // pointer to root node of tree
-    ArtNode* fp; // pointer to fast path node
-    std::array<ArtNode*, maxPrefixLength> fp_path; // path that leads to fp
-    size_t fp_path_length; // stores length of fp path
-    ArtNode* fp_leaf; // pointer to leaf node in fast path
-    size_t fp_depth; // depth that will be used during fp insertion
-    ArtNode** fp_ref; // reference to fp node, used for insertion
+    ArtNode* root;  // pointer to root node of tree
+    ArtNode* fp;    // pointer to fast path node
+    std::array<ArtNode*, maxPrefixLength> fp_path;  // path that leads to fp
+    size_t fp_path_length;                          // stores length of fp path
+    ArtNode* fp_leaf;  // pointer to leaf node in fast path
+    size_t fp_depth;   // depth that will be used during fp insertion
+    ArtNode** fp_ref;  // reference to fp node, used for insertion
 
     // constructor
     ART()
@@ -50,8 +50,7 @@ class ART {
           fp_path_length(0),
           fp_leaf(nullptr),
           fp_depth(0),
-          fp_ref(nullptr)
-    {}
+          fp_ref(nullptr) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         insert(this, root, &root, key, 0, value, maxPrefixLength);
