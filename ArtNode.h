@@ -177,6 +177,8 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         unsigned pos;
         for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++)
             ;
+        // Shift keys and children to the right to make space for the new
+        // key/child. This preserves the sorted order of keys in the node.
         memmove(this->key + pos + 1, this->key + pos, this->count - pos);
         memmove(this->child + pos + 1, this->child + pos,
                 (this->count - pos) * sizeof(uintptr_t));
@@ -200,6 +202,8 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
 void Node4::eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
+    // Shift keys and children to the left to fill the gap left by the removed
+    // key/child. This keeps the keys and children arrays compact and ordered.
     memmove(this->key + pos, this->key + pos + 1, this->count - pos - 1);
     memmove(this->child + pos, this->child + pos + 1,
             (this->count - pos - 1) * sizeof(uintptr_t));
@@ -234,13 +238,30 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     // Insert leaf into inner node
     if (this->count < 16) {
         // Insert element
+
+        // Flip the sign bit of the key byte for correct ordering in signed
+        // comparisons
         uint8_t keyByteFlipped = flipSign(keyByte);
+
+        // SIMD: Compare keyByteFlipped with all keys in the node in parallel
+        // _mm_set1_epi8 sets all 16 bytes of an SSE register to keyByteFlipped
+        // _mm_loadu_si128 loads the node's keys into an SSE register
+        // _mm_cmplt_epi8 does a signed comparison of each byte
         __m128i cmp = _mm_cmplt_epi8(
             _mm_set1_epi8(keyByteFlipped),
             _mm_loadu_si128(reinterpret_cast<__m128i*>(this->key)));
+
+        // _mm_movemask_epi8 creates a 16-bit mask from the comparison results
+        // Only consider the bits for the active keys (this->count)
         uint16_t bitfield =
             _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - this->count));
+
+        // Find the position of the first set bit (i.e., where keyByteFlipped <
+        // key[i])
         unsigned pos = bitfield ? ctz(bitfield) : this->count;
+
+        // Shift keys and children to the right to make space for the new
+        // key/child. This preserves the sorted order of keys in the node.
         memmove(this->key + pos + 1, this->key + pos, this->count - pos);
         memmove(this->child + pos + 1, this->child + pos,
                 (this->count - pos) * sizeof(uintptr_t));
@@ -264,6 +285,8 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
 void Node16::eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
+    // Shift keys and children to the left to fill the gap left by the removed
+    // key/child. This keeps the keys and children arrays compact and ordered.
     memmove(this->key + pos, this->key + pos + 1, this->count - pos - 1);
     memmove(this->child + pos, this->child + pos + 1,
             (this->count - pos - 1) * sizeof(uintptr_t));
@@ -291,6 +314,8 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         if (this->child[pos])
             for (pos = 0; this->child[pos] != NULL; pos++)
                 ;
+        // No memmove needed here because Node48 uses a mapping (childIndex) and
+        // a dense array.
         this->child[pos] = child;
         this->childIndex[keyByte] = pos;
         this->count++;
@@ -310,6 +335,8 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
 
 void Node48::eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
     // Delete leaf from inner node
+    // No memmove needed here because Node48 uses a mapping (childIndex) and a
+    // dense array.
     this->child[this->childIndex[keyByte]] = NULL;
     this->childIndex[keyByte] = emptyMarker;
     this->count--;
@@ -334,12 +361,16 @@ void Node48::eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
 void Node256::insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                             ArtNode* child) {
     // Insert leaf into inner node
+    // No memmove needed here because Node256 uses a direct mapping for all
+    // possible keys.
     this->count++;
     this->child[keyByte] = child;
 }
 
 void Node256::eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
     // Delete leaf from inner node
+    // No memmove needed here because Node256 uses a direct mapping for all
+    // possible keys.
     this->child[keyByte] = NULL;
     this->count--;
 
@@ -370,9 +401,13 @@ ArtNode** findChild(ArtNode* n, uint8_t keyByte) {
         }
         case NodeType16: {
             Node16* node = static_cast<Node16*>(n);
+            // SIMD: Compare keyByte (after flipSign) with all keys in the node
+            // in parallel
             __m128i cmp = _mm_cmpeq_epi8(
                 _mm_set1_epi8(flipSign(keyByte)),
                 _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
+            // _mm_movemask_epi8 creates a 16-bit mask from the comparison
+            // results Only consider the bits for the active keys (node->count)
             unsigned bitfield =
                 _mm_movemask_epi8(cmp) & ((1 << node->count) - 1);
             if (bitfield)
