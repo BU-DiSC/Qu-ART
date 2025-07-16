@@ -8,7 +8,7 @@
             "name": "Debug main.cpp",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/profile_inserts_with_file",
+            "program": "${workspaceFolder}/build/quart_lil",
             "args": ["-N", "50000000", "-f", "../bods/workloads/workload_N50000000_K10_L10.bin"],
             "environment": [],
             "cwd": "${workspaceFolder}"
