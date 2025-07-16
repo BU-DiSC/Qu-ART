@@ -41,7 +41,7 @@ namespace ART {
 
                 // We reached the last byte of the key, we can lil insert
                 //printf("doing lil insert for value: %lu, value on leaf node was: %lu\n", value, getLeafValue(this->fp_leaf));
-                QuART_lil::insert_recursive_only_update_fp(this, this->fp, this->fp_ref, 
+                QuART_lil::insert_recursive_always_change_fp(this, this->fp, this->fp_ref, 
                             key, fp_depth, value, maxPrefixLength);
                 return;
             }
@@ -84,6 +84,7 @@ namespace ART {
                         this->fp_ref = nodeRef;
                         this->fp_depth = depth;
                     }
+
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node);
                     newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],

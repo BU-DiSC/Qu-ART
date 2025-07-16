@@ -50,33 +50,14 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        //if (41487881 <= keys[i] && keys[i] <= 41488107) {
-        //if (keys[i] == 41487916) {
-        // 41488038
-        if (keys[i] == 41488038) {
 
-            cout << "we got here debugger" << endl;
-            cout << "before insert: ";
-            //tree->printTree();
-            tree->insert(key, keys[i]);
-            cout << "after insert: ";
-            //tree->printTree();
-        }
-        else {
-            tree->insert(key, keys[i]);
-        }
+        tree->insert(key, keys[i]);
+        
         
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
-
-        if (i != 0 && i != 1) {
-            if (!tree->verifyTailPath()) {
-                cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
-                break;
-            }
-        }
 
     }
 
