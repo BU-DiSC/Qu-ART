@@ -119,6 +119,7 @@ namespace ART {
                                 std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
+                                tree->fp_depth += node->prefixLength;
                             }
                             newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node);
                             node->prefixLength -= (mismatchPos + 1);
@@ -136,6 +137,7 @@ namespace ART {
                                 std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
+                                tree->fp_depth += node->prefixLength;
                             }
                             newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos],
                                         node);
