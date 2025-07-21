@@ -149,10 +149,11 @@ class QuART_lil : ART::ART {
             // update the fast path
             fp = newNode;
             fp_ref = nodeRef;
-            fp_path[0] = newNode;
-            fp_path_ref[0] = nodeRef;
+            fp_path[fp_path_length] = newNode;
+            fp_path_ref[fp_path_length] = nodeRef;
+            fp_path_length++;
             // fp_path_length = 1;
-            //   fp_depth = newNode->prefixLength;
+            // fp_depth = newNode->prefixLength;
             fp_leaf = newLeaf;
 
             return;
@@ -196,8 +197,8 @@ class QuART_lil : ART::ART {
                 // fp_depth += fp_path[fp_path_length - 1]->prefixLength;
                 fp_path[fp_path_length] = newNode;
                 fp_path_ref[fp_path_length] = nodeRef;
-                fp_path_length++;
-                // fp_depth += newNode->prefixLength;
+                // fp_path_length++;
+                //  fp_depth += newNode->prefixLength;
                 fp_leaf = newLeaf;
 
                 return;
