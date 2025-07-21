@@ -61,6 +61,11 @@ int main(int argc, char** argv) {
 
     }
 
+    cout << tree->counter1 << ","
+         << tree->counter2 << ","
+         << tree->counter3 << ","
+         << tree->counter4 << endl;
+
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
@@ -74,26 +79,8 @@ int main(int argc, char** argv) {
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         query_time += duration.count();
         
-        if (!(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i])) {
-            std::cerr << "Assertion failed at i=" << i << std::endl;
-            std::cerr << "Expected key (uint32_t): " << keys[i] << std::endl;
-            std::cerr << "Expected key bytes: ";
-            for (int j = 3; j >= 0; --j) std::cerr << ((keys[i] >> (8*j)) & 0xFF) << " ";
-            std::cerr << std::endl;
-
-            uint32_t leafval = ART::getLeafValue(leaf);
-            std::cerr << "Actual leaf value (uint32_t): " << leafval << std::endl;
-            std::cerr << "Actual leaf bytes: ";
-            for (int j = 3; j >= 0; --j) std::cerr << ((leafval >> (8*j)) & 0xFF) << " ";
-            std::cerr << std::endl;
-
-            std::cerr << "Key used for lookup: ";
-            for (int j = 0; j < 4; ++j) std::cerr << (int)key[j] << " ";
-            std::cerr << std::endl;
-
-            //tree->printTree();
-            abort();
-        }
+        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+        
     }
     
     // simply output the times in csv format

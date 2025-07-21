@@ -28,6 +28,7 @@ namespace ART {
                             // If the key is less than the leaf value, we do insert without 
                             // tracking the path, as this will never be the new fp path. We only
                             // update the current fp information if it changes. 
+                            this->counter1++;
                             QuART_xtail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                             return;
                         }
@@ -36,6 +37,7 @@ namespace ART {
                             // tracking the path and updating fp information in the end
                             this->fp_path = {this->root};
                             this->fp_path_length = 1;
+                            this->counter2++;
                             QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                             return;
                         }
@@ -47,11 +49,38 @@ namespace ART {
                     this->fp_path_length = 1;
                     QuART_xtail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                     return;
-                }   
-
-                QuART_xtail::insert_recursive_only_update_fp(this, this->fp, this->fp_ref, 
-                    key, fp_depth, value, maxPrefixLength);
-                return;
+                }                   
+                
+                if (this->fp_depth == maxPrefixLength - 1) {
+                    this->counter3++;
+                    // Insert leaf into fp
+                    ArtNode* newNode = makeLeaf(value);
+                    switch (this->fp->type) {
+                        case NodeType4:
+                            static_cast<Node4*>(this->fp)->insertNode4OnlyUpdateFp(
+                                this, this->fp_ref, key[fp_depth], newNode);
+                            break;
+                        case NodeType16:
+                            static_cast<Node16*>(this->fp)->insertNode16OnlyUpdateFp(
+                                this, this->fp_ref, key[fp_depth], newNode);
+                            break;
+                        case NodeType48:
+                            static_cast<Node48*>(this->fp)->insertNode48OnlyUpdateFp(
+                                this, this->fp_ref, key[fp_depth], newNode);
+                            break;
+                        case NodeType256:
+                            static_cast<Node256*>(this->fp)->insertNode256OnlyUpdateFp(
+                                this, this->fp_ref, key[fp_depth], newNode);
+                            break;
+                    }
+                    return;
+                } else {
+                    this->counter4++;
+                    QuART_xtail::insert_recursive_only_update_fp(
+                        this, this->fp, this->fp_ref, key, fp_depth, value,
+                        maxPrefixLength);
+                    return;
+                }
             }
             
         private:

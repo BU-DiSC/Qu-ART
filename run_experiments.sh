@@ -8,7 +8,7 @@ mkdir -p "$LOGDIR"
 
 echo "N,K,L,type_of_tree,avg_insert_time,avg_query_time" > "$RESULTS"
 
-REPEAT=1
+REPEAT=3
 
 for FILE in ../bods/workloads/workload_N*_K*_L*.bin; do
     [ -f "$FILE" ] || continue

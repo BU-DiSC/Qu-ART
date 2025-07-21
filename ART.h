@@ -41,6 +41,10 @@ namespace ART {
             ArtNode* fp_leaf;
             size_t fp_depth;
             ArtNode** fp_ref;
+            int counter1;
+            int counter2;
+            int counter3;
+            int counter4;
 
             // constructor
             ART()
@@ -409,10 +413,22 @@ namespace ART {
                     return;
                 }
 
+                // Helper to print prefix
+                auto printPrefix = [](ArtNode* n) {
+                    printf(" prefix=[");
+                    for (unsigned j = 0; j < n->prefixLength; j++) {
+                        printf("%u", n->prefix[j]);
+                        if (j + 1 < n->prefixLength) printf(",");
+                    }
+                    printf("]");
+                };
+
                 switch (node->type) {
                     case NodeType4: {
                         Node4* n = static_cast<Node4*>(node);
-                        printf("Node4 [%p]\n", static_cast<void*>(n));
+                        printf("Node4 [%p]", static_cast<void*>(n));
+                        printPrefix(n);
+                        printf("\n");
                         for (unsigned i = 0; i < n->count; i++) {
                             printTree(n->child[i], depth + 1);
                         }
@@ -420,7 +436,9 @@ namespace ART {
                     }
                     case NodeType16: {
                         Node16* n = static_cast<Node16*>(node);
-                        printf("Node16 [%p]\n", static_cast<void*>(n));
+                        printf("Node16 [%p]", static_cast<void*>(n));
+                        printPrefix(n);
+                        printf("\n");
                         for (unsigned i = 0; i < n->count; i++) {
                             printTree(n->child[i], depth + 1);
                         }
@@ -428,7 +446,9 @@ namespace ART {
                     }
                     case NodeType48: {
                         Node48* n = static_cast<Node48*>(node);
-                        printf("Node48 [%p]\n", static_cast<void*>(n));
+                        printf("Node48 [%p]", static_cast<void*>(n));
+                        printPrefix(n);
+                        printf("\n");
                         for (unsigned i = 0; i < 256; i++) {
                             if (n->childIndex[i] != emptyMarker) {
                                 printTree(n->child[n->childIndex[i]], depth + 1);
@@ -438,7 +458,9 @@ namespace ART {
                     }
                     case NodeType256: {
                         Node256* n = static_cast<Node256*>(node);
-                        printf("Node256 [%p]\n", static_cast<void*>(n));
+                        printf("Node256 [%p]", static_cast<void*>(n));
+                        printPrefix(n);
+                        printf("\n");
                         for (unsigned i = 0; i < 256; i++) {
                             if (n->child[i]) {
                                 printTree(n->child[i], depth + 1);

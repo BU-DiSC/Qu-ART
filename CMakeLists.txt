@@ -14,7 +14,7 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release")
 include_directories(${CMAKE_SOURCE_DIR})
 
 # Set compiler flags for different build types
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O2")
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 add_executable(test_range benchmarks/test_range_query.cpp)
@@ -25,3 +25,4 @@ add_executable(quart_tail benchmarks/quart_tail.cpp)
 add_executable(quart_xtail benchmarks/quart_xtail.cpp)
 add_executable(quart_lil benchmarks/quart_lil.cpp)
 add_executable(quart_iglil benchmarks/quart_iglil.cpp)
+add_executable(art_prefix_test benchmarks/art_prefix_test.cpp)

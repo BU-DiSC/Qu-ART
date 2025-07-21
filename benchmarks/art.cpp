@@ -46,6 +46,7 @@ int main(int argc, char** argv) {
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
+        //cout << keys[i] << ", ";
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
@@ -58,6 +59,8 @@ int main(int argc, char** argv) {
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
     }
+    //cout << endl;
+    //tree->printTree();
 
     // Query tree
     long long query_time = 0;
