@@ -152,6 +152,7 @@ class QuART_iglil : public ART {
                             fp_path.begin() + fp_path_length + 1);
                         fp_path[pos] = newNode;
                         fp_path_length++;
+                        tree->fp_depth += node->prefixLength;
                     }
                     newNode->insertNode4(this, nodeRef,
                                          node->prefix[mismatchPos], node);
@@ -174,6 +175,7 @@ class QuART_iglil : public ART {
                             fp_path.begin() + fp_path_length + 1);
                         fp_path[pos] = newNode;
                         fp_path_length++;
+                        tree->fp_depth += node->prefixLength;
                     }
                     newNode->insertNode4(this, nodeRef,
                                          minKey[depth + mismatchPos], node);
