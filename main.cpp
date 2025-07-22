@@ -64,6 +64,8 @@ int main(int argc, char** argv) {
         cout << "Insertion time: " << insertion_time << " ns" << endl;
     }
 
+    tree->printTree();
+
     // Query tree
     long long query_time = 0;
     for (auto i = 0; i < N; i++) {
