@@ -51,11 +51,10 @@ class QuART_lil : ART::ART {
     }
 
     void insert(uint8_t key[], uintptr_t value) {
-        // std::cout << "Value inserted: " << value << std::endl;
-        if (value >= 256) {
-            std::cout << std::endl;
-            // printTree();
-        }
+        // if (value >= 256) {
+        //     std::cout << std::endl;
+        //     printTree();
+        // }
 
         // Check if the fast path exists and if the new key fits on the fast
         // path.
@@ -78,11 +77,6 @@ class QuART_lil : ART::ART {
             };
             if (onFastPath && !isFull) {
                 // If so, insert from the end of the fast path.
-                // fp_depth = 0;
-                // for (size_t i = 0; i < fp_path_length - 1; i++) {
-                //     fp_depth += fp_path[i]->prefixLength;
-                //     fp_depth++;
-                // }
                 insertRecursive(this, fp, fp_ref, key, fp_depth, value,
                                 maxPrefixLength, true);
                 return;
@@ -92,7 +86,6 @@ class QuART_lil : ART::ART {
         fp = root;
         fp_ref = &root;
         fp_path_length = 1;
-        // fp_depth = (root != NULL && !isLeaf(root)) ? root->prefixLength : 0;
         fp_depth = 0;
         fp_path.fill(NULL);
         fp_path_ref.fill(NULL);
@@ -157,11 +150,9 @@ class QuART_lil : ART::ART {
             unsigned index = isLeaf(root) ? 0 : fp_path_length;
             fp_path[index] = newNode;
             fp_path_ref[index] = nodeRef;
-            // fp_path_length += isLeaf(root) ? 1 : 0;
-            //  fp_path[fp_path_length] = newNode;
-            //  fp_path_ref[fp_path_length] = nodeRef;
             fp_path_length++;
             fp_leaf = newLeaf;
+
             fp_depth = depth;
 
             return;
@@ -202,11 +193,8 @@ class QuART_lil : ART::ART {
                 // update the fast path
                 fp = newNode;
                 fp_ref = nodeRef;
-                // fp_depth += fp_path[fp_path_length - 1]->prefixLength;
-                fp_path[fp_path_length] = newNode;
-                fp_path_ref[fp_path_length] = nodeRef;
-                // fp_path_length++;
-                //  fp_depth += newNode->prefixLength;
+                fp_path[fp_path_length - 1] = newNode;
+                fp_path_ref[fp_path_length - 1] = nodeRef;
                 fp_leaf = newLeaf;
 
                 return;
@@ -219,18 +207,16 @@ class QuART_lil : ART::ART {
         if (!firstCall) {
             fp = node;
             fp_ref = nodeRef;
-            // fp_depth += fp_path[fp_path_length - 1]->prefixLength;
             fp_path[fp_path_length] = node;
             fp_path_ref[fp_path_length] = nodeRef;
             fp_path_length++;
-            // fp_depth += node->prefixLength;
         }
 
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
-            fp_depth += node->prefixLength;
-            insertRecursive(tree, *child, child, key, depth, value,
+            fp_depth += node->prefixLength + 1;
+            insertRecursive(tree, *child, child, key, depth + 1, value,
                             maxKeyLength, false);
             return;
         }
