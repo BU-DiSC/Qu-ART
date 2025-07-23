@@ -46,6 +46,8 @@ namespace ART {
             int counter3;
             int counter4;
 
+            bool flag;
+
             // constructor
             ART()
                 : root(nullptr),
@@ -54,7 +56,8 @@ namespace ART {
                   fp_path_length(0),
                   fp_leaf(nullptr),
                   fp_depth(0),
-                  fp_ref(nullptr)
+                  fp_ref(nullptr),
+                  flag(false)
             {}
 
             void insert(uint8_t key[], uintptr_t value) {

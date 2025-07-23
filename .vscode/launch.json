@@ -8,8 +8,8 @@
             "name": "Debug main.cpp",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/art",
-            "args": ["-f", "../bods/workloads/workload_N50000000_K10_L10.bin"],
+            "program": "${workspaceFolder}/build/quart_iglilrevised",
+            "args": ["-f", "../bods/workloads/workload_N50000000_K20_L30.bin"],
             "environment": [],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb"

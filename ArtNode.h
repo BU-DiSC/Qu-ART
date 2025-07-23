@@ -87,6 +87,15 @@
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode4AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
+         void insertNode4OnlyUpdateFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
+        // Insert function used in xtail insert when key is greater than the leaf value
+        // and always in lil insert. Always updates the existing fp structures.
+        void insertNode4AlwaysChangeFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
+
          // Erase function for Node4
          void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
@@ -117,6 +126,14 @@
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode16AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
+         void insertNode16OnlyUpdateFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
+        // Insert function used in xtail insert when key is greater than the leaf value
+        // and always in lil insert. Always updates the existing fp structures.
+        void insertNode16AlwaysChangeFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
          // Erase function for Node16
          void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
@@ -148,6 +165,14 @@
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode48AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
+         void insertNode48OnlyUpdateFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
+        // Insert function used in xtail insert when key is greater than the leaf value
+        // and always in lil insert. Always updates the existing fp structures.
+        void insertNode48AlwaysChangeFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
          // Erase function for Node48
          void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
@@ -175,6 +200,14 @@
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode256AlwaysChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child, size_t depth_prev);
+         // Insert function used in xtail insert when key is less than the leaf value
+         // Only updates the existing fp structures if needed.
+         void insertNode256OnlyUpdateFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
+         // Insert function used in xtail insert when key is greater than the leaf value
+         // and always in lil insert. Always updates the existing fp structures.
+         void insertNode256AlwaysChangeFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child);
          // Erase function for Node256
          void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 

@@ -5,9 +5,9 @@
 
 namespace ART {
 
-class QuART_iglil : public ART {
+class QuART_iglilRevised : public ART {
    public:
-    QuART_iglil() : ART() {}
+    QuART_iglilRevised() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
         // Check if we can lil insert
@@ -15,6 +15,7 @@ class QuART_iglil : public ART {
         // Check if the root is not null and is not a leaf
         if (root != nullptr && !isLeaf(root)) {
             int leafValue = getLeafValue(this->fp_leaf);
+
             // For each byte in the key excluding the last byte,
             // check if it matches the corresponding byte in the leaf value
             // If any byte does not match, set can_lil_insert to false
@@ -24,9 +25,7 @@ class QuART_iglil : public ART {
                 if (leafByte != key[i]) {
                     // If the key defers from leafByte earlier, we lil insert
                     // from root
-                    this->fp_path = {this->root};
-                    this->fp_path_length = 1;
-                    QuART_iglil::insert_recursive_always_change_fp(
+                    QuART_iglilRevised::insert_recursive_always_change_fp(
                         this, this->root, &this->root, key, 0, value,
                         maxPrefixLength);
                     return;
@@ -34,20 +33,10 @@ class QuART_iglil : public ART {
             }
         } else {
             // If the root is null or is a leaf, we cannot lil insert
-            fp_path = {this->root};
-            fp_path_length = 1;
-            QuART_iglil::insert_recursive_always_change_fp(
+            QuART_iglilRevised::insert_recursive_always_change_fp(
                 this, this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
-
-        /*
-        // We reached the last byte of the key, we can lil insert
-        printf(
-            "%lu doing lil insert for value: %lu, value on leaf node was: "
-            "%lu\n",
-            fp_depth, value, getLeafValue(this->fp_leaf));
-        */
 
         if (fp_depth == maxPrefixLength - 1) {
             // Insert leaf into fp
@@ -55,25 +44,25 @@ class QuART_iglil : public ART {
             switch (this->fp->type) {
                 
                 case NodeType4:
-                    static_cast<Node4*>(this->fp)->insertNode4OnlyUpdateFp(
+                    static_cast<Node4*>(this->fp)->insertNode4OnlyUpdateFp2(
                         this, this->fp_ref, key[fp_depth], newNode);
                     break;
                 case NodeType16:
-                    static_cast<Node16*>(this->fp)->insertNode16OnlyUpdateFp(
+                    static_cast<Node16*>(this->fp)->insertNode16OnlyUpdateFp2(
                         this, this->fp_ref, key[fp_depth], newNode);
                     break;
                 case NodeType48:
-                    static_cast<Node48*>(this->fp)->insertNode48OnlyUpdateFp(
+                    static_cast<Node48*>(this->fp)->insertNode48OnlyUpdateFp2(
                         this, this->fp_ref, key[fp_depth], newNode);
                     break;
                 case NodeType256:
-                    static_cast<Node256*>(this->fp)->insertNode256OnlyUpdateFp(
+                    static_cast<Node256*>(this->fp)->insertNode256OnlyUpdateFp2(
                         this, this->fp_ref, key[fp_depth], newNode);
                     break;
             }
             return;
         } else {
-            QuART_iglil::insert_recursive_only_update_fp(
+            QuART_iglilRevised::insert_recursive_only_update_fp(
                 this, this->fp, this->fp_ref, key, fp_depth, value,
                 maxPrefixLength);
             return;
@@ -111,12 +100,11 @@ class QuART_iglil : public ART {
 
             // If the changing node was the fp just straight change the node
             if (tree->fp_leaf == node) {
-                this->fp_path[this->fp_path_length] = newNode;
-                this->fp_path_length++;
                 this->fp = newNode;
                 this->fp_ref = nodeRef;
-                this->fp_depth = depth;
+                this->fp_depth = depth + newPrefixLength;
             }
+
             newNode->insertNode4(this, nodeRef,
                                  existingKey[depth + newPrefixLength], node);
             newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
@@ -137,20 +125,6 @@ class QuART_iglil : public ART {
                        min(mismatchPos, maxPrefixLength));
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    // If the nodes that being changed is in fp_path
-                    auto it = std::find(fp_path.begin(),
-                                        fp_path.begin() + fp_path_length, node);
-                    if (it != fp_path.begin() + fp_path_length) {
-                        // Find the position of node in fp_path
-                        size_t pos = std::distance(fp_path.begin(), it);
-                        std::copy_backward(
-                            fp_path.begin() + pos,
-                            fp_path.begin() + fp_path_length,
-                            fp_path.begin() + fp_path_length + 1);
-                        fp_path[pos] = newNode;
-                        fp_path_length++;
-                        tree->fp_depth += node->prefixLength;
-                    }
                     newNode->insertNode4(this, nodeRef,
                                          node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
@@ -160,25 +134,12 @@ class QuART_iglil : public ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    // If the nodes that being changed is in fp_path
-                    auto it = std::find(fp_path.begin(),
-                                        fp_path.begin() + fp_path_length, node);
-                    if (it != fp_path.begin() + fp_path_length) {
-                        // Find the position of node in fp_path
-                        size_t pos = std::distance(fp_path.begin(), it);
-                        std::copy_backward(
-                            fp_path.begin() + pos,
-                            fp_path.begin() + fp_path_length,
-                            fp_path.begin() + fp_path_length + 1);
-                        fp_path[pos] = newNode;
-                        fp_path_length++;
-                        tree->fp_depth += node->prefixLength;
-                    }
                     newNode->insertNode4(this, nodeRef,
                                          minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
+                //this->fp_depth = depth;
                 newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
                                      makeLeaf(value));
                 return;
@@ -196,21 +157,22 @@ class QuART_iglil : public ART {
 
         // Insert leaf into inner node
         ArtNode* newNode = makeLeaf(value);
+        //this->fp_depth = depth - node->prefixLength;
         switch (node->type) {
             case NodeType4:
-                static_cast<Node4*>(node)->insertNode4OnlyUpdateFp(
+                static_cast<Node4*>(node)->insertNode4OnlyUpdateFp2(
                     this, nodeRef, key[depth], newNode);
                 break;
             case NodeType16:
-                static_cast<Node16*>(node)->insertNode16OnlyUpdateFp(
+                static_cast<Node16*>(node)->insertNode16OnlyUpdateFp2(
                     this, nodeRef, key[depth], newNode);
                 break;
             case NodeType48:
-                static_cast<Node48*>(node)->insertNode48OnlyUpdateFp(
+                static_cast<Node48*>(node)->insertNode48OnlyUpdateFp2(
                     this, nodeRef, key[depth], newNode);
                 break;
             case NodeType256:
-                static_cast<Node256*>(node)->insertNode256OnlyUpdateFp(
+                static_cast<Node256*>(node)->insertNode256OnlyUpdateFp2(
                     this, nodeRef, key[depth], newNode);
                 break;
         }
@@ -220,7 +182,6 @@ class QuART_iglil : public ART {
                                            ArtNode** nodeRef, uint8_t key[],
                                            unsigned depth, uintptr_t value,
                                            unsigned maxKeyLength) {
-        size_t depth_prev = depth;
 
         // Insert the leaf value into the tree
         if (node == NULL) {
@@ -246,13 +207,13 @@ class QuART_iglil : public ART {
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            fp_path[fp_path_length - 1] = newNode;
+            this->fp_depth = depth + newPrefixLength;
 
             newNode->insertNode4(this, nodeRef,
                                  existingKey[depth + newPrefixLength], node);
-            newNode->insertNode4AlwaysChangeFp(this, nodeRef,
+            newNode->insertNode4AlwaysChangeFp2(this, nodeRef,
                                                key[depth + newPrefixLength],
-                                               makeLeaf(value), depth_prev + newPrefixLength);
+                                               makeLeaf(value));
             return;
         }
 
@@ -269,9 +230,6 @@ class QuART_iglil : public ART {
                        min(mismatchPos, maxPrefixLength));
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    // In all cases, newNode should be added to fp_path
-                    fp_path[fp_path_length - 1] = newNode;
-                    // If the nodes that being changed is in fp_path
                     newNode->insertNode4(this, nodeRef,
                                          node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
@@ -281,16 +239,15 @@ class QuART_iglil : public ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    // In all cases, newNode should be added to fp_path
-                    fp_path[fp_path_length - 1] = newNode;
                     newNode->insertNode4(this, nodeRef,
                                          minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
-                newNode->insertNode4AlwaysChangeFp(this, nodeRef,
+                this->fp_depth = depth;
+                newNode->insertNode4AlwaysChangeFp2(this, nodeRef,
                                                    key[depth + mismatchPos],
-                                                   makeLeaf(value), depth_prev);
+                                                   makeLeaf(value));
                 return;
             }
             depth += node->prefixLength;
@@ -299,9 +256,6 @@ class QuART_iglil : public ART {
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
-            fp_path[fp_path_length] =
-                *child;        // add the node to the array before recursion
-            fp_path_length++;  // increase the size of the array
             insert_recursive_always_change_fp(tree, *child, child, key,
                                               depth + 1, value, maxKeyLength);
             return;
@@ -309,22 +263,23 @@ class QuART_iglil : public ART {
 
         // Insert leaf into inner node
         ArtNode* newNode = makeLeaf(value);
+        this->fp_depth = depth - node->prefixLength;
         switch (node->type) {
             case NodeType4:
-                static_cast<Node4*>(node)->insertNode4AlwaysChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                static_cast<Node4*>(node)->insertNode4AlwaysChangeFp2(
+                    this, nodeRef, key[depth], newNode);
                 break;
             case NodeType16:
-                static_cast<Node16*>(node)->insertNode16AlwaysChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                static_cast<Node16*>(node)->insertNode16AlwaysChangeFp2(
+                    this, nodeRef, key[depth], newNode);
                 break;
             case NodeType48:
-                static_cast<Node48*>(node)->insertNode48AlwaysChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                static_cast<Node48*>(node)->insertNode48AlwaysChangeFp2(
+                    this, nodeRef, key[depth], newNode);
                 break;
             case NodeType256:
-                static_cast<Node256*>(node)->insertNode256AlwaysChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                static_cast<Node256*>(node)->insertNode256AlwaysChangeFp2(
+                    this, nodeRef, key[depth], newNode);
                 break;
         }
     }

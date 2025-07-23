@@ -8,6 +8,7 @@
 #include "QuARTVariants/QuART_tail.h"
 #include "QuARTVariants/QuART_xtail.h" 
 #include "QuARTVariants/QuART_lil.h" 
+#include "QuARTVariants/QuART_iglil.h" 
 #include "ArtNode.h"
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_xtail* tree = new ART::QuART_xtail();
+    ART::QuART_iglil* tree = new ART::QuART_iglil();
 
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
