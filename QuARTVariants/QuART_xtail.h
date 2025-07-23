@@ -119,7 +119,7 @@ namespace ART {
                         this->fp_path_length++;
                         this->fp = newNode;
                         this->fp_ref = nodeRef;
-                        this->fp_depth = depth;
+                        this->fp_depth = depth + newPrefixLength;
                     }
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node);
@@ -148,7 +148,7 @@ namespace ART {
                                 std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
-                                tree->fp_depth += node->prefixLength;
+                                //tree->fp_depth += node->prefixLength;
                             }
                             newNode->insertNode4(this, nodeRef, node->prefix[mismatchPos], node);
                             node->prefixLength -= (mismatchPos + 1);
@@ -166,7 +166,7 @@ namespace ART {
                                 std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
-                                tree->fp_depth += node->prefixLength;
+                                //tree->fp_depth += node->prefixLength;
                             }
                             newNode->insertNode4(this, nodeRef, minKey[depth + mismatchPos],
                                         node);
@@ -239,7 +239,7 @@ namespace ART {
                     newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
                                 node);
                     newNode->insertNode4AlwaysChangeFp(this, nodeRef, key[depth + newPrefixLength],
-                                makeLeaf(value), depth_prev);
+                                makeLeaf(value), depth_prev + newPrefixLength);
                     return;
                 }
 
