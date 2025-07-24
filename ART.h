@@ -46,7 +46,7 @@ namespace ART {
             int counter3;
             int counter4;
 
-            bool flag;
+            int smartIdx;
 
             // constructor
             ART()
@@ -57,7 +57,7 @@ namespace ART {
                   fp_leaf(nullptr),
                   fp_depth(0),
                   fp_ref(nullptr),
-                  flag(false)
+                  smartIdx(2)
             {}
 
             void insert(uint8_t key[], uintptr_t value) {

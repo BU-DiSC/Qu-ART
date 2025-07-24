@@ -1,4 +1,3 @@
-
 #include <algorithm>
 #include <chrono>
 #include <fstream>
@@ -6,6 +5,7 @@
 #include <vector>
 
 #include "ART.h"
+#include "QuARTVariants/QuART_smarttail.h"
 #include "ArtNode.h"
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
@@ -41,27 +41,39 @@ int main(int argc, char** argv) {
     // read data
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
+    /*
+    keys = std::vector<uint32_t>({1, 2, 7, 9, 18000, 25847281});
+    N = keys.size();
+    */
+
     // Build tree
-    ART::ART* tree = new ART::ART();
+    ART::QuART_smarttail* tree = new ART::QuART_smarttail();
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
-        //cout << keys[i] << ", ";
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-
+        cout << keys[i] << endl;
         tree->insert(key, keys[i]);
         tree->printTree();
+        //cout << tree->fp << endl;
+        cout << "fp_ref points to address: " << static_cast<void*>(tree->fp_ref) << endl;
+        cout << "fp_ref points to node: " << static_cast<void*>(*tree->fp_ref) << endl;
 
+            
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         insertion_time += duration.count();
+
     }
-    //cout << endl;
-    //tree->printTree();
+
+    cout << tree->counter1 << ","
+         << tree->counter2 << ","
+         << tree->counter3 << ","
+         << tree->counter4 << endl;
 
     // Query tree
     long long query_time = 0;
@@ -75,7 +87,9 @@ int main(int argc, char** argv) {
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         query_time += duration.count();
+        
         assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+        
     }
     
     // simply output the times in csv format

@@ -497,6 +497,10 @@ namespace ART {
             if (tree->fp == this) {
                 tree->fp = newNode;
             }
+            
+
+            // fp_ref could point to an address inside node, and during expansion we need to update that too!
+            // would slow down operation if we manually want to check
 
             newNode->count = 4;
             copyPrefix(this, newNode);
@@ -563,6 +567,7 @@ namespace ART {
                 newNode->child[i] = this->child[this->childIndex[i]];
             newNode->count = this->count;
             copyPrefix(this, newNode);
+            printf("nodeRef points to node: %p\n", static_cast<void*>(*nodeRef));
             *nodeRef = newNode;
 
             if (tree->fp == this) {
@@ -579,6 +584,7 @@ namespace ART {
         // Insert leaf into inner node
         this->count++;
         this->child[keyByte] = child;
+        tree->printTree();
     }  
 
         // fp insert method for Node4
@@ -698,5 +704,39 @@ namespace ART {
         tree->fp_ref = nodeRef; 
 
     }  
+
+
+    void Node4::insertNode4Smart(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+        ArtNode* child) {
+        // Insert leaf into inner node
+        if (this->count < 4) {
+            // Insert element
+            unsigned pos;
+            for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++);
+            memmove(this->key + pos + 1, this->key + pos, this->count - pos);
+            memmove(this->child + pos + 1, this->child + pos,
+                    (this->count - pos) * sizeof(uintptr_t));
+            this->key[pos] = keyByte;
+            this->child[pos] = child;
+            this->count++;
+            
+            if (child == tree->fp) {
+                tree->fp_ref = &this->child[pos];
+            }
+
+        } else {
+            // Grow to Node16
+            Node16* newNode = new Node16();
+            *nodeRef = newNode;
+            newNode->count = 4;
+            copyPrefix(this, newNode);
+            for (unsigned i = 0; i < 4; i++)
+                newNode->key[i] = flipSign(this->key[i]);
+            memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
+            delete this;
+            return newNode->insertNode16(tree, nodeRef, keyByte, child);
+        }
+    }
+
 
 }

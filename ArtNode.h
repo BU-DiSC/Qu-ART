@@ -74,6 +74,9 @@
          // Base ART insert function for Node4
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         void insertNode4Smart(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child);
+
          // Insert function used in base tail insert. Checks if fp structures need
          // to be updated and updates if necessary 
          void tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,

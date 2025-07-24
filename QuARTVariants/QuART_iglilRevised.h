@@ -23,6 +23,7 @@ class QuART_iglilRevised : public ART {
                 uint8_t leafByte =
                     (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                 if (leafByte != key[i]) {
+                    counter1++;
                     // If the key defers from leafByte earlier, we lil insert
                     // from root
                     QuART_iglilRevised::insert_recursive_always_change_fp(
@@ -39,6 +40,7 @@ class QuART_iglilRevised : public ART {
         }
 
         if (fp_depth == maxPrefixLength - 1) {
+            counter2++;
             // Insert leaf into fp
             ArtNode* newNode = makeLeaf(value);
             switch (this->fp->type) {
@@ -62,6 +64,7 @@ class QuART_iglilRevised : public ART {
             }
             return;
         } else {
+            counter3++;
             QuART_iglilRevised::insert_recursive_only_update_fp(
                 this, this->fp, this->fp_ref, key, fp_depth, value,
                 maxPrefixLength);
