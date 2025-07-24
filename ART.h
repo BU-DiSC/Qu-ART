@@ -66,6 +66,111 @@ class ART {
                            maxKeyLength);
     }
 
+    void printTree() { printTree(this->root, 0); }
+
+    // Method to verify the tail path after each insertion
+    // Returns true if the fast path (fp_path) leads to the correct fp and
+    // fp_leaf
+    bool verifyTailPath() {
+        if (this->fp_path_length == 0) {
+            // No fast path to verify
+            return true;
+        }
+
+        ArtNode* current = this->root;
+        // Traverse the tree following the fp_path
+        for (size_t i = 0; i < this->fp_path_length; i++) {
+            // If we're at the last node in the fp_path, check if it's the fp
+            // node
+            if (i == this->fp_path_length - 1) {
+                if (current == this->fp) {
+                    // Check if the leaf value matches the expected fp_leaf
+                    if (getLeafValue(maximum(current)) ==
+                        getLeafValue(this->fp_leaf)) {
+                        return true;
+                    } else {
+                        std::cerr << "Error: fp_leaf mismatch. Expected "
+                                  << getLeafValue(maximum(current)) << ", got "
+                                  << getLeafValue(this->fp_leaf) << "."
+                                  << std::endl;
+                        return false;
+                    }
+                } else {
+                    std::cerr << "Error: last node in fp_path is not the fp. "
+                                 "Expected "
+                              << static_cast<void*>(current) << ", got "
+                              << static_cast<void*>(this->fp) << "."
+                              << std::endl;
+                    return false;
+                }
+            }
+
+            // Move to the rightmost child for each node type
+            switch (current->type) {
+                case NodeType4: {
+                    Node4* node = static_cast<Node4*>(current);
+                    if (node->count > 0) {
+                        // Move to the last child (rightmost)
+                        current = node->child[node->count - 1];
+                    } else {
+                        std::cerr << "Error: NodeType4 has no children."
+                                  << std::endl;
+                        return false;
+                    }
+                    break;
+                }
+                case NodeType16: {
+                    Node16* node = static_cast<Node16*>(current);
+                    if (node->count > 0) {
+                        // Move to the last child (rightmost)
+                        current = node->child[node->count - 1];
+                    } else {
+                        std::cerr << "Error: NodeType16 has no children."
+                                  << std::endl;
+                        return false;
+                    }
+                    break;
+                }
+                case NodeType48: {
+                    Node48* node = static_cast<Node48*>(current);
+                    unsigned pos = 255;
+                    // Find the rightmost valid child
+                    while (pos > 0 && node->childIndex[pos] == emptyMarker)
+                        pos--;
+                    if (node->childIndex[pos] != emptyMarker) {
+                        current = node->child[node->childIndex[pos]];
+                    } else {
+                        std::cerr << "Error: NodeType48 has no valid children."
+                                  << std::endl;
+                        return false;
+                    }
+                    break;
+                }
+                case NodeType256: {
+                    Node256* node = static_cast<Node256*>(current);
+                    unsigned pos = 255;
+                    // Find the rightmost valid child
+                    while (pos > 0 && !node->child[pos]) pos--;
+                    if (node->child[pos]) {
+                        current = node->child[pos];
+                    } else {
+                        std::cerr << "Error: NodeType256 has no valid children."
+                                  << std::endl;
+                        return false;
+                    }
+                    break;
+                }
+                default:
+                    std::cerr << "Error: Unknown node type." << std::endl;
+                    return false;
+            }
+        }
+
+        // If we exit the loop without returning, the path is incorrect
+        std::cerr << "Error: fp_path does not lead to the fp." << std::endl;
+        return false;
+    }
+
    private:
     // Void insert function
     void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[],
@@ -326,6 +431,59 @@ class ART {
         }
         delete queue;
         return result;
+    }
+
+    void printTree(ArtNode* node, int depth) {
+        if (!node) return;
+
+        // Indent based on depth
+        for (int i = 0; i < depth; i++) {
+            printf("  ");
+        }
+
+        if (isLeaf(node)) {
+            printf("Leaf(%lu)\n", getLeafValue(node));
+            return;
+        }
+
+        switch (node->type) {
+            case NodeType4: {
+                Node4* n = static_cast<Node4*>(node);
+                printf("Node4 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < n->count; i++) {
+                    printTree(n->child[i], depth + 1);
+                }
+                break;
+            }
+            case NodeType16: {
+                Node16* n = static_cast<Node16*>(node);
+                printf("Node16 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < n->count; i++) {
+                    printTree(n->child[i], depth + 1);
+                }
+                break;
+            }
+            case NodeType48: {
+                Node48* n = static_cast<Node48*>(node);
+                printf("Node48 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < 256; i++) {
+                    if (n->childIndex[i] != emptyMarker) {
+                        printTree(n->child[n->childIndex[i]], depth + 1);
+                    }
+                }
+                break;
+            }
+            case NodeType256: {
+                Node256* n = static_cast<Node256*>(node);
+                printf("Node256 [%p]\n", static_cast<void*>(n));
+                for (unsigned i = 0; i < 256; i++) {
+                    if (n->child[i]) {
+                        printTree(n->child[i], depth + 1);
+                    }
+                }
+                break;
+            }
+        }
     }
 };
 }  // namespace ART

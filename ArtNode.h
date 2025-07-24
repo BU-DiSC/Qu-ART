@@ -69,6 +69,7 @@ struct Node4 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    // Base ART insert function for Node4
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                      ArtNode* child);
     void eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace);
@@ -84,6 +85,7 @@ struct Node16 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    // Base ART insert function for Node16
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
     void eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace);
@@ -99,6 +101,7 @@ struct Node48 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    // Base ART insert function for Node48
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
     void eraseNode48(ArtNode** nodeRef, uint8_t keyByte);
@@ -110,6 +113,7 @@ struct Node256 : ArtNode {
 
     Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
 
+    // Base ART insert function for Node256
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                        ArtNode* child);
     void eraseNode256(ArtNode** nodeRef, uint8_t keyByte);
@@ -140,6 +144,8 @@ inline bool isLeaf(ArtNode* node) {
 void Node4::eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
+    // Shift keys and children to the left to fill the gap left by the removed
+    // key/child. This keeps the keys and children arrays compact and ordered.
     memmove(this->key + pos, this->key + pos + 1, this->count - pos - 1);
     memmove(this->child + pos, this->child + pos + 1,
             (this->count - pos - 1) * sizeof(uintptr_t));
@@ -172,6 +178,8 @@ void Node4::eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace) {
 void Node16::eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
+    // Shift keys and children to the left to fill the gap left by the removed
+    // key/child. This keeps the keys and children arrays compact and ordered.
     memmove(this->key + pos, this->key + pos + 1, this->count - pos - 1);
     memmove(this->child + pos, this->child + pos + 1,
             (this->count - pos - 1) * sizeof(uintptr_t));
@@ -192,6 +200,8 @@ void Node16::eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace) {
 
 void Node48::eraseNode48(ArtNode** nodeRef, uint8_t keyByte) {
     // Delete leaf from inner node
+    // No memmove needed here because Node48 uses a mapping (childIndex) and a
+    // dense array.
     this->child[this->childIndex[keyByte]] = NULL;
     this->childIndex[keyByte] = emptyMarker;
     this->count--;
@@ -215,6 +225,8 @@ void Node48::eraseNode48(ArtNode** nodeRef, uint8_t keyByte) {
 
 void Node256::eraseNode256(ArtNode** nodeRef, uint8_t keyByte) {
     // Delete leaf from inner node
+    // No memmove needed here because Node256 uses a direct mapping for all
+    // possible keys.
     this->child[keyByte] = NULL;
     this->count--;
 
@@ -245,9 +257,13 @@ ArtNode** findChild(ArtNode* n, uint8_t keyByte) {
         }
         case NodeType16: {
             Node16* node = static_cast<Node16*>(n);
+            // SIMD: Compare keyByte (after flipSign) with all keys in the node
+            // in parallel
             __m128i cmp = _mm_cmpeq_epi8(
                 _mm_set1_epi8(flipSign(keyByte)),
                 _mm_loadu_si128(reinterpret_cast<__m128i*>(node->key)));
+            // _mm_movemask_epi8 creates a 16-bit mask from the comparison
+            // results Only consider the bits for the active keys (node->count)
             unsigned bitfield =
                 _mm_movemask_epi8(cmp) & ((1 << node->count) - 1);
             if (bitfield)
@@ -385,6 +401,34 @@ ArtNode* lookupPessimistic(ArtNode* node, uint8_t key[], unsigned keyLength,
     }
 
     return NULL;
+}
+
+void printFpPath(std::array<ArtNode*, maxPrefixLength> path,
+                 size_t path_length) {
+    // Print the fp path for debugging
+    for (size_t i = 0; i < path_length; i++) {
+        if (isLeaf(path[i])) {
+            printf("Leaf(%lu)\n", getLeafValue(path[i]));
+        } else {
+            switch (path[i]->type) {
+                case NodeType4:
+                    printf("Node4 %p\n", path[i]);
+                    break;
+                case NodeType16:
+                    printf("Node16 %p\n", path[i]);
+                    break;
+                case NodeType48:
+                    printf("Node48 %p\n", path[i]);
+                    break;
+                case NodeType256:
+                    printf("Node256 %p\n", path[i]);
+                    break;
+                default:
+                    printf("Unknown NodeType %p\n", path[i]);
+                    break;
+            }
+        }
+    }
 }
 
 }  // namespace ART

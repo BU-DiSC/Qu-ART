@@ -38,6 +38,7 @@ class QuART_lil : ART::ART {
     // constructor
     QuART_lil() : ART() {}
 
+    // function to determine if a given key fits on the current fast path
     bool canLilInsert(uint8_t key[]) {
         // if root is null or root is a leaf, we cannot lil insert
         if (this->root == NULL || isLeaf(this->root)) {
@@ -51,11 +52,6 @@ class QuART_lil : ART::ART {
     }
 
     void insert(uint8_t key[], uintptr_t value) {
-        // if (value >= 256) {
-        //     std::cout << std::endl;
-        //     printTree();
-        // }
-
         // Check if the fast path exists and if the new key fits on the fast
         // path.
         if (fp != NULL) {
@@ -75,14 +71,17 @@ class QuART_lil : ART::ART {
                     isFull = fp->count == 256;
                     break;
             };
+            // Ff the new key fits on the fast path and the fast path node is
+            // not full, insert to the fast path
             if (onFastPath && !isFull) {
-                // If so, insert from the end of the fast path.
+                // Insert from the end of the fast path.
                 insertRecursive(this, fp, fp_ref, key, fp_depth, value,
                                 maxPrefixLength, true);
                 return;
             }
         }
-        // Else, reset the fast path and insert from the root
+        // Else, set the fast path to just contain the root and insert from the
+        // root
         fp = root;
         fp_ref = &root;
         fp_path_length = 1;
@@ -114,8 +113,8 @@ class QuART_lil : ART::ART {
         // Insert the leaf value into the tree
 
         // If tree is empty, populate with a single node.
-        // Do not alter fp values; fp should only refer to internal nodes,
-        // not leaf nodes
+        // Do not alter fp values aside from fp_leaf; fp should only refer to
+        // internal nodes, not leaf nodes.
         if (node == NULL) {
             ArtNode* newLeaf = makeLeaf(value);
             *nodeRef = newLeaf;
@@ -124,7 +123,8 @@ class QuART_lil : ART::ART {
         }
 
         if (isLeaf(node)) {
-            // Replace leaf with Node4 and store both leaves in it
+            // If the current node is a leaf, make a new Node4 and store both
+            // the current leaf and the one made for the new entry in it.
             uint8_t existingKey[maxKeyLength];
             loadKey(getLeafValue(node), existingKey);
             unsigned newPrefixLength = 0;
@@ -144,7 +144,7 @@ class QuART_lil : ART::ART {
             newNode->insertNode4(this, nodeRef, key[depth + newPrefixLength],
                                  newLeaf);
 
-            // update the fast path
+            // update the fast path to include the new node4.
             fp = newNode;
             fp_ref = nodeRef;
             unsigned index = isLeaf(root) ? 0 : fp_path_length;
@@ -152,7 +152,6 @@ class QuART_lil : ART::ART {
             fp_path_ref[index] = nodeRef;
             fp_path_length++;
             fp_leaf = newLeaf;
-
             fp_depth = depth;
 
             return;
@@ -163,13 +162,17 @@ class QuART_lil : ART::ART {
             unsigned mismatchPos =
                 prefixMismatch(node, key, depth, maxKeyLength);
             if (mismatchPos != node->prefixLength) {
-                // Prefix differs, create new node
+                // If the prefix of the node does not match the relevant part of
+                // the key, a split must be created.
+                // Create a new internal node to hold the current node and the
+                // new leaf
                 Node4* newNode = new Node4();
                 *nodeRef = newNode;
                 newNode->prefixLength = mismatchPos;
                 memcpy(newNode->prefix, node->prefix,
                        min(mismatchPos, maxPrefixLength));
-                // Break up prefix
+                // Break up prefix so that the common section is assigned to the
+                // new parent
                 if (node->prefixLength < maxPrefixLength) {
                     newNode->insertNode4(this, nodeRef,
                                          node->prefix[mismatchPos], node);
@@ -190,7 +193,7 @@ class QuART_lil : ART::ART {
                 newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
                                      newLeaf);
 
-                // update the fast path
+                // Update the fast path to include the new node4.
                 fp = newNode;
                 fp_ref = nodeRef;
                 fp_path[fp_path_length - 1] = newNode;
@@ -215,6 +218,8 @@ class QuART_lil : ART::ART {
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
+            // Only update fp_depth with the prefix of the second-to-last node
+            // of the fast path; the prefix of the last node does not factor in
             fp_depth += node->prefixLength + 1;
             insertRecursive(tree, *child, child, key, depth + 1, value,
                             maxKeyLength, false);
