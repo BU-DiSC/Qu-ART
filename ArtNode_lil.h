@@ -27,8 +27,8 @@
 
 namespace ART {
 
-void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                        ArtNode* child) {
+void Node4::insertNode4_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                            ArtNode* child) {
     // Insert leaf into inner node
     if (this->count < 4) {
         // Insert element
@@ -56,12 +56,12 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
         delete this;
-        return newNode->insertNode16(tree, nodeRef, keyByte, child);
+        return newNode->insertNode16_lil(tree, nodeRef, keyByte, child);
     }
 }
 
-void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                          ArtNode* child) {
+void Node16::insertNode16_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                              ArtNode* child) {
     // Insert leaf into inner node
     if (this->count < 16) {
         // Insert element
@@ -94,12 +94,12 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         copyPrefix(this, newNode);
         newNode->count = this->count;
         delete this;
-        return newNode->insertNode48(tree, nodeRef, keyByte, child);
+        return newNode->insertNode48_lil(tree, nodeRef, keyByte, child);
     }
 }
 
-void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                          ArtNode* child) {
+void Node48::insertNode48_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                              ArtNode* child) {
     // Insert leaf into inner node
     if (this->count < 48) {
         // Insert element
@@ -125,15 +125,14 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         tree->fp_path_ref[tree->fp_path_length - 1] = nodeRef;
 
         delete this;
-        return newNode->insertNode256(tree, nodeRef, keyByte, child);
+        return newNode->insertNode256_lil(tree, nodeRef, keyByte, child);
     }
 }
 
 // suppress warnings about unused parameters to ensure consistency
-
-void Node256::insertNode256(ART* tree [[maybe_unused]],
-                            ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
-                            ArtNode* child) {
+void Node256::insertNode256_lil(ART* tree [[maybe_unused]],
+                                ArtNode** nodeRef [[maybe_unused]],
+                                uint8_t keyByte, ArtNode* child) {
     // Insert leaf into inner node
     this->count++;
     this->child[keyByte] = child;

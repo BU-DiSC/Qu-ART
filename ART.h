@@ -35,22 +35,25 @@ namespace ART {
 
 class ART {
    public:
-    ArtNode* root;                                  // pointer to root node
-    ArtNode* fp;                                    // fast path
-    ArtNode** fp_ref;                               // pointer to fp
-    unsigned fp_depth;                              // depth of fp
-    std::array<ArtNode*, maxPrefixLength> fp_path;  // fp path
+    ArtNode* root;  // pointer to root node of tree
+    ArtNode* fp;    // pointer to fast path node
+    std::array<ArtNode*, maxPrefixLength> fp_path;  // path that leads to fp
     std::array<ArtNode**, maxPrefixLength>
         fp_path_ref;        // references to nodes on fp_path
-    size_t fp_path_length;  // stores real length of fp path
-    ArtNode* fp_leaf;
+    size_t fp_path_length;  // stores length of fp path
+    ArtNode* fp_leaf;       // pointer to leaf node in fast path
+    size_t fp_depth;        // depth that will be used during fp insertion
+    ArtNode** fp_ref;       // reference to fp node, used for insertion
 
     // constructor
-    ART() {
-        root = NULL;
-        fp_path_length = 0;
-        fp = NULL;
-    }
+    ART()
+        : root(nullptr),
+          fp(nullptr),
+          fp_path{nullptr},
+          fp_path_length(0),
+          fp_leaf(nullptr),
+          fp_depth(0),
+          fp_ref(nullptr) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         insert(this, root, &root, key, 0, value, maxPrefixLength);
@@ -335,17 +338,18 @@ class ART {
             // Leaf found, delete it in inner node
             switch (node->type) {
                 case NodeType4:
-                    static_cast<Node4*>(node)->eraseNode4(nodeRef, child);
+                    static_cast<Node4*>(node)->eraseNode4(this, nodeRef, child);
                     break;
                 case NodeType16:
-                    static_cast<Node16*>(node)->eraseNode16(nodeRef, child);
+                    static_cast<Node16*>(node)->eraseNode16(this, nodeRef,
+                                                            child);
                     break;
                 case NodeType48:
-                    static_cast<Node48*>(node)->eraseNode48(nodeRef,
+                    static_cast<Node48*>(node)->eraseNode48(this, nodeRef,
                                                             key[depth]);
                     break;
                 case NodeType256:
-                    static_cast<Node256*>(node)->eraseNode256(nodeRef,
+                    static_cast<Node256*>(node)->eraseNode256(this, nodeRef,
                                                               key[depth]);
                     break;
             }

@@ -69,10 +69,20 @@ struct Node4 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    void insertNode4_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child);
+
     // Base ART insert function for Node4
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                      ArtNode* child);
-    void eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary
+    void tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child,
+                         std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                         size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node4
+    void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 };
 
 // Node with up to 16 children
@@ -85,10 +95,20 @@ struct Node16 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    void insertNode16_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child);
+
     // Base ART insert function for Node16
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
-    void eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary.
+    void tailInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child,
+                          std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                          size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node16
+    void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 };
 
 // Node with up to 48 children
@@ -101,10 +121,20 @@ struct Node48 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    void insertNode48_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child);
+
     // Base ART insert function for Node48
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
-    void eraseNode48(ArtNode** nodeRef, uint8_t keyByte);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary.
+    void tailInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child,
+                          std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                          size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node48
+    void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 };
 
 // Node with up to 256 children
@@ -113,10 +143,21 @@ struct Node256 : ArtNode {
 
     Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
 
+    void insertNode256_lil(ART* tree [[maybe_unused]],
+                           ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
+                           ArtNode* child);
+
     // Base ART insert function for Node256
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                        ArtNode* child);
-    void eraseNode256(ArtNode** nodeRef, uint8_t keyByte);
+    // Insert function used in base tail insert. Checks if fp structures need
+    // to be updated and updates if necessary.
+    void tailInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                           ArtNode* child,
+                           std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
+                           size_t& temp_fp_path_length, size_t depth_prev);
+    // Erase function for Node256
+    void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 };
 
 void copyPrefix(ArtNode* src, ArtNode* dst) {
@@ -141,7 +182,37 @@ inline bool isLeaf(ArtNode* node) {
     return reinterpret_cast<uintptr_t>(node) & 1;
 }
 
-void Node4::eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace) {
+void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                        ArtNode* child) {
+    // Insert leaf into inner node
+    if (this->count < 4) {
+        // Insert element
+        unsigned pos;
+        for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++);
+        // Shift keys and children to the right to make space for the new
+        // key/child. This preserves the sorted order of keys in the node.
+        memmove(this->key + pos + 1, this->key + pos, this->count - pos);
+        memmove(this->child + pos + 1, this->child + pos,
+                (this->count - pos) * sizeof(uintptr_t));
+        this->key[pos] = keyByte;
+        this->child[pos] = child;
+        this->count++;
+    } else {
+        // Grow to Node16
+        Node16* newNode = new Node16();
+        *nodeRef = newNode;
+        newNode->count = 4;
+        copyPrefix(this, newNode);
+        for (unsigned i = 0; i < 4; i++)
+            newNode->key[i] = flipSign(this->key[i]);
+        memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
+        delete this;
+        return newNode->insertNode16(tree, nodeRef, keyByte, child);
+    }
+}
+
+void Node4::eraseNode4(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                       ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
     // Shift keys and children to the left to fill the gap left by the removed
@@ -175,7 +246,57 @@ void Node4::eraseNode4(ArtNode** nodeRef, ArtNode** leafPlace) {
     }
 }
 
-void Node16::eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace) {
+void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child) {
+    // Insert leaf into inner node
+    if (this->count < 16) {
+        // Insert element
+
+        // Flip the sign bit of the key byte for correct ordering in signed
+        // comparisons
+        uint8_t keyByteFlipped = flipSign(keyByte);
+
+        // SIMD: Compare keyByteFlipped with all keys in the node in parallel
+        // _mm_set1_epi8 sets all 16 bytes of an SSE register to keyByteFlipped
+        // _mm_loadu_si128 loads the node's keys into an SSE register
+        // _mm_cmplt_epi8 does a signed comparison of each byte
+        __m128i cmp = _mm_cmplt_epi8(
+            _mm_set1_epi8(keyByteFlipped),
+            _mm_loadu_si128(reinterpret_cast<__m128i*>(this->key)));
+
+        // _mm_movemask_epi8 creates a 16-bit mask from the comparison results
+        // Only consider the bits for the active keys (this->count)
+        uint16_t bitfield =
+            _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - this->count));
+
+        // Find the position of the first set bit (i.e., where keyByteFlipped <
+        // key[i])
+        unsigned pos = bitfield ? ctz(bitfield) : this->count;
+
+        // Shift keys and children to the right to make space for the new
+        // key/child. This preserves the sorted order of keys in the node.
+        memmove(this->key + pos + 1, this->key + pos, this->count - pos);
+        memmove(this->child + pos + 1, this->child + pos,
+                (this->count - pos) * sizeof(uintptr_t));
+        this->key[pos] = keyByteFlipped;
+        this->child[pos] = child;
+        this->count++;
+    } else {
+        // Grow to Node48
+        Node48* newNode = new Node48();
+        *nodeRef = newNode;
+        memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
+        for (unsigned i = 0; i < this->count; i++)
+            newNode->childIndex[flipSign(this->key[i])] = i;
+        copyPrefix(this, newNode);
+        newNode->count = this->count;
+        delete this;
+        return newNode->insertNode48(tree, nodeRef, keyByte, child);
+    }
+}
+
+void Node16::eraseNode16(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                         ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
     // Shift keys and children to the left to fill the gap left by the removed
@@ -198,7 +319,35 @@ void Node16::eraseNode16(ArtNode** nodeRef, ArtNode** leafPlace) {
     }
 }
 
-void Node48::eraseNode48(ArtNode** nodeRef, uint8_t keyByte) {
+void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                          ArtNode* child) {
+    // Insert leaf into inner node
+    if (this->count < 48) {
+        // Insert element
+        unsigned pos = this->count;
+        if (this->child[pos])
+            for (pos = 0; this->child[pos] != NULL; pos++);
+        // No memmove needed here because Node48 uses a mapping (childIndex) and
+        // a dense array.
+        this->child[pos] = child;
+        this->childIndex[keyByte] = pos;
+        this->count++;
+    } else {
+        // Grow to Node256
+        Node256* newNode = new Node256();
+        for (unsigned i = 0; i < 256; i++)
+            if (this->childIndex[i] != 48)
+                newNode->child[i] = this->child[this->childIndex[i]];
+        newNode->count = this->count;
+        copyPrefix(this, newNode);
+        *nodeRef = newNode;
+        delete this;
+        return newNode->insertNode256(tree, nodeRef, keyByte, child);
+    }
+}
+
+void Node48::eraseNode48(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                         uint8_t keyByte) {
     // Delete leaf from inner node
     // No memmove needed here because Node48 uses a mapping (childIndex) and a
     // dense array.
@@ -223,7 +372,18 @@ void Node48::eraseNode48(ArtNode** nodeRef, uint8_t keyByte) {
     }
 }
 
-void Node256::eraseNode256(ArtNode** nodeRef, uint8_t keyByte) {
+void Node256::insertNode256(ART* tree [[maybe_unused]],
+                            ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
+                            ArtNode* child) {
+    // Insert leaf into inner node
+    // No memmove needed here because Node256 uses a direct mapping for all
+    // possible keys.
+    this->count++;
+    this->child[keyByte] = child;
+}
+
+void Node256::eraseNode256(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                           uint8_t keyByte) {
     // Delete leaf from inner node
     // No memmove needed here because Node256 uses a direct mapping for all
     // possible keys.
