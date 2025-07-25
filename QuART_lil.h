@@ -407,10 +407,10 @@ class QuART_lil : ART::ART {
             if (continue_flag) continue;
             depth += node->prefixLength;
 
-            std::unique_ptr<Chain> newly_added =
-                std::move(std::unique_ptr<Chain>(newly_added->findChildbyRange(
-                    item->nodeptr(), lequ ? l_key[depth] : 0,
-                    hequ ? h_key[depth] : 255, depth, lequ, hequ)));
+            std::unique_ptr<Chain> newly_added = std::make_unique<Chain>();
+            newly_added = std::move(std::unique_ptr<Chain>(newly_added->findChildbyRange(
+                item->nodeptr(), lequ ? l_key[depth] : 0,
+                hequ ? h_key[depth] : 255, depth, lequ, hequ)));
             queue->extend(std::move(newly_added));
         }
         delete queue;
