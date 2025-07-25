@@ -66,7 +66,7 @@ unsigned min(unsigned a, unsigned b) {
     return (a < b) ? a : b;
 }
 
-int arrToInt(const uint8_t key[4]) {
+int arrToInt(const std::array<uint8_t, 4>& key) {
     return (int32_t(key[0]) << 24) | (int32_t(key[1]) << 16) |
            (int32_t(key[2]) << 8) | (int32_t(key[3]));
 }
