@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 
     // Query tree
     long long query_time = 0;
-    for (auto i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
