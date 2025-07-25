@@ -8,7 +8,7 @@
             "name": "Debug main.cpp",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/quart_smarttail",
+            "program": "${workspaceFolder}/build/quart_stail",
             "args": ["-N", "53", "-f", "../bods/workloads/workload_N50000000_K10_L10.bin"],
             "environment": [],
             "cwd": "${workspaceFolder}",

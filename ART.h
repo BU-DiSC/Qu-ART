@@ -159,6 +159,32 @@ namespace ART {
                 return false;
             }
 
+            void printFpPath() {
+                printf("fp_path (length=%zu):\n", this->fp_path_length);
+                for (size_t i = 0; i < this->fp_path_length; i++) {
+                    ArtNode* node = this->fp_path[i];
+                    if (!node) {
+                        printf("  [%zu]: nullptr\n", i);
+                        continue;
+                    }
+                    const char* typeStr = nullptr;
+                    switch (node->type) {
+                        case NodeType4: typeStr = "Node4"; break;
+                        case NodeType16: typeStr = "Node16"; break;
+                        case NodeType48: typeStr = "Node48"; break;
+                        case NodeType256: typeStr = "Node256"; break;
+                        default: typeStr = "Unknown"; break;
+                    }
+                    printf("  %s [%p] [prefix=[", typeStr, static_cast<void*>(node));
+                    for (unsigned j = 0; j < node->prefixLength; j++) {
+                        printf("%u", node->prefix[j]);
+                        if (j + 1 < node->prefixLength) printf(",");
+                    }
+                    printf("]]\n");
+                }
+                printf("fp: %p\n", static_cast<void*>(this->fp));
+                printf("fp_leaf: %p\n", static_cast<void*>(this->fp_leaf));
+            }
                 
 
         private:
