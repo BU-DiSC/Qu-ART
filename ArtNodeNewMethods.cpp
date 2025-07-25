@@ -759,41 +759,28 @@ namespace ART {
             // Grow to Node16
             Node16* newNode = new Node16();
             *nodeRef = newNode;
+            newNode->count = 4;
+            copyPrefix(this, newNode);
+            for (unsigned i = 0; i < 4; i++)
+                newNode->key[i] = flipSign(this->key[i]);
+            memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
+            delete this;
+
             if (tree->fp == this) {
                 tree->fp = newNode;
                 tree->fp_path[tree->fp_path_length - 1] = newNode;
                 tree->fp_ref = nodeRef;
-                newNode->count = 4;
-                copyPrefix(this, newNode);
-                for (unsigned i = 0; i < 4; i++)
-                    newNode->key[i] = flipSign(this->key[i]);
-                memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
-                delete this;
             }
             else if (tree->fp_path[tree->fp_path_length - 2] == this) {
                 tree->fp_path[tree->fp_path_length - 2] = newNode;
-                newNode->count = 4;
-                copyPrefix(this, newNode);
-                for (unsigned i = 0; i < 4; i++)
-                    newNode->key[i] = flipSign(this->key[i]);
-                memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
-
                 for (size_t i = 0; i < newNode->count; i++) {
                     if (newNode->child[i] == tree->fp) {
                         tree->fp_ref = &newNode->child[i];
                         break;
                     }
                 }
-                delete this;
             }
-            else {
-                newNode->count = 4;
-                copyPrefix(this, newNode);
-                for (unsigned i = 0; i < 4; i++)
-                    newNode->key[i] = flipSign(this->key[i]);
-                memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
-                delete this;
-            }
+
             return newNode->insertNode16OnlyUpdateFpS(tree, nodeRef, keyByte, child);
         }
     }
@@ -821,18 +808,28 @@ namespace ART {
             Node48* newNode = new Node48();
             *nodeRef = newNode;
 
-            // If the changing node is on the fp_path
-            if (tree->fp_path[tree->fp_path_length - 1] == this) {
-                tree->fp_path[tree->fp_path_length - 1] = newNode;
-                tree->fp = newNode; 
-            }
-
             memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
             for (unsigned i = 0; i < this->count; i++)
                 newNode->childIndex[flipSign(this->key[i])] = i;
             copyPrefix(this, newNode);
             newNode->count = this->count;
             delete this;
+
+            if (tree->fp == this) {
+                tree->fp = newNode;
+                tree->fp_path[tree->fp_path_length - 1] = newNode;
+                tree->fp_ref = nodeRef;
+            }
+            else if (tree->fp_path[tree->fp_path_length - 2] == this) {
+                tree->fp_path[tree->fp_path_length - 2] = newNode;
+                for (size_t i = 0; i < newNode->count; i++) {
+                    if (newNode->child[i] == tree->fp) {
+                        tree->fp_ref = &newNode->child[i];
+                        break;
+                    }
+                }
+            }
+
             return newNode->insertNode48OnlyUpdateFpS(tree, nodeRef, keyByte, child);
         }
     }
@@ -856,12 +853,22 @@ namespace ART {
             newNode->count = this->count;
             copyPrefix(this, newNode);
             *nodeRef = newNode;
-
-            // If the changing node is on the fp_path
-            if (tree->fp_path[tree->fp_path_length - 1] == this) {
+    
+            if (tree->fp == this) {
+                tree->fp = newNode;
                 tree->fp_path[tree->fp_path_length - 1] = newNode;
-                tree->fp = newNode; 
+                tree->fp_ref = nodeRef;
             }
+            else if (tree->fp_path[tree->fp_path_length - 2] == this) {
+                tree->fp_path[tree->fp_path_length - 2] = newNode;
+                for (size_t i = 0; i < newNode->count; i++) {
+                    if (newNode->child[i] == tree->fp) {
+                        tree->fp_ref = &newNode->child[i];
+                        break;
+                    }
+                }
+            }
+
             delete this;
             return newNode->insertNode256OnlyUpdateFp(tree, nodeRef, keyByte, child);
         }

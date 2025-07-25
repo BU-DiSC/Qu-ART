@@ -17,7 +17,7 @@ namespace ART {
                 if (root != nullptr && !isLeaf(root)) {
                     int leafValue = getLeafValue(this->fp_leaf);
                     // For each byte in the key excluding the last byte,
-                    // check if it matches the corresponding byte in the leaf value
+                    // check if it matchmes the corresponding byte in the leaf value
                     // If any byte does not match, set can_tail_insert to false
                     for (size_t i = 0; i < maxPrefixLength - 1; i++) {
                         uint8_t leafByte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
@@ -25,7 +25,7 @@ namespace ART {
                             continue;
                         }
                         else if (key[i] < leafByte) {
-                            counter1++;
+                            counter3++;
                             // If the key is less than the leaf value, we do insert without 
                             // tracking the path, as this will never be the new fp path. We only
                             // update the current fp information if it changes. 
@@ -33,10 +33,14 @@ namespace ART {
                             return;
                         }
                         else { 
+                            // fix algorithm here
                             if (i == 0 || i == 1) {
-                                if ((leafValue >> 8 * (maxPrefixLength - smartIdx - 1)) & 0xFF == 255) {
-                                    printf("tail is changing from value %lu to value %lu\n",
-                                        getLeafValue(this->fp_leaf), value);    
+                                int byte = (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
+                                if (byte == 255) {
+                                    counter2++;
+                                    printf("tail is changing from value %lu to value %lu\n", getLeafValue(this->fp_leaf), value);   
+                                    this->fp_path = {this->root};
+                                    this->fp_path_length = 1;
                                     QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                     // decrement smartIdx carefully
                                     if ((leafValue >> 8 * (maxPrefixLength - smartIdx)) & 0xFF == 255 && smartIdx != 0) {
@@ -45,14 +49,17 @@ namespace ART {
                                     return;
                                 }
                                 else {
-                                    printf("tail is not changing for %lu\n", value);
+                                    //printf("tail is not changing for %lu\n", value);
+                                    counter3++;
                                     QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                     return;
                                 }
                             }
                             else {
-                                printf("tail is changing from value %lu to value %lu\n",
-                                    getLeafValue(this->fp_leaf), value);
+                                counter2++;
+                                printf("tail is changing from value %lu to value %lu\n", getLeafValue(this->fp_leaf), value);
+                                this->fp_path = {this->root};
+                                this->fp_path_length = 1;
                                 // If the key is greater than the leaf value, we do tail insert with 
                                 // tracking the path and updating fp information in the end
                                 QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
@@ -62,15 +69,17 @@ namespace ART {
                     }                    
                 }
                 else {
+                    counter2++;
                     // If the root is null or is a leaf, we cannot tail insert
                     this->fp_path = {this->root};
                     this->fp_path_length = 1;
                     QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                     return;
                 }                   
+
+                counter1++;
                 
                 if (this->fp_depth == maxPrefixLength - 1) {
-                    counter3++;
                     // Insert leaf into fp
                     ArtNode* newNode = makeLeaf(value);
                     switch (this->fp->type) {
@@ -93,7 +102,6 @@ namespace ART {
                     }
                     return;
                 } else {
-                    counter4++;
                     QuART_stail::insert_recursive_only_update_fp(
                         this, this->fp, this->fp_ref, key, fp_depth, value,
                         maxPrefixLength);
@@ -149,7 +157,7 @@ namespace ART {
             if (node->prefixLength) {
                 unsigned mismatchPos = prefixMismatch(node, key, depth, maxKeyLength);
                 if (mismatchPos != node->prefixLength) {
-                    printf("prefix mismatch at node address: %p\n", (void*)node);
+                    //printf("prefix mismatch at node address: %p\n", (void*)node);
                     // Prefix differs, create new node
                     Node4* newNode = new Node4();
                     *nodeRef = newNode;

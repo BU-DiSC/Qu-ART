@@ -55,12 +55,13 @@ int main(int argc, char** argv) {
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
-        cout << keys[i] << endl;
+        //cout << keys[i] << endl;
         tree->insert(key, keys[i]);
         tree->printTree();
         tree->printFpPath();
-        cout << "fp_ref points to address: " << static_cast<void*>(tree->fp_ref) << endl;
-        cout << "fp_ref points to node: " << static_cast<void*>(*tree->fp_ref) << endl;
+        cout << "fp_leaf: " << ART::getLeafValue(tree->fp_leaf) << endl;
+        //cout << "fp_ref points to address: " << static_cast<void*>(tree->fp_ref) << endl;
+        //cout << "fp_ref points to node: " << static_cast<void*>(*tree->fp_ref) << endl;
 
             
         auto stop = chrono::high_resolution_clock::now();
