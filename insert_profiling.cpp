@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     // Build tree
 
     ART::QuART_lil* tree = new ART::QuART_lil();
-    for (auto val = 1; val <= N; val++) {
+    for (int val = 1; val <= N; val++) {
         uint8_t key[4];
         ART::loadKey(val, key);
         tree->insert(key, val);
