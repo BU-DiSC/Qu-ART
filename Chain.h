@@ -106,9 +106,7 @@ class Chain {
                         ret->extend_item((ChainItem *)new ChainItemWithDepth(
                             node->child[i], depth + 1,
                             (node->key[i] == lkeyByte) & lequ,
-                            (node->key[i] == hkeyByte) &&
-                                hequ));  // TODO: check if this works. "&&" was
-                                         // "*" before.
+                            (node->key[i] == hkeyByte) * hequ));
             } break;
             case NodeType16: {
                 Node16 *node = static_cast<Node16 *>(n);

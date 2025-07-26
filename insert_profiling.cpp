@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "ArtNode.h"
-#include "ArtNode_lil.h"
 #include "Chain.h"
 #include "Helper.h"
 #include "QuART_lil.h"

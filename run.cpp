@@ -9,6 +9,7 @@
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
 #include "Helper.h"
+#include "trees/QuART_lil.h"
 #include "trees/QuART_tail.h"
 
 using namespace std;
@@ -58,6 +59,8 @@ int main(int argc, char** argv) {
         tree = new ART::ART();
     } else if (tree_type == "QuART_tail") {
         tree = new ART::QuART_tail();
+    } else if (tree_type == "QuArt_lil") {
+        tree = new ART::QuART_lil();
     } else {
         cerr << "Unknown tree type: " << tree_type << endl;
         return 1;

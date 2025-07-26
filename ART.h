@@ -27,9 +27,8 @@
 #include <stdexcept>
 
 #include "ArtNode.h"  // ArtNode definitions
-#include "ArtNode_lil.h"
-#include "Chain.h"   // Chain definitions
-#include "Helper.h"  // Helper functions
+#include "Chain.h"    // Chain definitions
+#include "Helper.h"   // Helper functions
 
 namespace ART {
 

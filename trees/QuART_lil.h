@@ -26,14 +26,15 @@
 #include <memory>
 #include <stdexcept>
 
-#include "ART.h"          // Original ART class
-#include "ArtNode_lil.h"  // ArtNode definitions
-#include "Chain.h"        // Chain definitions
-#include "Helper.h"       // Helper functions
+#include "../ART.h"      // Original ART class
+#include "../ArtNode.h"  // ArtNode definitions
+#include "../ArtNodeNewMethods.cpp"
+#include "../Chain.h"   // Chain definitions
+#include "../Helper.h"  // Helper functions
 
 namespace ART {
 
-class QuART_lil : ART::ART {
+class QuART_lil : public ART {
    public:
     // constructor
     QuART_lil() : ART() {}
