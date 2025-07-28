@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/quart_stail",
-            "args": ["-N", "556", "-f", "../bods/workloads/workload_N50000000_K10_L10.bin"],
+            "args": ["-N", "50000000", "-f", "../bods/workloads/workload_N50000000_K10_L10.bin"],
             "environment": [],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb"

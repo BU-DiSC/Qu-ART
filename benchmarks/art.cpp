@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 
 
         tree->insert(key, keys[i]);
-        tree->printTree();
+        //tree->printTree();
 
         auto stop = chrono::high_resolution_clock::now();
         auto duration =

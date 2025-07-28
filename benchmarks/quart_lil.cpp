@@ -60,10 +60,18 @@ int main(int argc, char** argv) {
         insertion_time += duration.count();
     }
 
+    /*
+    cout << "number of fast path insertions: " << tree->counter1 << endl;
+    cout << "number of fp changes: " << tree->counter2 << endl;
+    cout << "number of regular insertions: " << tree->counter3 << endl;
+    */
+
+    /*
     cout << tree->counter1 << ","
     << tree->counter2 << ","
     << tree->counter3 << ","
     << tree->counter4 << endl;
+    */
 
     // Query tree
     long long query_time = 0;

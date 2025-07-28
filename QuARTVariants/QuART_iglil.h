@@ -26,7 +26,7 @@ class QuART_iglil : public ART {
                     // from root
                     this->fp_path = {this->root};
                     this->fp_path_length = 1;
-                    counter1++;
+                    //counter1++;
                     QuART_iglil::insert_recursive_always_change_fp(
                         this, this->root, &this->root, key, 0, value,
                         maxPrefixLength);
@@ -52,7 +52,7 @@ class QuART_iglil : public ART {
 
         if (fp_depth == maxPrefixLength - 1) {
             // Insert leaf into fp
-            counter2++;
+            //counter2++;
             ArtNode* newNode = makeLeaf(value);
             switch (this->fp->type) {
                 
@@ -75,7 +75,7 @@ class QuART_iglil : public ART {
             }
             return;
         } else {
-            counter3++;
+            //counter3++;
             QuART_iglil::insert_recursive_only_update_fp(
                 this, this->fp, this->fp_ref, key, fp_depth, value,
                 maxPrefixLength);

@@ -51,15 +51,16 @@ int main(int argc, char** argv) {
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
+        //cout << i << endl;
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
         //cout << keys[i] << endl;
         tree->insert(key, keys[i]);
-        tree->printTree();
-        tree->printFpPath();
-        cout << "fp_leaf: " << ART::getLeafValue(tree->fp_leaf) << endl;
+        //tree->printTree();
+        //tree->printFpPath();
+        // cout << "fp_leaf: " << ART::getLeafValue(tree->fp_leaf) << endl;
         //cout << "fp_ref points to address: " << static_cast<void*>(tree->fp_ref) << endl;
         //cout << "fp_ref points to node: " << static_cast<void*>(*tree->fp_ref) << endl;
 
@@ -71,10 +72,16 @@ int main(int argc, char** argv) {
 
     }
 
+    //cout << "number of fast path inserts in stail: " << tree->counter1 << endl;
+    //cout << "number of fast path changes in stail: " << tree->counter2 << endl;
+    //cout << "number of regular inserts in stail: " << tree->counter3 << endl;
+
+    /*
     cout << tree->counter1 << ","
          << tree->counter2 << ","
          << tree->counter3 << ","
          << tree->counter4 << endl;
+    */
 
     // Query tree
     long long query_time = 0;

@@ -25,7 +25,7 @@ namespace ART {
                             continue;
                         }
                         else if (key[i] < leafByte) {
-                            counter1++;
+                            //counter1++;
                             // If the key is less than the leaf value, we do insert without 
                             // tracking the path, as this will never be the new fp path. We only
                             // update the current fp information if it changes. 
@@ -33,7 +33,7 @@ namespace ART {
                             return;
                         }
                         else { 
-                            counter2++;
+                            //counter2++;
                             // If the key is greater than the leaf value, we do tail insert with 
                             // tracking the path and updating fp information in the end
                             this->fp_path = {this->root};
@@ -52,7 +52,7 @@ namespace ART {
                 }                   
                 
                 if (this->fp_depth == maxPrefixLength - 1) {
-                    counter3++;
+                    //counter3++;
                     // Insert leaf into fp
                     ArtNode* newNode = makeLeaf(value);
                     switch (this->fp->type) {
@@ -75,7 +75,7 @@ namespace ART {
                     }
                     return;
                 } else {
-                    counter4++;
+                    //counter4++;
                     QuART_xtail::insert_recursive_only_update_fp(
                         this, this->fp, this->fp_ref, key, fp_depth, value,
                         maxPrefixLength);

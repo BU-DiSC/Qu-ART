@@ -60,10 +60,12 @@ int main(int argc, char** argv) {
         insertion_time += duration.count();
     }
 
+    /*
     cout << tree->counter1 << ","
     << tree->counter2 << ","
     << tree->counter3 << ","
     << tree->counter4 << endl;
+    */
 
     // Query tree
     long long query_time = 0;
