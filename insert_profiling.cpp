@@ -8,7 +8,7 @@
 #include "ArtNode.h"
 #include "Chain.h"
 #include "Helper.h"
-#include "QuART_lil.h"
+#include "trees/QuART_lil.h"
 
 using namespace std;
 
