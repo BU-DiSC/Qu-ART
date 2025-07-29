@@ -69,8 +69,8 @@ struct Node4 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
-    void insertNode4_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                         ArtNode* child);
+    void lilInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                        ArtNode* child);
 
     // Base ART insert function for Node4
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -95,8 +95,8 @@ struct Node16 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
-    void insertNode16_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                          ArtNode* child);
+    void lilInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child);
 
     // Base ART insert function for Node16
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -121,8 +121,8 @@ struct Node48 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
-    void insertNode48_lil(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                          ArtNode* child);
+    void lilInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child);
 
     // Base ART insert function for Node48
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -143,9 +143,9 @@ struct Node256 : ArtNode {
 
     Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
 
-    void insertNode256_lil(ART* tree [[maybe_unused]],
-                           ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
-                           ArtNode* child);
+    void lilInsertNode256(ART* tree [[maybe_unused]],
+                          ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
+                          ArtNode* child);
 
     // Base ART insert function for Node256
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,

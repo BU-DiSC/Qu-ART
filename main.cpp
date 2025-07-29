@@ -26,7 +26,7 @@ std::vector<key_type> read_bin(const char* filename) {
 
 int main(int argc, char** argv) {
     bool verbose = false;  // optional argument
-    int N = 5000000;       // optional argument
+    uint64_t N = 5000000;  // optional argument
     string input_file;     // required argument
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
 
     // Query tree
     long long query_time = 0;
-    for (int i = 0; i < N; i++) {
+    for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();

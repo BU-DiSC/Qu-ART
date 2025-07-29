@@ -139,11 +139,11 @@ class QuART_lil : public ART {
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            newNode->insertNode4_lil(
-                this, nodeRef, existingKey[depth + newPrefixLength], node);
+            newNode->lilInsertNode4(this, nodeRef,
+                                    existingKey[depth + newPrefixLength], node);
             ArtNode* newLeaf = makeLeaf(value);
-            newNode->insertNode4_lil(this, nodeRef,
-                                     key[depth + newPrefixLength], newLeaf);
+            newNode->lilInsertNode4(this, nodeRef, key[depth + newPrefixLength],
+                                    newLeaf);
 
             // update the fast path to include the new node4.
             fp = newNode;
@@ -175,8 +175,8 @@ class QuART_lil : public ART {
                 // Break up prefix so that the common section is assigned to the
                 // new parent
                 if (node->prefixLength < maxPrefixLength) {
-                    newNode->insertNode4_lil(this, nodeRef,
-                                             node->prefix[mismatchPos], node);
+                    newNode->lilInsertNode4(this, nodeRef,
+                                            node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
                     memmove(node->prefix, node->prefix + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
@@ -184,15 +184,15 @@ class QuART_lil : public ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    newNode->insertNode4_lil(this, nodeRef,
-                                             minKey[depth + mismatchPos], node);
+                    newNode->lilInsertNode4(this, nodeRef,
+                                            minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
 
                 ArtNode* newLeaf = makeLeaf(value);
-                newNode->insertNode4_lil(this, nodeRef,
-                                         key[depth + mismatchPos], newLeaf);
+                newNode->lilInsertNode4(this, nodeRef, key[depth + mismatchPos],
+                                        newLeaf);
 
                 // Update the fast path to include the new node4.
                 fp = newNode;
@@ -233,19 +233,19 @@ class QuART_lil : public ART {
 
         switch (node->type) {
             case NodeType4:
-                static_cast<Node4*>(node)->insertNode4_lil(this, nodeRef,
-                                                           key[depth], newLeaf);
+                static_cast<Node4*>(node)->lilInsertNode4(this, nodeRef,
+                                                          key[depth], newLeaf);
                 break;
             case NodeType16:
-                static_cast<Node16*>(node)->insertNode16_lil(
+                static_cast<Node16*>(node)->lilInsertNode16(
                     this, nodeRef, key[depth], newLeaf);
                 break;
             case NodeType48:
-                static_cast<Node48*>(node)->insertNode48_lil(
+                static_cast<Node48*>(node)->lilInsertNode48(
                     this, nodeRef, key[depth], newLeaf);
                 break;
             case NodeType256:
-                static_cast<Node256*>(node)->insertNode256_lil(
+                static_cast<Node256*>(node)->lilInsertNode256(
                     this, nodeRef, key[depth], newLeaf);
                 break;
         }
@@ -409,9 +409,10 @@ class QuART_lil : public ART {
             depth += node->prefixLength;
 
             std::unique_ptr<Chain> newly_added = std::make_unique<Chain>();
-            newly_added = std::move(std::unique_ptr<Chain>(newly_added->findChildbyRange(
-                item->nodeptr(), lequ ? l_key[depth] : 0,
-                hequ ? h_key[depth] : 255, depth, lequ, hequ)));
+            newly_added =
+                std::move(std::unique_ptr<Chain>(newly_added->findChildbyRange(
+                    item->nodeptr(), lequ ? l_key[depth] : 0,
+                    hequ ? h_key[depth] : 255, depth, lequ, hequ)));
             queue->extend(std::move(newly_added));
         }
         delete queue;
