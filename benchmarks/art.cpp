@@ -61,7 +61,8 @@ int main(int argc, char** argv) {
         insertion_time += duration.count();
     }
     //cout << endl;
-    //tree->printTree();
+
+    tree->printTree();
 
     // Query tree
     long long query_time = 0;

@@ -722,9 +722,6 @@ namespace ART {
             
             if (child == tree->fp) {
                 tree->fp_ref = &this->child[pos];
-                tree->fp_path[tree->fp_path_length] = child;
-                tree->fp_path[tree->fp_path_length - 1 ] = this;
-                tree->fp_path_length++;
             }
 
         } else {
@@ -853,6 +850,17 @@ namespace ART {
             newNode->count = this->count;
             copyPrefix(this, newNode);
             *nodeRef = newNode;
+            delete this;
+
+
+            /*
+            for (int i = 0; i < tree->fp_path[tree->fp_path_length - 2]->count; i++) {
+                if (tree->fp_path[tree->fp_path_length - 2]->child[i] == this) {
+                    printf("Child pointer points to this node: %p, Child pointer address: %p\n", 
+                           static_cast<void*>(this), static_cast<void*>(&this->child[i]));
+                }
+            }
+            */
     
             if (tree->fp == this) {
                 tree->fp = newNode;
@@ -869,7 +877,6 @@ namespace ART {
                 }
             }
 
-            delete this;
             return newNode->insertNode256OnlyUpdateFp(tree, nodeRef, keyByte, child);
         }
     }

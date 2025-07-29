@@ -51,13 +51,28 @@ int main(int argc, char** argv) {
 
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
-        //cout << i << endl;
+        //cout << "inserting " << keys[i] << endl;
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();
 
         //cout << keys[i] << endl;
+        /*
+        if (keys[i] != 73) {
+            tree->insert(key, keys[i]);
+        }
+        else {
+            tree->printTree();
+            tree->insert(key, keys[i]);
+            tree->printTree();
+        }
+        */
+
         tree->insert(key, keys[i]);
+        //tree->printTree();
+        //tree->printFpPath();
+        
+        
         //tree->printTree();
         //tree->printFpPath();
         // cout << "fp_leaf: " << ART::getLeafValue(tree->fp_leaf) << endl;
@@ -71,6 +86,8 @@ int main(int argc, char** argv) {
         insertion_time += duration.count();
 
     }
+
+    //tree->printTree();
 
     //cout << "number of fast path inserts in stail: " << tree->counter1 << endl;
     //cout << "number of fast path changes in stail: " << tree->counter2 << endl;
