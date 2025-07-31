@@ -14,6 +14,7 @@
 #include <sys/time.h>  // gettime
 
 #include <algorithm>  // std::random_shuffle
+#include <array>
 #include <cassert>
 #include <cstdio>
 #include <fstream>
@@ -63,6 +64,21 @@ static inline unsigned ctz(uint16_t x) {
 unsigned min(unsigned a, unsigned b) {
     // Helper function
     return (a < b) ? a : b;
+}
+
+// Function for representing key/prefix arrays as integers.
+// Used for debugging and printing.
+int arrToInt(const std::array<uint8_t, 4>& key) {
+    return (int32_t(key[0]) << 24) | (int32_t(key[1]) << 16) |
+           (int32_t(key[2]) << 8) | (int32_t(key[3]));
+}
+std::array<uint8_t, 4> intToArr(int value) {
+    return {
+        static_cast<uint8_t>((value / 16777216) % 256),  // 2^24
+        static_cast<uint8_t>((value / 65536) % 256),     // 2^16
+        static_cast<uint8_t>((value / 256) % 256),       // 2^8
+        static_cast<uint8_t>(value % 256)                // 2^0
+    };
 }
 
 }  // namespace ART

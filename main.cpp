@@ -5,10 +5,11 @@
 #include <iostream>
 #include <vector>
 
-#include "ART.h"
 #include "ArtNode.h"
 #include "Chain.h"
 #include "Helper.h"
+#include "trees/QuART_lil.h"
+#include "trees/QuART_tail.h"
 
 using namespace std;
 
@@ -25,7 +26,7 @@ std::vector<key_type> read_bin(const char* filename) {
 
 int main(int argc, char** argv) {
     bool verbose = false;  // optional argument
-    int N = 5000000;       // optional argument
+    uint64_t N = 5000000;  // optional argument
     string input_file;     // required argument
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
@@ -46,7 +47,8 @@ int main(int argc, char** argv) {
 
     // Build tree
 
-    ART::ART* tree = new ART::ART();
+    ART::QuART_lil* tree = new ART::QuART_lil();
+    // ART::ART* tree = new ART::ART();
     long long insertion_time = 0;
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
@@ -62,6 +64,8 @@ int main(int argc, char** argv) {
     if (verbose) {
         cout << "Insertion time: " << insertion_time << " ns" << endl;
     }
+
+    // tree->printTree();
 
     // Query tree
     long long query_time = 0;

@@ -69,6 +69,9 @@ struct Node4 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    void lilInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                        ArtNode* child);
+
     // Base ART insert function for Node4
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                      ArtNode* child);
@@ -91,6 +94,9 @@ struct Node16 : ArtNode {
         memset(key, 0, sizeof(key));
         memset(child, 0, sizeof(child));
     }
+
+    void lilInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child);
 
     // Base ART insert function for Node16
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -115,6 +121,9 @@ struct Node48 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
+    void lilInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                         ArtNode* child);
+
     // Base ART insert function for Node48
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
@@ -133,6 +142,10 @@ struct Node256 : ArtNode {
     ArtNode* child[256];
 
     Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
+
+    void lilInsertNode256(ART* tree [[maybe_unused]],
+                          ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
+                          ArtNode* child);
 
     // Base ART insert function for Node256
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
@@ -175,8 +188,7 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     if (this->count < 4) {
         // Insert element
         unsigned pos;
-        for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++)
-            ;
+        for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++);
         // Shift keys and children to the right to make space for the new
         // key/child. This preserves the sorted order of keys in the node.
         memmove(this->key + pos + 1, this->key + pos, this->count - pos);
@@ -199,7 +211,8 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     }
 }
 
-void Node4::eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
+void Node4::eraseNode4(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                       ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
     // Shift keys and children to the left to fill the gap left by the removed
@@ -282,7 +295,8 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     }
 }
 
-void Node16::eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace) {
+void Node16::eraseNode16(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                         ArtNode** leafPlace) {
     // Delete leaf from inner node
     unsigned pos = leafPlace - this->child;
     // Shift keys and children to the left to fill the gap left by the removed
@@ -312,8 +326,7 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // Insert element
         unsigned pos = this->count;
         if (this->child[pos])
-            for (pos = 0; this->child[pos] != NULL; pos++)
-                ;
+            for (pos = 0; this->child[pos] != NULL; pos++);
         // No memmove needed here because Node48 uses a mapping (childIndex) and
         // a dense array.
         this->child[pos] = child;
@@ -333,7 +346,8 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     }
 }
 
-void Node48::eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
+void Node48::eraseNode48(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                         uint8_t keyByte) {
     // Delete leaf from inner node
     // No memmove needed here because Node48 uses a mapping (childIndex) and a
     // dense array.
@@ -358,7 +372,8 @@ void Node48::eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
     }
 }
 
-void Node256::insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+void Node256::insertNode256(ART* tree [[maybe_unused]],
+                            ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
                             ArtNode* child) {
     // Insert leaf into inner node
     // No memmove needed here because Node256 uses a direct mapping for all
@@ -367,7 +382,8 @@ void Node256::insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     this->child[keyByte] = child;
 }
 
-void Node256::eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte) {
+void Node256::eraseNode256(ART* tree [[maybe_unused]], ArtNode** nodeRef,
+                           uint8_t keyByte) {
     // Delete leaf from inner node
     // No memmove needed here because Node256 uses a direct mapping for all
     // possible keys.

@@ -39,7 +39,7 @@ Run the executables in `build` with the following options:
 - `-f <input_file>`: Path to the binary file that contains keys 
 - `-N <num_keys>`: Number of keys to insert and query (optional, default = 5,000,000)
 - `-v`: Verbose mode (optional, default = false)
-- `-t <tree_type>`: Type of tree to use (`ART` or `QuART_tail`)
+- `-t <tree_type>`: Type of tree to use (`ART`, `QuART_tail`, or `QuART_lil`)
 
 ### Example
 
@@ -53,12 +53,14 @@ Run the executables in `build` with the following options:
 
 - **ART**: Baseline Adaptive Radix Tree.
 - **QuART_tail**: Standard QuART with tail optimization.
+- **QuART_lil**: Standard QuART with lil optimization.
 
 You can run each variant by using the `run` executable in `build/` with the `-t` option to select the tree type. For example:
 
 ```shell
 ./run -f <input_file> -N <num_keys> -t ART
 ./run -f <input_file> -N <num_keys> -t QuART_tail
+./run -f <input_file> -N <num_keys> -t QuART_lil
 ```
 
 Replace `<input_file>` and `<num_keys>` with your workload file and desired number of keys.

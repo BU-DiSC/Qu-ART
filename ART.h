@@ -37,10 +37,12 @@ class ART {
     ArtNode* root;  // pointer to root node of tree
     ArtNode* fp;    // pointer to fast path node
     std::array<ArtNode*, maxPrefixLength> fp_path;  // path that leads to fp
-    size_t fp_path_length;                          // stores length of fp path
-    ArtNode* fp_leaf;  // pointer to leaf node in fast path
-    size_t fp_depth;   // depth that will be used during fp insertion
-    ArtNode** fp_ref;  // reference to fp node, used for insertion
+    std::array<ArtNode**, maxPrefixLength>
+        fp_path_ref;        // references to nodes on fp_path
+    size_t fp_path_length;  // stores length of fp path
+    ArtNode* fp_leaf;       // pointer to leaf node in fast path
+    size_t fp_depth;        // depth that will be used during fp insertion
+    ArtNode** fp_ref;       // reference to fp node, used for insertion
 
     // constructor
     ART()
@@ -57,20 +59,20 @@ class ART {
     }
 
     ArtNode* lookup(uint8_t key[]) {
-        return lookup(this, root, key, maxPrefixLength, 0, maxPrefixLength);
+        return lookup(root, key, maxPrefixLength, 0, maxPrefixLength);
     }
 
     Chain* rangelookup(uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[],
-                       uint8_t h_keyLength, unsigned depth,
-                       unsigned maxKeyLength) {
-        return rangelookup(this, root, l_key, l_keyLength, h_key, h_keyLength,
-                           depth, maxKeyLength);
+                       uint8_t h_keyLength, unsigned maxKeyLength) {
+        return rangelookup(root, l_key, l_keyLength, h_key, h_keyLength,
+                           maxKeyLength);
     }
 
     void printTree() { printTree(this->root, 0); }
 
     // Method to verify the tail path after each insertion
-    // Returns true if the fast path (fp_path) leads to the correct fp and fp_leaf
+    // Returns true if the fast path (fp_path) leads to the correct fp and
+    // fp_leaf
     bool verifyTailPath() {
         if (this->fp_path_length == 0) {
             // No fast path to verify
@@ -80,7 +82,8 @@ class ART {
         ArtNode* current = this->root;
         // Traverse the tree following the fp_path
         for (size_t i = 0; i < this->fp_path_length; i++) {
-            // If we're at the last node in the fp_path, check if it's the fp node
+            // If we're at the last node in the fp_path, check if it's the fp
+            // node
             if (i == this->fp_path_length - 1) {
                 if (current == this->fp) {
                     // Check if the leaf value matches the expected fp_leaf
@@ -90,13 +93,16 @@ class ART {
                     } else {
                         std::cerr << "Error: fp_leaf mismatch. Expected "
                                   << getLeafValue(maximum(current)) << ", got "
-                                  << getLeafValue(this->fp_leaf) << "." << std::endl;
+                                  << getLeafValue(this->fp_leaf) << "."
+                                  << std::endl;
                         return false;
                     }
                 } else {
-                    std::cerr << "Error: last node in fp_path is not the fp. Expected "
+                    std::cerr << "Error: last node in fp_path is not the fp. "
+                                 "Expected "
                               << static_cast<void*>(current) << ", got "
-                              << static_cast<void*>(this->fp) << "." << std::endl;
+                              << static_cast<void*>(this->fp) << "."
+                              << std::endl;
                     return false;
                 }
             }
@@ -109,7 +115,8 @@ class ART {
                         // Move to the last child (rightmost)
                         current = node->child[node->count - 1];
                     } else {
-                        std::cerr << "Error: NodeType4 has no children." << std::endl;
+                        std::cerr << "Error: NodeType4 has no children."
+                                  << std::endl;
                         return false;
                     }
                     break;
@@ -120,7 +127,8 @@ class ART {
                         // Move to the last child (rightmost)
                         current = node->child[node->count - 1];
                     } else {
-                        std::cerr << "Error: NodeType16 has no children." << std::endl;
+                        std::cerr << "Error: NodeType16 has no children."
+                                  << std::endl;
                         return false;
                     }
                     break;
@@ -134,7 +142,8 @@ class ART {
                     if (node->childIndex[pos] != emptyMarker) {
                         current = node->child[node->childIndex[pos]];
                     } else {
-                        std::cerr << "Error: NodeType48 has no valid children." << std::endl;
+                        std::cerr << "Error: NodeType48 has no valid children."
+                                  << std::endl;
                         return false;
                     }
                     break;
@@ -147,7 +156,8 @@ class ART {
                     if (node->child[pos]) {
                         current = node->child[pos];
                     } else {
-                        std::cerr << "Error: NodeType256 has no valid children." << std::endl;
+                        std::cerr << "Error: NodeType256 has no valid children."
+                                  << std::endl;
                         return false;
                     }
                     break;
@@ -260,7 +270,7 @@ class ART {
     }
 
     // Lookup function, returns ArtNode
-    ArtNode* lookup(ART* tree, ArtNode* node, uint8_t key[], unsigned keyLength,
+    ArtNode* lookup(ArtNode* node, uint8_t key[], unsigned keyLength,
                     unsigned depth, unsigned maxKeyLength) {
         // Find the node with a matching key, optimistic version
 
@@ -349,9 +359,8 @@ class ART {
     }
 
     // Range lookup function, returns a Chain of ArtNode
-    Chain* rangelookup(ART* tree, ArtNode* node, uint8_t l_key[],
-                       unsigned l_keyLength, uint8_t h_key[],
-                       uint8_t h_keyLength, unsigned depth,
+    Chain* rangelookup(ArtNode* node, uint8_t l_key[], unsigned l_keyLength,
+                       uint8_t h_key[], uint8_t h_keyLength,
                        unsigned maxKeyLength) {
         // Find the node with a matching key, optimistic version
         Chain* queue =

@@ -1,4 +1,7 @@
 **/*.csv
 build/
 .DS_Store
+.vscode/launch.json
+.vscode/tasks.json
 results/
+workloads/
