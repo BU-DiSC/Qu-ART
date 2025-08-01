@@ -67,10 +67,16 @@ int main(int argc, char** argv) {
             tree->printTree();
         }
         */
-
+        //cout << "Inserting key: " << keys[i] << endl;
         tree->insert(key, keys[i]);
-        //tree->printTree();
-        //tree->printFpPath();
+        /*
+        tree->printTree();
+        cout << "fp_depth: " << tree->fp_depth << endl;
+        cout << "fp_leaf: " << ART::getLeafValue(tree->fp_leaf) << endl;
+        tree->printFpPath();
+        cout << endl;
+        cout << endl;
+        */
         
         
         //tree->printTree();
@@ -103,7 +109,7 @@ int main(int argc, char** argv) {
     // Query tree
     long long query_time = 0;
     for (uint64_t i = 0; i < N; i++) {
-        //cout << i << endl;
+        cout << i << endl;
         uint8_t key[4];
         ART::loadKey(keys[i], key);
         auto start = chrono::high_resolution_clock::now();

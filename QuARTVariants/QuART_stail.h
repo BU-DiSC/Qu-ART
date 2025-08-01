@@ -14,7 +14,15 @@ namespace ART {
                 // Check if we can tail insert
                 ArtNode* root = this->root;
                 // Check if the root is not null and is not a leaf
-                if (root != nullptr && !isLeaf(root)) {
+                if (root == nullptr) {
+                    QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
+                    return;                                   
+                } 
+                else if (isLeaf(root)) { 
+                    QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
+                    return;
+                }
+                if (true) {
                     int leafValue = getLeafValue(this->fp_leaf);
                     // For each byte in the key excluding the last byte,
                     // check if it matchmes the corresponding byte in the leaf value
@@ -83,16 +91,6 @@ namespace ART {
                         }
                     }                    
                 }
-                else {
-                    //counter2++;
-                    // If the root is null or is a leaf, we cannot tail insert
-                    //printf("tail is changing for %lu, from %lu\n", value, getLeafValue(this->fp_leaf));
-                    this->fp_path = {this->root};
-                    this->fp_path_length = 1;
-                    QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
-                    return;
-                }                   
-
                 //counter1++;
                 
                 if (this->fp_depth == maxPrefixLength - 1) {
@@ -157,11 +155,14 @@ namespace ART {
 
                 // If the changing node was the fp just straight change the node
                 if (tree->fp_leaf == node) { 
+                    if (fp != nullptr) {
+                        this->fp_depth += fp->prefixLength;
+                        this->fp_depth++;
+                    }
                     this->fp_path[this->fp_path_length] = newNode;
                     this->fp_path_length++;
                     this->fp = newNode;
                     this->fp_ref = nodeRef;
-                    this->fp_depth = depth + newPrefixLength;
                 }
 
                 newNode->insertNode4(this, nodeRef, existingKey[depth + newPrefixLength],
@@ -191,7 +192,10 @@ namespace ART {
                                 std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
-                                //tree->fp_depth += node->prefixLength;
+                                if (node == this->fp) {
+                                    this->fp_depth += newNode->prefixLength;
+                                    this->fp_depth++;                                  
+                                }
                             }
                             newNode->insertNode4Smart(this, nodeRef, node->prefix[mismatchPos], node);
                             node->prefixLength -= (mismatchPos + 1);
@@ -209,7 +213,11 @@ namespace ART {
                                 std::copy_backward(fp_path.begin() + pos, fp_path.begin() + fp_path_length, fp_path.begin() + fp_path_length + 1);
                                 fp_path[pos] = newNode;
                                 fp_path_length++;
-                                //tree->fp_depth += node->prefixLength;
+                                if (node == this->fp) {
+                                    this->fp_depth += newNode->prefixLength;
+                                    this->fp_depth++;                                  
+                                }
+                          
                             }
                             newNode->insertNode4Smart(this, nodeRef, minKey[depth + mismatchPos],
                                         node);

@@ -183,7 +183,6 @@ namespace ART {
                     printf("]]\n");
                 }
                 printf("fp: %p\n", static_cast<void*>(this->fp));
-                printf("fp_leaf: %p\n", static_cast<void*>(this->fp_leaf));
             }
                 
 
