@@ -6,7 +6,7 @@
 
 #include "ART.h"
 #include "ArtNode.h"
-#include "ArtNodeNewMethods.cpp"
+// #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
 #include "Helper.h"
 #include "trees/QuART_lil.h"
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
         tree = new ART::ART();
     } else if (tree_type == "QuART_tail") {
         tree = new ART::QuART_tail();
-    } else if (tree_type == "QuArt_lil") {
+    } else if (tree_type == "QuART_lil") {
         tree = new ART::QuART_lil();
     } else {
         cerr << "Unknown tree type: " << tree_type << endl;
@@ -86,18 +86,23 @@ int main(int argc, char** argv) {
         cout << "Insertion time: " << insertion_time << " ns" << endl;
     }
 
-    // Query tree
+    // Query 1% of entries
+    uint64_t minval = 1;
+    uint64_t maxval = N;
+    srand(time(0));
+
     long long query_time = 0;
-    for (uint64_t i = 0; i < N; i++) {
+    for (uint64_t i = 0; i < (N / 100); i++) {
+        int random = rand() % (maxval - minval + 1) + minval;
         uint8_t key[4];
-        ART::loadKey(keys[i], key);
+        ART::loadKey(keys[random], key);
         auto start = chrono::high_resolution_clock::now();
         ART::ArtNode* leaf = tree->lookup(key);
         auto stop = chrono::high_resolution_clock::now();
         auto duration =
             chrono::duration_cast<chrono::nanoseconds>(stop - start);
         query_time += duration.count();
-        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
     }
 
     if (verbose) {
