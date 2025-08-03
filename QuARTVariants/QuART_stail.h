@@ -22,7 +22,6 @@ namespace ART {
                     QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                     return;
                 }
-                if (true) {
                     int leafValue = getLeafValue(this->fp_leaf);
                     // For each byte in the key excluding the last byte,
                     // check if it matchmes the corresponding byte in the leaf value
@@ -90,7 +89,6 @@ namespace ART {
                             }
                         }
                     }                    
-                }
                 //counter1++;
                 
                 if (this->fp_depth == maxPrefixLength - 1) {
