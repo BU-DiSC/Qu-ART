@@ -10,6 +10,7 @@ class QuART_stail : public ART {
     QuART_stail() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
+
         /* Check if we can tail insert */
 
         ArtNode* root = this->root;
@@ -17,7 +18,7 @@ class QuART_stail : public ART {
         // keys[0] = 1 in all cases
         if (root == nullptr) {
             QuART_stail::insert_recursive_preserve_fp(
-                this, this->root, &this->root, key, 0, value, maxPrefixLength);
+                this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
 
@@ -25,7 +26,7 @@ class QuART_stail : public ART {
         // fp_leaf since keys[1] can be an outlier
         else if (isLeaf(root)) {
             QuART_stail::insert_recursive_preserve_fp(
-                this, this->root, &this->root, key, 0, value, maxPrefixLength);
+                this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
 
@@ -48,8 +49,7 @@ class QuART_stail : public ART {
             // only update the current fp information if it changes.
             else if (key[i] < leafByte) {
                 QuART_stail::insert_recursive_preserve_fp(
-                    this, this->root, &this->root, key, 0, value,
-                    maxPrefixLength);
+                    this->root, &this->root, key, 0, value, maxPrefixLength);
                 return;
             }
             // Key byte is greater than leaf byte
@@ -63,20 +63,19 @@ class QuART_stail : public ART {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
                         QuART_stail::insert_recursive_change_fp(
-                            this, this->root, &this->root, key, 0, value,
+                            this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
                     // If it is not a bridge value, insert without changing
                     else {
                         QuART_stail::insert_recursive_preserve_fp(
-                            this, this->root, &this->root, key, 0, value,
+                            this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
                 }
                 // If we are at the second byte
-
                 else if (i == 1) {
                     // If the key is a bridge value, change fp
                     if ((key[1] == leafByte + 1) && (key[2] == 0) &&
@@ -85,14 +84,14 @@ class QuART_stail : public ART {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
                         QuART_stail::insert_recursive_change_fp(
-                            this, this->root, &this->root, key, 0, value,
+                            this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
                     // If it is not a bridge value, insert without changing
                     else {
                         QuART_stail::insert_recursive_preserve_fp(
-                            this, this->root, &this->root, key, 0, value,
+                            this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
@@ -106,14 +105,14 @@ class QuART_stail : public ART {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
                         QuART_stail::insert_recursive_change_fp(
-                            this, this->root, &this->root, key, 0, value,
+                            this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
                     // If it is not a bridge value, insert without changing
                     else {
                         QuART_stail::insert_recursive_preserve_fp(
-                            this, this->root, &this->root, key, 0, value,
+                            this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
@@ -154,28 +153,27 @@ class QuART_stail : public ART {
         // into the fp
         else {
             QuART_stail::insert_recursive_preserve_fp(
-                this, this->fp, this->fp_ref, key, fp_depth, value,
-                maxPrefixLength);
+                this->fp, this->fp_ref, key, fp_depth, value, maxPrefixLength);
             return;
         }
     }
 
    private:
 
-    // Recursive insert function that does NOT change fp_leaf value
-    void insert_recursive_preserve_fp(ART* tree, ArtNode* node,
-                                         ArtNode** nodeRef, uint8_t key[],
-                                         unsigned depth, uintptr_t value,
-                                         unsigned maxKeyLength) {
-        // Insert the leaf value into the tree
+    /* Recursive insert function that does NOT change fp_leaf value */
+    void insert_recursive_preserve_fp(ArtNode* node, ArtNode** nodeRef,
+                                      uint8_t key[], unsigned depth,
+                                      uintptr_t value, unsigned maxKeyLength) {
+        // Insert the leaf 
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
-            // Adjust only fp_leaf (fp will still be null)
-            tree->fp_leaf = *nodeRef;
-            tree->fp_ref = nodeRef;
+            // Adjust fp parameters
+            this->fp_leaf = *nodeRef;
+            this->fp_ref = nodeRef;
             return;
         }
 
+        // If leaf expansion is needed
         if (isLeaf(node)) {
             // Replace leaf with Node4 and store both leaves in it
             uint8_t existingKey[maxKeyLength];
@@ -191,12 +189,14 @@ class QuART_stail : public ART {
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            // If the changing node was the fp just straight change the node
-            if (tree->fp_leaf == node) {
+            // If the changing node was the fp
+            if (this->fp_leaf == node) {
+                // If fp is not null (used only to avoid second insert)
                 if (fp != nullptr) {
                     this->fp_depth += fp->prefixLength;
                     this->fp_depth++;
                 }
+                // Adjust fp parameters
                 this->fp_path[this->fp_path_length] = newNode;
                 this->fp_path_length++;
                 this->fp = newNode;
@@ -229,13 +229,17 @@ class QuART_stail : public ART {
                     if (it != fp_path.begin() + fp_path_length) {
                         // Find the position of node in fp_path
                         size_t pos = std::distance(fp_path.begin(), it);
+                        // Shift the elements to the right to make space for
                         std::copy_backward(
                             fp_path.begin() + pos,
                             fp_path.begin() + fp_path_length,
                             fp_path.begin() + fp_path_length + 1);
+                        // Insert newNode in the position of node
                         fp_path[pos] = newNode;
                         fp_path_length++;
+                        // If the changing node was the fp
                         if (node == this->fp) {
+                            // Adjust fp_depth
                             this->fp_depth += newNode->prefixLength;
                             this->fp_depth++;
                         }
@@ -255,13 +259,17 @@ class QuART_stail : public ART {
                     if (it != fp_path.begin() + fp_path_length) {
                         // Find the position of node in fp_path
                         size_t pos = std::distance(fp_path.begin(), it);
+                        // Shift the elements to the right to make space for
                         std::copy_backward(
                             fp_path.begin() + pos,
                             fp_path.begin() + fp_path_length,
                             fp_path.begin() + fp_path_length + 1);
+                        // Insert newNode in the position of node
                         fp_path[pos] = newNode;
                         fp_path_length++;
+                        // If the changing node was the fp
                         if (node == this->fp) {
+                            // Adjust fp_depth
                             this->fp_depth += newNode->prefixLength;
                             this->fp_depth++;
                         }
@@ -281,8 +289,8 @@ class QuART_stail : public ART {
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
-            insert_recursive_preserve_fp(tree, *child, child, key, depth + 1,
-                                            value, maxKeyLength);
+            insert_recursive_preserve_fp(*child, child, key, depth + 1, value,
+                                         maxKeyLength);
             return;
         }
 
@@ -308,11 +316,10 @@ class QuART_stail : public ART {
         }
     }
 
-    // Recursive insert function that changes fp_leaf value
-    void insert_recursive_change_fp(ART* tree, ArtNode* node,
-                                           ArtNode** nodeRef, uint8_t key[],
-                                           unsigned depth, uintptr_t value,
-                                           unsigned maxKeyLength) {
+    /* Recursive insert function that changes fp_leaf value */
+    void insert_recursive_change_fp(ArtNode* node, ArtNode** nodeRef,
+                                    uint8_t key[], unsigned depth,
+                                    uintptr_t value, unsigned maxKeyLength) {
         // Insert the leaf value into the tree, no operations needed for keys[0]
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
@@ -334,7 +341,8 @@ class QuART_stail : public ART {
             memcpy(newNode->prefix, key + depth,
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
-            
+
+            // Adjust fp parameters
             this->fp_path[this->fp_path_length - 1] = newNode;
             this->fp_depth = depth + newPrefixLength;
 
@@ -360,7 +368,6 @@ class QuART_stail : public ART {
                 if (node->prefixLength < maxPrefixLength) {
                     // In all cases, newNode should be added to fp_path
                     fp_path[fp_path_length - 1] = newNode;
-                    // If the nodes that being changed is in fp_path
                     newNode->insertNode4(this, nodeRef,
                                          node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
@@ -377,10 +384,10 @@ class QuART_stail : public ART {
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
+                // Adjust fp_depth
                 this->fp_depth = depth;
-                newNode->stailInsertNode4ChangeFp(this, nodeRef,
-                                                  key[depth + mismatchPos],
-                                                  makeLeaf(value));
+                newNode->stailInsertNode4ChangeFp(
+                    this, nodeRef, key[depth + mismatchPos], makeLeaf(value));
                 return;
             }
             depth += node->prefixLength;
@@ -392,8 +399,8 @@ class QuART_stail : public ART {
             fp_path[fp_path_length] =
                 *child;        // add the node to the array before recursion
             fp_path_length++;  // increase the size of the array
-            insert_recursive_change_fp(tree, *child, child, key,
-                                              depth + 1, value, maxKeyLength);
+            insert_recursive_change_fp(*child, child, key, depth + 1, value,
+                                       maxKeyLength);
             return;
         }
 
