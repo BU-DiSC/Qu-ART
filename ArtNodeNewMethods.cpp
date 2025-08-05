@@ -408,8 +408,7 @@ void Node256::lilInsertNode256(ART* tree [[maybe_unused]],
 
 // fp insert method for Node4
 void Node4::stailInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef,
-                                     uint8_t keyByte, ArtNode* child,
-                                     size_t depth_prev) {
+                                     uint8_t keyByte, ArtNode* child) {
     // Insert leaf into inner node
     if (this->count < 4) {
         // Insert element
@@ -423,8 +422,7 @@ void Node4::stailInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef,
         this->child[pos] = child;
 
         tree->fp_leaf = child;
-        tree->fp = tree->fp_path[tree->fp_path_length - 1];
-        tree->fp_depth = depth_prev;
+        tree->fp = this;
         tree->fp_ref = nodeRef;
 
         this->count++;
@@ -441,15 +439,13 @@ void Node4::stailInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef,
         tree->fp_path[tree->fp_path_length - 1] = newNode;
 
         delete this;
-        return newNode->stailInsertNode16ChangeFp(tree, nodeRef, keyByte, child,
-                                                  depth_prev);
+        return newNode->stailInsertNode16ChangeFp(tree, nodeRef, keyByte, child);
     }
 }
 
 // fp insert method for Node16
 void Node16::stailInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
-                                       uint8_t keyByte, ArtNode* child,
-                                       size_t depth_prev) {
+                                       uint8_t keyByte, ArtNode* child) {
     // Insert leaf into inner node
     if (this->count < 16) {
         // Insert element
@@ -468,8 +464,7 @@ void Node16::stailInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
         this->child[pos] = child;
 
         tree->fp_leaf = child;
-        tree->fp = tree->fp_path[tree->fp_path_length - 1];
-        tree->fp_depth = depth_prev;
+        tree->fp = this;
         tree->fp_ref = nodeRef;
 
         this->count++;
@@ -486,15 +481,13 @@ void Node16::stailInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
         tree->fp_path[tree->fp_path_length - 1] = newNode;
 
         delete this;
-        return newNode->stailInsertNode48ChangeFp(tree, nodeRef, keyByte, child,
-                                                  depth_prev);
+        return newNode->stailInsertNode48ChangeFp(tree, nodeRef, keyByte, child);
     }
 }
 
 // fp insert method for Node48
 void Node48::stailInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
-                                       uint8_t keyByte, ArtNode* child,
-                                       size_t depth_prev) {
+                                       uint8_t keyByte, ArtNode* child) {
     // Insert leaf into inner node
     if (this->count < 48) {
         // Insert element
@@ -507,8 +500,7 @@ void Node48::stailInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
         this->count++;
 
         tree->fp_leaf = child;
-        tree->fp = tree->fp_path[tree->fp_path_length - 1];
-        tree->fp_depth = depth_prev;
+        tree->fp = this;
         tree->fp_ref = nodeRef;
 
     } else {
@@ -525,21 +517,19 @@ void Node48::stailInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
 
         delete this;
         return newNode->stailInsertNode256ChangeFp(tree, nodeRef, keyByte,
-                                                   child, depth_prev);
+                                                   child);
     }
 }
 
 // fp insert method for Node256
 void Node256::stailInsertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
-                                         uint8_t keyByte, ArtNode* child,
-                                         size_t depth_prev) {
+                                         uint8_t keyByte, ArtNode* child) {
     // Insert leaf into inner node
     this->count++;
     this->child[keyByte] = child;
 
     tree->fp_leaf = child;
-    tree->fp = tree->fp_path[tree->fp_path_length - 1];
-    tree->fp_depth = depth_prev;
+    tree->fp = this;
     tree->fp_ref = nodeRef;
 }
 

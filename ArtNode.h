@@ -83,7 +83,7 @@ struct Node4 : ArtNode {
                          size_t& temp_fp_path_length, size_t depth_prev);
 
     void stailInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                                  ArtNode* child, size_t depth_prev);
+                                  ArtNode* child);
     void stailInsertNode4PreserveFpPrefixExpansion(ART* tree, ArtNode** nodeRef,
                                                    uint8_t keyByte,
                                                    ArtNode* child);
@@ -116,8 +116,7 @@ struct Node16 : ArtNode {
                           std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
                           size_t& temp_fp_path_length, size_t depth_prev);
     void stailInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
-                                   uint8_t keyByte, ArtNode* child,
-                                   size_t depth_prev);
+                                   uint8_t keyByte, ArtNode* child);
     void stailInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
                                      uint8_t keyByte, ArtNode* child);
     // Erase function for Node16
@@ -147,8 +146,7 @@ struct Node48 : ArtNode {
                           std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
                           size_t& temp_fp_path_length, size_t depth_prev);
     void stailInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
-                                   uint8_t keyByte, ArtNode* child,
-                                   size_t depth_prev);
+                                   uint8_t keyByte, ArtNode* child);
     void stailInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
                                      uint8_t keyByte, ArtNode* child);
     // Erase function for Node48
@@ -175,8 +173,7 @@ struct Node256 : ArtNode {
                            std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
                            size_t& temp_fp_path_length, size_t depth_prev);
     void stailInsertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
-                                    uint8_t keyByte, ArtNode* child,
-                                    size_t depth_prev);
+                                    uint8_t keyByte, ArtNode* child);
     // Erase function for Node256
     void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 };

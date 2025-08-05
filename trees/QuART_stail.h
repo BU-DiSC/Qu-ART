@@ -10,84 +10,109 @@ class QuART_stail : public ART {
     QuART_stail() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
-        // Check if we can tail insert
+        /* Check if we can tail insert */
+
         ArtNode* root = this->root;
         // If the root is null (i = 0), we will insert and change fp since
         // keys[0] = 1 in all cases
         if (root == nullptr) {
-            QuART_stail::insert_recursive_always_change_fp(
+            QuART_stail::insert_recursive_preserve_fp(
                 this, this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
+
         // If the root is leaf (i = 1), we do a leaf insert and don't update
         // fp_leaf since keys[1] can be an outlier
         else if (isLeaf(root)) {
-            QuART_stail::insert_recursive_only_update_fp(
+            QuART_stail::insert_recursive_preserve_fp(
                 this, this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
+
+        // Store leafValue, it will be used a lot
         int leafValue = getLeafValue(this->fp_leaf);
+
         // For each byte in the key excluding the last byte,
-        // check if it matchmes the corresponding byte in the leaf value
-        // If any byte does not match, set can_tail_insert to false
+        // check if it matches the corresponding byte in the leaf value
         for (size_t i = 0; i < maxPrefixLength - 1; i++) {
+            // Find the byte of leaf in the i'th position (i = [0, 1, 2])
             uint8_t leafByte =
                 (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
+
+            // If the bytes match, continue to next byte
             if (key[i] == leafByte) {
                 continue;
-            } else if (key[i] < leafByte) {
-                // If the key is less than the leaf value, we do insert without
-                // tracking the path, as this will never be the new fp path. We
-                // only update the current fp information if it changes.
-                QuART_stail::insert_recursive_only_update_fp(
+            }
+            // If the key byte is less than the leaf value, we do insert without
+            // tracking the path, as this will never be the new fp path. We
+            // only update the current fp information if it changes.
+            else if (key[i] < leafByte) {
+                QuART_stail::insert_recursive_preserve_fp(
                     this, this->root, &this->root, key, 0, value,
                     maxPrefixLength);
                 return;
-            } else {
+            }
+            // Key byte is greater than leaf byte
+            else {
+                // If we are at the first byte
                 if (i == 0) {
+                    // If the key is a bridge value, change fp
                     if ((key[0] == leafByte + 1) && (key[1] == 0) &&
                         (key[2] == 0) && ((leafValue >> 8 * 2) & 0xFF) == 255 &&
                         ((leafValue >> 8) & 0xFF) == 255) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
-                        QuART_stail::insert_recursive_always_change_fp(
-                            this, this->root, &this->root, key, 0, value,
-                            maxPrefixLength);
-                        return;
-                    } else {
-                        QuART_stail::insert_recursive_only_update_fp(
+                        QuART_stail::insert_recursive_change_fp(
                             this, this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
-                } else if (i == 1) {
+                    // If it is not a bridge value, insert without changing
+                    else {
+                        QuART_stail::insert_recursive_preserve_fp(
+                            this, this->root, &this->root, key, 0, value,
+                            maxPrefixLength);
+                        return;
+                    }
+                }
+                // If we are at the second byte
+
+                else if (i == 1) {
+                    // If the key is a bridge value, change fp
                     if ((key[1] == leafByte + 1) && (key[2] == 0) &&
                         (key[0] == ((leafValue >> 8 * 3) & 0xFF)) &&
                         ((leafValue >> 8) & 0xFF) == 255) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
-                        QuART_stail::insert_recursive_always_change_fp(
-                            this, this->root, &this->root, key, 0, value,
-                            maxPrefixLength);
-                        return;
-                    } else {
-                        QuART_stail::insert_recursive_only_update_fp(
+                        QuART_stail::insert_recursive_change_fp(
                             this, this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
                     }
-                } else {
+                    // If it is not a bridge value, insert without changing
+                    else {
+                        QuART_stail::insert_recursive_preserve_fp(
+                            this, this->root, &this->root, key, 0, value,
+                            maxPrefixLength);
+                        return;
+                    }
+                }
+                // If we are at the third byte
+                else {
+                    // If the key is a bridge value, change fp
                     if ((key[2] == leafByte + 1) &&
                         (key[0] == ((leafValue >> 8 * 3) & 0xFF)) &&
                         (key[1] == ((leafValue >> 8 * 2) & 0xFF))) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
-                        QuART_stail::insert_recursive_always_change_fp(
+                        QuART_stail::insert_recursive_change_fp(
                             this, this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
-                    } else {
-                        QuART_stail::insert_recursive_only_update_fp(
+                    }
+                    // If it is not a bridge value, insert without changing
+                    else {
+                        QuART_stail::insert_recursive_preserve_fp(
                             this, this->root, &this->root, key, 0, value,
                             maxPrefixLength);
                         return;
@@ -96,7 +121,7 @@ class QuART_stail : public ART {
             }
         }
 
-        // If the algorithm reaches here, it means that fp insert will happen.
+        /* If the algorithm reaches here, it means that fp insert will happen */
 
         // If depth is at maxPrefixLength - 1, we do not need to worry about
         // leaf expansion of prefix mismatch, we can directly insert the new
@@ -125,9 +150,10 @@ class QuART_stail : public ART {
             return;
         }
         // Else, we call the recursive function and let it handle leaf expansion
-        // or prefix mismatch if there is one
+        // or prefix mismatch if there is one. If not, it will directly insert
+        // into the fp
         else {
-            QuART_stail::insert_recursive_only_update_fp(
+            QuART_stail::insert_recursive_preserve_fp(
                 this, this->fp, this->fp_ref, key, fp_depth, value,
                 maxPrefixLength);
             return;
@@ -135,7 +161,9 @@ class QuART_stail : public ART {
     }
 
    private:
-    void insert_recursive_only_update_fp(ART* tree, ArtNode* node,
+
+    // Recursive insert function that does NOT change fp_leaf value
+    void insert_recursive_preserve_fp(ART* tree, ArtNode* node,
                                          ArtNode** nodeRef, uint8_t key[],
                                          unsigned depth, uintptr_t value,
                                          unsigned maxKeyLength) {
@@ -253,7 +281,7 @@ class QuART_stail : public ART {
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
-            insert_recursive_only_update_fp(tree, *child, child, key, depth + 1,
+            insert_recursive_preserve_fp(tree, *child, child, key, depth + 1,
                                             value, maxKeyLength);
             return;
         }
@@ -280,21 +308,18 @@ class QuART_stail : public ART {
         }
     }
 
-    void insert_recursive_always_change_fp(ART* tree, ArtNode* node,
+    // Recursive insert function that changes fp_leaf value
+    void insert_recursive_change_fp(ART* tree, ArtNode* node,
                                            ArtNode** nodeRef, uint8_t key[],
                                            unsigned depth, uintptr_t value,
                                            unsigned maxKeyLength) {
-        size_t depth_prev = depth;
-
-        // Insert the leaf value into the tree
+        // Insert the leaf value into the tree, no operations needed for keys[0]
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
-            // Adjust only fp_leaf (fp will still be null)
-            tree->fp_leaf = *nodeRef;
-            tree->fp_ref = nodeRef;
             return;
         }
 
+        // If leaf expansion is needed
         if (isLeaf(node)) {
             // Replace leaf with Node4 and store both leaves in it
             uint8_t existingKey[maxKeyLength];
@@ -309,14 +334,14 @@ class QuART_stail : public ART {
             memcpy(newNode->prefix, key + depth,
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
-
-            fp_path[fp_path_length - 1] = newNode;
+            
+            this->fp_path[this->fp_path_length - 1] = newNode;
+            this->fp_depth = depth + newPrefixLength;
 
             newNode->insertNode4(this, nodeRef,
                                  existingKey[depth + newPrefixLength], node);
             newNode->stailInsertNode4ChangeFp(
-                this, nodeRef, key[depth + newPrefixLength], makeLeaf(value),
-                depth_prev + newPrefixLength);
+                this, nodeRef, key[depth + newPrefixLength], makeLeaf(value));
             return;
         }
 
@@ -352,9 +377,10 @@ class QuART_stail : public ART {
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }
+                this->fp_depth = depth;
                 newNode->stailInsertNode4ChangeFp(this, nodeRef,
                                                   key[depth + mismatchPos],
-                                                  makeLeaf(value), depth_prev);
+                                                  makeLeaf(value));
                 return;
             }
             depth += node->prefixLength;
@@ -366,29 +392,30 @@ class QuART_stail : public ART {
             fp_path[fp_path_length] =
                 *child;        // add the node to the array before recursion
             fp_path_length++;  // increase the size of the array
-            insert_recursive_always_change_fp(tree, *child, child, key,
+            insert_recursive_change_fp(tree, *child, child, key,
                                               depth + 1, value, maxKeyLength);
             return;
         }
 
         // Insert leaf into inner node
         ArtNode* newNode = makeLeaf(value);
+        this->fp_depth = depth - node->prefixLength;
         switch (node->type) {
             case NodeType4:
                 static_cast<Node4*>(node)->stailInsertNode4ChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                    this, nodeRef, key[depth], newNode);
                 break;
             case NodeType16:
                 static_cast<Node16*>(node)->stailInsertNode16ChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                    this, nodeRef, key[depth], newNode);
                 break;
             case NodeType48:
                 static_cast<Node48*>(node)->stailInsertNode48ChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                    this, nodeRef, key[depth], newNode);
                 break;
             case NodeType256:
                 static_cast<Node256*>(node)->stailInsertNode256ChangeFp(
-                    this, nodeRef, key[depth], newNode, depth_prev);
+                    this, nodeRef, key[depth], newNode);
                 break;
         }
     }

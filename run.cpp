@@ -27,7 +27,7 @@ std::vector<key_type> read_bin(const char* filename) {
 
 int main(int argc, char** argv) {
     bool verbose = false;      // optional argument
-    int N = 5000000;           // optional argument
+    int N = 500000000;           // optional argument
     string input_file;         // required argument
     string tree_type = "ART";  // default tree type
 
