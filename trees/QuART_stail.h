@@ -10,7 +10,6 @@ class QuART_stail : public ART {
     QuART_stail() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
-
         /* Check if we can tail insert */
 
         ArtNode* root = this->root;
@@ -159,12 +158,11 @@ class QuART_stail : public ART {
     }
 
    private:
-
     /* Recursive insert function that does NOT change fp_leaf value */
     void insert_recursive_preserve_fp(ArtNode* node, ArtNode** nodeRef,
                                       uint8_t key[], unsigned depth,
                                       uintptr_t value, unsigned maxKeyLength) {
-        // Insert the leaf 
+        // Insert the leaf
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
             // Adjust fp parameters
