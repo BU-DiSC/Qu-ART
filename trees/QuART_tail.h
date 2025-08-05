@@ -1,6 +1,10 @@
 #pragma once
 
+#include "../ART.h"
+#include "../ArtNode.h"
+
 namespace ART {
+
 class QuART_tail : public ART {
    public:
     QuART_tail() : ART() {}

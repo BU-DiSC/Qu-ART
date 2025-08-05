@@ -4,12 +4,12 @@
 #include <iostream>
 #include <vector>
 
-#include "ART.h"
+
 #include "ArtNode.h"
-#include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
 #include "Helper.h"
 #include "trees/QuART_lil.h"
+#include "trees/QuART_stail.h"
 #include "trees/QuART_tail.h"
 
 using namespace std;
@@ -59,8 +59,10 @@ int main(int argc, char** argv) {
         tree = new ART::ART();
     } else if (tree_type == "QuART_tail") {
         tree = new ART::QuART_tail();
-    } else if (tree_type == "QuArt_lil") {
+    } else if (tree_type == "QuART_lil") {
         tree = new ART::QuART_lil();
+    } else if (tree_type == "QuART_stail") {
+        tree = new ART::QuART_stail();
     } else {
         cerr << "Unknown tree type: " << tree_type << endl;
         return 1;
