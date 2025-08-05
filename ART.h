@@ -41,12 +41,7 @@ namespace ART {
             ArtNode* fp_leaf;
             size_t fp_depth;
             ArtNode** fp_ref;
-            int counter1;
-            int counter2;
-            int counter3;
-            int counter4;
-
-            int smartIdx;
+            int numberOfFpChanges;
 
             // constructor
             ART()
@@ -57,7 +52,7 @@ namespace ART {
                   fp_leaf(nullptr),
                   fp_depth(0),
                   fp_ref(nullptr),
-                  smartIdx(2)
+                  numberOfFpChanges(0)
             {}
 
             void insert(uint8_t key[], uintptr_t value) {

@@ -9,6 +9,7 @@
 #include "QuARTVariants/QuART_xtail.h" 
 #include "QuARTVariants/QuART_lil.h" 
 #include "QuARTVariants/QuART_iglil.h" 
+#include "QuARTVariants/QuART_stail.h" 
 #include "ArtNode.h"
 #include "ArtNodeNewMethods.cpp"
 #include "Chain.h"
@@ -48,21 +49,13 @@ int main(int argc, char** argv) {
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
     // Change the type of tree to ART::ART to use ART tree
-    ART::QuART_iglil* tree = new ART::QuART_iglil();
+    ART::QuART_stail* tree = new ART::QuART_stail();
 
     for (uint64_t i = 0; i < N; i++) {
         uint8_t key[4];
         ART::loadKey(keys[i], key);
 
-        tree->insert(key, keys[i]);
-                
-        // Uncomment the following lines to verify the tail path after each insertion
-        /*
-        if (!tree->verifyTailPath()) {
-            cout << "fp path verification failed at i=" << i << ", keys=" << keys[i] << endl;
-            break;
-        }
-        */    
+        tree->insert(key, keys[i]);      
     }
 
     return 0;

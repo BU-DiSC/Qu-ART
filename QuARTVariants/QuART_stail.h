@@ -13,11 +13,13 @@ namespace ART {
             void insert(uint8_t key[], uintptr_t value) {
                 // Check if we can tail insert
                 ArtNode* root = this->root;
-                // Check if the root is not null and is not a leaf
+                // If the root is null (i = 0), we will insert and change fp since keys[0] = 1 in all cases
                 if (root == nullptr) {
                     QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                     return;                                   
                 } 
+                // If the root is leaf (i = 1), we do a leaf insert and don't update fp_leaf since
+                // keys[1] can be an outlier
                 else if (isLeaf(root)) { 
                     QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                     return;
@@ -35,7 +37,6 @@ namespace ART {
                             // If the key is less than the leaf value, we do insert without 
                             // tracking the path, as this will never be the new fp path. We only
                             // update the current fp information if it changes. 
-                            //counter3++;
                             QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                             return;
                         }
@@ -43,15 +44,12 @@ namespace ART {
                             if (i == 0) {
                                 if ((key[0] == leafByte + 1) && (key[1] == 0) && (key[2] == 0) && 
                                     ((leafValue >> 8 * 2) & 0xFF) == 255 && ((leafValue >> 8) & 0xFF) == 255)  {
-                                        //counter2++;
-                                        //printf("tail is changing for %lu, from %lu\n", value, leafValue);
                                         this->fp_path = {this->root};
                                         this->fp_path_length = 1;                    
                                         QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                         return;                                   
                                 } 
                                 else {
-                                    //counter3++;
                                     QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                     return;
                                 }
@@ -59,38 +57,35 @@ namespace ART {
                             else if (i == 1) {
                                 if ((key[1] == leafByte + 1) && (key[2] == 0) && (key[0] == ((leafValue >> 8*3) & 0xFF)) && 
                                     ((leafValue >> 8) & 0xFF) == 255)  {
-                                        //counter2++;
-                                        //printf("tail is changing for %lu, from %lu\n", value, leafValue);
                                         this->fp_path = {this->root};
                                         this->fp_path_length = 1;                    
                                         QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                         return;                                   
                                 } 
                                 else {
-                                    //counter3++;
                                     QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                     return;
                                 }
                             }
                             else {
                                 if ((key[2] == leafByte + 1) && (key[0] == ((leafValue >> 8*3) & 0xFF)) && (key[1] == ((leafValue >> 8*2) & 0xFF))) {
-                                    //counter2++;
-                                    //printf("tail is changing for %lu, from %lu\n", value, leafValue);
                                     this->fp_path = {this->root};
                                     this->fp_path_length = 1;                
                                     QuART_stail::insert_recursive_always_change_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                     return;                                   
                                 } 
                                 else {
-                                    //counter3++;
                                     QuART_stail::insert_recursive_only_update_fp(this, this->root, &this->root, key, 0, value, maxPrefixLength);
                                     return;
                                 }
                             }
                         }
-                    }                    
-                //counter1++;
+                    }       
                 
+                // If the algorithm reaches here, it means that fp insert will happen.
+                
+                // If depth is at maxPrefixLength - 1, we do not need to worry about leaf expansion of prefix mismatch,
+                // we can directly insert the new leaf into fp node
                 if (this->fp_depth == maxPrefixLength - 1) {
                     // Insert leaf into fp
                     ArtNode* newNode = makeLeaf(value);
@@ -113,7 +108,10 @@ namespace ART {
                             break;
                     }
                     return;
-                } else {
+                }
+                // Else, we call the recursive function and let it handle leaf expansion or prefix mismatch
+                // if there is one
+                else {
                     QuART_stail::insert_recursive_only_update_fp(
                         this, this->fp, this->fp_ref, key, fp_depth, value,
                         maxPrefixLength);
