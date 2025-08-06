@@ -27,7 +27,7 @@ std::vector<key_type> read_bin(const char* filename) {
 
 int main(int argc, char** argv) {
     bool verbose = false;      // optional argument
-    int N = 500000000;           // optional argument
+    int N = 500000000;         // optional argument
     string input_file;         // required argument
     string tree_type = "ART";  // default tree type
 
@@ -71,12 +71,12 @@ int main(int argc, char** argv) {
             cout << "Tree type: " << tree_type << endl;
             cout << "Insertion time: " << insertion_time << " ns" << endl;
         }
-    
+
         // Query 1% of entries
         uint64_t minval = 1;
         uint64_t maxval = N;
         srand(time(0));
-    
+
         long long query_time = 0;
         for (uint64_t i = 0; i < (N / 100); i++) {
             int random = rand() % (maxval - minval + 1) + minval;
@@ -88,17 +88,17 @@ int main(int argc, char** argv) {
             auto duration =
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
+            assert(ART::isLeaf(leaf) &&
+                   ART::getLeafValue(leaf) == keys[random]);
         }
-    
+
         if (verbose) {
             cout << "Query time: " << query_time << " ns" << endl;
         }
-    
+
         // Output the times in csv format, including tree type
         cout << insertion_time << "," << query_time << endl;
-    } 
-    else if (tree_type == "QuART_tail") {
+    } else if (tree_type == "QuART_tail") {
         ART::QuART_tail* tree = new ART::QuART_tail();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
@@ -116,12 +116,12 @@ int main(int argc, char** argv) {
             cout << "Tree type: " << tree_type << endl;
             cout << "Insertion time: " << insertion_time << " ns" << endl;
         }
-    
+
         // Query 1% of entries
         uint64_t minval = 1;
         uint64_t maxval = N;
         srand(time(0));
-    
+
         long long query_time = 0;
         for (uint64_t i = 0; i < (N / 100); i++) {
             int random = rand() % (maxval - minval + 1) + minval;
@@ -133,17 +133,17 @@ int main(int argc, char** argv) {
             auto duration =
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
+            assert(ART::isLeaf(leaf) &&
+                   ART::getLeafValue(leaf) == keys[random]);
         }
-    
+
         if (verbose) {
             cout << "Query time: " << query_time << " ns" << endl;
         }
-    
+
         // Output the times in csv format, including tree type
         cout << insertion_time << "," << query_time << endl;
-    } 
-    else if (tree_type == "QuART_lil") {
+    } else if (tree_type == "QuART_lil") {
         ART::QuART_lil* tree = new ART::QuART_lil();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
@@ -161,12 +161,12 @@ int main(int argc, char** argv) {
             cout << "Tree type: " << tree_type << endl;
             cout << "Insertion time: " << insertion_time << " ns" << endl;
         }
-    
+
         // Query 1% of entries
         uint64_t minval = 1;
         uint64_t maxval = N;
         srand(time(0));
-    
+
         long long query_time = 0;
         for (uint64_t i = 0; i < (N / 100); i++) {
             int random = rand() % (maxval - minval + 1) + minval;
@@ -178,17 +178,17 @@ int main(int argc, char** argv) {
             auto duration =
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
+            assert(ART::isLeaf(leaf) &&
+                   ART::getLeafValue(leaf) == keys[random]);
         }
-    
+
         if (verbose) {
             cout << "Query time: " << query_time << " ns" << endl;
         }
-    
+
         // Output the times in csv format, including tree type
         cout << insertion_time << "," << query_time << endl;
-    } 
-    else {
+    } else {
         cerr << "Unknown tree type: " << tree_type << endl;
         return 1;
     }
