@@ -13,18 +13,11 @@ class QuART_stail : public ART {
         /* Check if we can tail insert */
 
         ArtNode* root = this->root;
+        
         // If the root is null (i = 0), we will insert and change fp since
         // keys[0] = 1 in all cases
         if (root == nullptr) {
-            QuART_stail::insert_recursive_preserve_fp(
-                this->root, &this->root, key, 0, value, maxPrefixLength);
-            return;
-        }
-
-        // If the root is leaf (i = 1), we do a leaf insert and don't update
-        // fp_leaf since keys[1] can be an outlier
-        else if (isLeaf(root)) {
-            QuART_stail::insert_recursive_preserve_fp(
+            QuART_stail::insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
@@ -162,15 +155,6 @@ class QuART_stail : public ART {
     void insert_recursive_preserve_fp(ArtNode* node, ArtNode** nodeRef,
                                       uint8_t key[], unsigned depth,
                                       uintptr_t value, unsigned maxKeyLength) {
-        // Insert the leaf
-        if (node == NULL) {
-            *nodeRef = makeLeaf(value);
-            // Adjust fp parameters
-            this->fp_leaf = *nodeRef;
-            this->fp_ref = nodeRef;
-            return;
-        }
-
         // If leaf expansion is needed
         if (isLeaf(node)) {
             // Replace leaf with Node4 and store both leaves in it
@@ -318,9 +302,12 @@ class QuART_stail : public ART {
     void insert_recursive_change_fp(ArtNode* node, ArtNode** nodeRef,
                                     uint8_t key[], unsigned depth,
                                     uintptr_t value, unsigned maxKeyLength) {
-        // Insert the leaf value into the tree, no operations needed for keys[0]
+        // Insert the leaf
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
+            // Adjust fp parameters
+            this->fp_leaf = *nodeRef;
+            this->fp_ref = nodeRef;
             return;
         }
 
