@@ -174,7 +174,7 @@ class QuART_stail : public ART {
             // If the changing node was the fp
             if (this->fp_leaf == node) {
                 // If fp is not null (used only to avoid second insert)
-                if (fp != nullptr) {
+                if (!isLeaf(this->fp)) {
                     this->fp_depth += fp->prefixLength;
                     this->fp_depth++;
                 }
@@ -307,7 +307,9 @@ class QuART_stail : public ART {
             *nodeRef = makeLeaf(value);
             // Adjust fp parameters
             this->fp_leaf = *nodeRef;
+            this->fp = *nodeRef;
             this->fp_ref = nodeRef;
+            this->fp_depth = 0;
             return;
         }
 
