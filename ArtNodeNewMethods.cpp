@@ -655,7 +655,7 @@ void Node16::stailInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
             tree->fp_ref = nodeRef;
         }
         // If the changing node hosts the cell fp_ref points to
-        else if (tree->fp_path[tree->fp_path_length - 2] == this) {
+        else if (tree->fp_path_length >= 2 && tree->fp_path[tree->fp_path_length - 2] == this) {
             tree->fp_path[tree->fp_path_length - 2] = newNode;
             // Find the cell that points to the fast path node
             // and update the fp_ref to point to the cell
@@ -703,7 +703,7 @@ void Node48::stailInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
             tree->fp_ref = nodeRef;
         }
         // If the changing node hosts the cell fp_ref points to
-        else if (tree->fp_path[tree->fp_path_length - 2] == this) {
+        else if (tree->fp_path_length >= 2 && tree->fp_path[tree->fp_path_length - 2] == this) {
             tree->fp_path[tree->fp_path_length - 2] = newNode;
             // Find the cell that points to the fast path node
             // and update the fp_ref to point to the cell
