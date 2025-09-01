@@ -590,7 +590,6 @@ void Node4::stailInsertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
         for (unsigned i = 0; i < 4; i++)
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
-        delete this;
 
         // If the changing node is the fast path node
         if (tree->fp == this) {
@@ -611,6 +610,8 @@ void Node4::stailInsertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
                 }
             }
         }
+
+        delete this;
 
         return newNode->stailInsertNode16PreserveFp(tree, nodeRef, keyByte,
                                                     child);
@@ -646,7 +647,6 @@ void Node16::stailInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
             newNode->childIndex[flipSign(this->key[i])] = i;
         copyPrefix(this, newNode);
         newNode->count = this->count;
-        delete this;
 
         // If the changing node is the fast path node
         if (tree->fp == this) {
@@ -666,6 +666,8 @@ void Node16::stailInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
                 }
             }
         }
+
+        delete this;
 
         return newNode->stailInsertNode48PreserveFp(tree, nodeRef, keyByte,
                                                     child);
@@ -693,7 +695,6 @@ void Node48::stailInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
         newNode->count = this->count;
         copyPrefix(this, newNode);
         *nodeRef = newNode;
-        delete this;
 
         // If the changing node is the fast path node
         if (tree->fp == this) {
@@ -713,6 +714,8 @@ void Node48::stailInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
                 }
             }
         }
+
+        delete this;
 
         // There is no need for a stailInsertNode256PreserveFp method
         // because Node256 can't expand further
