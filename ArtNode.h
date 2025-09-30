@@ -52,6 +52,7 @@
          int8_t type;
          // compressed path (prefix)
          uint8_t prefix[maxPrefixLength];
+
          // version number for optimistic concurrency control
          std::atomic<uint64_t> version;
 
@@ -76,6 +77,7 @@
          // Base ART insert function for Node4
          void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+        
          void insertNode4Smart(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child);
 
@@ -102,6 +104,12 @@
             ArtNode* child);
         void insertNode4OnlyUpdateFpS(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                 ArtNode* child);
+
+
+        // Concurrent ART insert function for Node4
+         void insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child, uint64_t version, ArtNode* parent, uint64_t parentVersion);
+
          // Erase function for Node4
          void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
@@ -144,6 +152,11 @@
          // Only updates the existing fp structures if needed.
          void insertNode16OnlyUpdateFpS(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child);
+
+         // Concurrent ART insert function for Node16
+         void insertNode16OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child, uint64_t version, ArtNode* parent, uint64_t parentVersion);
+             
          // Erase function for Node16
          void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 
@@ -187,6 +200,9 @@
          // Only updates the existing fp structures if needed.
          void insertNode48OnlyUpdateFpS(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             ArtNode* child);
+        // Concurrent ART insert function for Node48
+         void insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child, uint64_t version, ArtNode* parent, uint64_t parentVersion);
          // Erase function for Node48
          void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 
@@ -222,6 +238,9 @@
          // and always in lil insert. Always updates the existing fp structures.
          void insertNode256AlwaysChangeFp2(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
              ArtNode* child);
+         // Concurrent ART insert function for Node256
+         void insertNode256OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+             ArtNode* child, uint64_t version, ArtNode* parent, uint64_t parentVersion);
          // Erase function for Node256
          void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 

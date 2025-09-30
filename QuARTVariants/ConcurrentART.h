@@ -37,7 +37,7 @@ private:
         }
 
         if (isLeaf(node)) {
-            
+
             // TODO: think about the correct location for it
             if (parent != nullptr) {
                 readUnlockOrRestart(parent, parentVersion);
@@ -57,8 +57,10 @@ private:
             memcpy(newNode->prefix, key + depth, min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            newNode->insertNode4(nullptr, nodeRef, existingKey[depth + newPrefixLength], node);
-            newNode->insertNode4(nullptr, nodeRef, key[depth + newPrefixLength], makeLeaf(value));
+            newNode->insertNode4OLC(nullptr, nodeRef, existingKey[depth + newPrefixLength], node, 
+                version, parent, parentVersion);
+            newNode->insertNode4OLC(nullptr, nodeRef, key[depth + newPrefixLength], makeLeaf(value), 
+                version, parent, parentVersion);
             
             if (parent) writeUnlock(parent);
 
@@ -81,7 +83,8 @@ private:
 
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    newNode->insertNode4(nullptr, nodeRef, node->prefix[mismatchPos], node);
+                    newNode->insertNode4OLC(nullptr, nodeRef, node->prefix[mismatchPos], node, 
+                        version, parent, parentVersion);
                     node->prefixLength -= (mismatchPos + 1);
                     memmove(node->prefix, node->prefix + mismatchPos + 1,
                            min(node->prefixLength, maxPrefixLength));
@@ -89,11 +92,13 @@ private:
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    newNode->insertNode4(nullptr, nodeRef, minKey[depth + mismatchPos], node);
+                    newNode->insertNode4OLC(nullptr, nodeRef, minKey[depth + mismatchPos], node, 
+                        version, parent, parentVersion);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                            min(node->prefixLength, maxPrefixLength));
                 }
-                newNode->insertNode4(nullptr, nodeRef, key[depth + mismatchPos], makeLeaf(value));
+                newNode->insertNode4OLC(nullptr, nodeRef, key[depth + mismatchPos], makeLeaf(value), 
+                    version, parent, parentVersion);
                 
                 if (parent) writeUnlock(parent);
 
@@ -123,16 +128,20 @@ private:
         
         switch (node->type) {
             case NodeType4:
-                static_cast<Node4*>(node)->insertNode4(nullptr, nodeRef, key[depth], newNode);
+                static_cast<Node4*>(node)->insertNode4OLC(nullptr, nodeRef, key[depth], newNode,
+                    version, parent, parentVersion);
                 break;
             case NodeType16:
-                static_cast<Node16*>(node)->insertNode16(nullptr, nodeRef, key[depth], newNode);
+                static_cast<Node16*>(node)->insertNode16OLC(nullptr, nodeRef, key[depth], newNode,
+                    version, parent, parentVersion);
                 break;
             case NodeType48:
-                static_cast<Node48*>(node)->insertNode48(nullptr, nodeRef, key[depth], newNode);
+                static_cast<Node48*>(node)->insertNode48OLC(nullptr, nodeRef, key[depth], newNode,
+                    version, parent, parentVersion);
                 break;
             case NodeType256:
-                static_cast<Node256*>(node)->insertNode256(nullptr, nodeRef, key[depth], newNode);
+                static_cast<Node256*>(node)->insertNode256OLC(nullptr, nodeRef, key[depth], newNode,
+                    version, parent, parentVersion);
                 break;
         }
 
