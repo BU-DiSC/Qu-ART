@@ -21,7 +21,7 @@
 #include <array>
 
 #include "Helper.h"     // Helper functions
-#include "ArtNode.h"    // ArtNode definitions
+#include "ArtNode.h"    // ArtNode* definitions
 
 namespace ART {
 
@@ -34,11 +34,11 @@ inline void pause() {
     _mm_pause();
 }
 
-inline uint64_t awaitNodeUnlocked(Node node) {
-    uint64_t version = node.version.load();
+inline uint64_t awaitNodeUnlocked(ArtNode* node) {
+    uint64_t version = node->version.load();
     while ((version & 2) == 2) {   // spin while locked
         pause();
-        version = node.version.load();
+        version = node->version.load();
     }
     return version;
 }
@@ -52,18 +52,18 @@ inline bool isObsolete(uint64_t version) {
 }
 
 // Write unlock helpers before users
-inline void writeUnlock(Node node) {
+inline void writeUnlock(ArtNode* node) {
     // reset locked bit and overflow into version
-    node.version.fetch_add(2);
+    node->version.fetch_add(2);
 }
 
-inline void writeUnlockObsolete(Node node) {
+inline void writeUnlockObsolete(ArtNode* node) {
     // set obsolete, reset locked, overflow into version
-    node.version.fetch_add(3);
+    node->version.fetch_add(3);
 }
 
 // Read-side helpers
-inline uint64_t readLockOrRestart(Node node) {
+inline uint64_t readLockOrRestart(ArtNode* node) {
     uint64_t version = awaitNodeUnlocked(node);
     if (isObsolete(version)) {
         restart();
@@ -71,38 +71,38 @@ inline uint64_t readLockOrRestart(Node node) {
     return version;
 }
 
-inline void readUnlockOrRestart(Node node, uint64_t version) {
-    if (version != node.version.load()) {
+inline void readUnlockOrRestart(ArtNode* node, uint64_t version) {
+    if (version != node->version.load()) {
         restart();
     }
 }
 
-inline void readUnlockOrRestart(Node node, uint64_t version, Node lockedNode) {
-    if (version != node.version.load()) {
+inline void readUnlockOrRestart(ArtNode* node, uint64_t version, ArtNode* lockedNode) {
+    if (version != node->version.load()) {
         writeUnlock(lockedNode);
         restart();
     }
 }
 
-inline void checkOrRestart(Node node, uint64_t version) {
+inline void checkOrRestart(ArtNode* node, uint64_t version) {
     readUnlockOrRestart(node, version);
 }
 
 // Write upgrade/lock
-inline void upgradeToWriteLockOrRestart(Node node, uint64_t version) {
-    if (!node.version.CAS(version, setLockedBit(version))) {
+inline void upgradeToWriteLockOrRestart(ArtNode* node, uint64_t version) {
+    if (!node->version.compare_exchange_strong(version, setLockedBit(version))) {
         restart();
     }
 }
 
-inline void upgradeToWriteLockOrRestart(Node node, uint64_t version, Node lockedNode) {
-    if (!node.version.CAS(version, setLockedBit(version))) {
+inline void upgradeToWriteLockOrRestart(ArtNode* node, uint64_t version, ArtNode* lockedNode) {
+    if (!node->version.compare_exchange_strong(version, setLockedBit(version))) {
         writeUnlock(lockedNode);
         restart();
     }
 }
 
-inline void writeLockOrRestart(Node node) {
+inline void writeLockOrRestart(ArtNode* node) {
     // Single-attempt upgrade; CAS failure triggers restart() inside upgrade
     uint64_t version = readLockOrRestart(node);
     upgradeToWriteLockOrRestart(node, version);

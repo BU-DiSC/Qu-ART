@@ -15,6 +15,7 @@
  #include <sys/time.h>  // gettime
   
  #include <algorithm>  // std::random_shuffle
+ #include <atomic>
  #include <chrono>
  
  #include "Helper.h" 
@@ -104,7 +105,6 @@
             ArtNode* child);
         void insertNode4OnlyUpdateFpS(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                 ArtNode* child);
-
 
         // Concurrent ART insert function for Node4
          void insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,

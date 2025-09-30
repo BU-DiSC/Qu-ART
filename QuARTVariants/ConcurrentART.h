@@ -3,14 +3,13 @@
 #include "ART.h"
 #include "ArtNode.h"
 #include "OLC.h"
+#include "ConcurrentArtNodeMethods.cpp"
 
 namespace ART {
 
-class ConcurrentART {
+class ConcurrentART : public ART {
 public:
-    ArtNode* root;
-
-    ConcurrentART() : root(nullptr) {}
+    ConcurrentART() : ART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
         while (true) {
@@ -103,7 +102,7 @@ private:
                 if (parent) writeUnlock(parent);
 
                 writeUnlock(node);
-                writeUnlock(parent)
+                writeUnlock(parent);
                 
                 return;
             }
@@ -113,7 +112,7 @@ private:
         // Find child node
         ArtNode** child = findChild(node, key[depth]);
 
-        checkOrRestart(node, version, parent);
+        checkOrRestart(node, version);
         
         if (*child) {
             // TODO: think about the correct location for it
@@ -146,5 +145,7 @@ private:
         }
 
     }
+
+};
 
 } // namespace ART

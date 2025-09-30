@@ -8,12 +8,12 @@
 namespace ART {
 void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         ArtNode* child, uint64_t version, ArtNode* parent, uint64_t parentVersion) {
-    // Insert leaf into inner node
+    // Insert leaf into inner this
     if (this->count < 4) {
         // Insert element
 
-        upgradeToWriteLockOrRestart(node, version);
-        readUnlockOrRestart(parent, parentVersion, node);
+        upgradeToWriteLockOrRestart(this, version);
+        readUnlockOrRestart(parent, parentVersion, this);
 
 
         unsigned pos;
@@ -25,13 +25,13 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         this->child[pos] = child;
         this->count++;
 
-        writeUnlock(node);
+        writeUnlock(this);
 
     } else {
         // Grow to Node16
 
         upgradeToWriteLockOrRestart(parent, parentVersion);
-        upgradeToWriteLockOrRestart(node, version, parent);
+        upgradeToWriteLockOrRestart(this, version, parent);
 
         Node16* newNode = new Node16();
         *nodeRef = newNode;
@@ -42,7 +42,7 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
         delete this;
 
-        writeUnlockObselete(node);
+        writeUnlockObsolete(this);
         writeUnlock(parent);
 
         return newNode->insertNode16OLC(tree, nodeRef, keyByte, child, 
@@ -51,14 +51,14 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
 }
 
     
-void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-            ArtNode* child) {
-    // Insert leaf into inner node
+void Node16::insertNode16OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+            ArtNode* child, uint64_t version, ArtNode* parent, uint64_t parentVersion) {
+    // Insert leaf into inner this
     if (this->count < 16) {
         // Insert element
 
-        upgradeToWriteLockOrRestart(node, version);
-        readUnlockOrRestart(parent, parentVersion, node);
+        upgradeToWriteLockOrRestart(this, version);
+        readUnlockOrRestart(parent, parentVersion, this);
 
         // Insert element
         uint8_t keyByteFlipped = flipSign(keyByte);
@@ -75,13 +75,13 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         this->child[pos] = child;
         this->count++;
 
-        writeUnlock(node);
+        writeUnlock(this);
 
     } else 
         // Grow to Node48
 
         upgradeToWriteLockOrRestart(parent, parentVersion);
-        upgradeToWriteLockOrRestart(node, version, parent);
+        upgradeToWriteLockOrRestart(this, version, parent);
 
         Node48* newNode = new Node48();
         *nodeRef = newNode;
@@ -92,7 +92,7 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         newNode->count = this->count;
         delete this;
 
-        writeUnlockObselete(node);
+        writeUnlockObsolete(this);
         writeUnlock(parent);
 
         return newNode->insertNode48OLC(tree, nodeRef, keyByte, child, 
@@ -101,12 +101,12 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
 
 void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
         uint64_t version, ArtNode* parent, uint64_t parentVersion) {
-    // Insert leaf into inner node
+    // Insert leaf into inner this
     if (this->count < 48) {
         // Insert element
 
-        upgradeToWriteLockOrRestart(node, version);
-        readUnlockOrRestart(parent, parentVersion, node);
+        upgradeToWriteLockOrRestart(this, version);
+        readUnlockOrRestart(parent, parentVersion, this);
 
         unsigned pos = this->count;
         if (this->child[pos])
@@ -115,13 +115,13 @@ void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtN
                 this->childIndex[keyByte] = pos;
                     this->count++;
 
-        writeUnlock(node);
+        writeUnlock(this);
 
     } else {
         // Grow to Node256
 
         upgradeToWriteLockOrRestart(parent, parentVersion);
-        upgradeToWriteLockOrRestart(node, version, parent);
+        upgradeToWriteLockOrRestart(this, version, parent);
 
         Node256* newNode = new Node256();
         for (unsigned i = 0; i < 256; i++)
@@ -132,7 +132,7 @@ void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtN
         *nodeRef = newNode;
         delete this;
 
-        writeUnlockObselete(node);
+        writeUnlockObsolete(this);
         writeUnlock(parent);
 
         return newNode->insertNode256OLC(tree, nodeRef, keyByte, child, 
@@ -143,14 +143,14 @@ void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtN
 void Node256::insertNode256OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
         uint64_t version, ArtNode* parent, uint64_t parentVersion) {
 
-    upgradeToWriteLockOrRestart(node, version);
-    readUnlockOrRestart(parent, parentVersion, node);
+    upgradeToWriteLockOrRestart(this, version);
+    readUnlockOrRestart(parent, parentVersion, this);
 
-    // Insert leaf into inner node
+    // Insert leaf into inner this
     this->count++;
     this->child[keyByte] = child;
 
-    writeUnlock(node);
+    writeUnlock(this);
 }  
 
 }
