@@ -52,8 +52,10 @@
          int8_t type;
          // compressed path (prefix)
          uint8_t prefix[maxPrefixLength];
- 
-         ArtNode(int8_t type) : prefixLength(0), count(0), type(type) {}
+         // version number for optimistic concurrency control
+         std::atomic<uint64_t> version;
+
+         ArtNode(int8_t type) : prefixLength(0), count(0), type(type), version(0) {}
      };
  
      // This address is used to communicate that search failed
