@@ -79,6 +79,7 @@
         "cassert": "cpp",
         "csignal": "cpp",
         "regex": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "text_encoding": "cpp"
     },
 }

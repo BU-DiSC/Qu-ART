@@ -13,7 +13,10 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // Insert element
 
         upgradeToWriteLockOrRestart(this, version);
-        readUnlockOrRestart(parent, parentVersion, this);
+
+        if (parentVersion != -1) {
+            readUnlockOrRestart(parent, parentVersion, this);
+        }
 
 
         unsigned pos;

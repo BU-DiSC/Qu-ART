@@ -8,8 +8,8 @@
             "name": "Debug main.cpp",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/debug",
-            "args": ["-N", "50000000", "-f", "../bods/workloads/workload_N50000000_K0_L0.bin"],
+            "program": "${workspaceFolder}/build/concurrent_art",
+            "args": ["-N", "10", "-t", "1", "-v", "-f", "../bods/workloads/workload_N500000000_K0_L0.bin"],
             "environment": [],
             "cwd": "${workspaceFolder}",
             "MIMode": "gdb"

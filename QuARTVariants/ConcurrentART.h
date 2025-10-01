@@ -27,8 +27,6 @@ private:
     void insert(ArtNode* node, ArtNode** nodeRef, uint8_t key[], unsigned depth,
                         uintptr_t value, unsigned maxKeyLength, ArtNode* parent, uint64_t parentVersion) {
 
-        uint64_t version = readLockOrRestart(node);
-
         // Insert the leaf value into the tree
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
@@ -38,11 +36,10 @@ private:
         if (isLeaf(node)) {
 
             // TODO: think about the correct location for it
-            if (parent != nullptr) {
+            if (parent) {
                 readUnlockOrRestart(parent, parentVersion);
+                upgradeToWriteLockOrRestart(parent, parentVersion);
             }
-
-            upgradeToWriteLockOrRestart(node, version, parent);
 
             // Replace leaf with Node4 and store both leaves in it
             uint8_t existingKey[maxKeyLength];
@@ -55,16 +52,18 @@ private:
             newNode->prefixLength = newPrefixLength;
             memcpy(newNode->prefix, key + depth, min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
-
-            newNode->insertNode4OLC(nullptr, nodeRef, existingKey[depth + newPrefixLength], node, 
-                version, parent, parentVersion);
-            newNode->insertNode4OLC(nullptr, nodeRef, key[depth + newPrefixLength], makeLeaf(value), 
-                version, parent, parentVersion);
             
+            newNode->insertNode4OLC(nullptr, nodeRef, existingKey[depth + newPrefixLength], node, 
+                newNode->version, parent, parent ? parentVersion : -1);
+            newNode->insertNode4OLC(nullptr, nodeRef, key[depth + newPrefixLength], makeLeaf(value), 
+                newNode->version, parent, parent ? parentVersion : -1);
+
             if (parent) writeUnlock(parent);
 
             return;
         }
+
+        uint64_t version = readLockOrRestart(node);
 
         // Check prefix
         if (node->prefixLength) {

@@ -51,7 +51,6 @@ int main(int argc, char** argv) {
 
     // read data
     auto keys = read_bin<uint32_t>(input_file.c_str());
-    if ((int)keys.size() < N) N = (int)keys.size();
 
     if (verbose) {
         cout << "Running concurrent ART insertion benchmark:" << endl;
@@ -66,6 +65,8 @@ int main(int argc, char** argv) {
         uint8_t key4[4];
         ART::loadKey(keys[0], key4);
         tree->insert(key4, keys[0]);
+        tree->printTree();
+        
     }
 
     // Parallel inserts for indices [1, N)
@@ -76,11 +77,12 @@ int main(int argc, char** argv) {
         vector<thread> ts;
         ts.reserve(threads);
         for (int tid = 0; tid < threads; ++tid) {
-            ts.emplace_back([&, tid] {
+            ts.emplace_back([&tree, &keys, startIdx, N, threads, tid] {
                 for (int i = startIdx + tid; i < N; i += threads) {
                     uint8_t key4[4];
                     ART::loadKey(keys[i], key4);
                     tree->insert(key4, keys[i]);
+                    tree->printTree();
                 }
             });
         }
