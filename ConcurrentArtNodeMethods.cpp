@@ -11,14 +11,14 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     // Insert leaf into inner this
     if (this->count < 4) {
         // Insert element
-
         upgradeToWriteLockOrRestart(this, version);
 
-        if (parentVersion != -1) {
+        // if parent exists
+        if (parent) {
             readUnlockOrRestart(parent, parentVersion, this);
         }
-
-
+        // no need to worry about it if parent is null
+        
         unsigned pos;
         for (pos = 0; (pos < this->count) && (this->key[pos] < keyByte); pos++);
         memmove(this->key + pos + 1, this->key + pos, this->count - pos);
@@ -33,8 +33,15 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
     } else {
         // Grow to Node16
 
-        upgradeToWriteLockOrRestart(parent, parentVersion);
-        upgradeToWriteLockOrRestart(this, version, parent);
+        // If the parent exists
+        if (parent) {
+            upgradeToWriteLockOrRestart(parent, parentVersion);
+            upgradeToWriteLockOrRestart(this, version, parent);
+        }
+        // if parent is null
+        else {
+            upgradeToWriteLockOrRestart(this, version);
+        }
 
         Node16* newNode = new Node16();
         *nodeRef = newNode;
@@ -43,13 +50,18 @@ void Node4::insertNode4OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         for (unsigned i = 0; i < 4; i++)
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
-        delete this;
 
         writeUnlockObsolete(this);
-        writeUnlock(parent);
+
+        delete this;
+        
+        // if parent exists
+        if (parent) {
+            writeUnlock(parent);
+        }
 
         return newNode->insertNode16OLC(tree, nodeRef, keyByte, child, 
-            version, parent, parentVersion);
+            version, parent, parent ? parentVersion : -1); 
     }
 }
 
@@ -61,7 +73,12 @@ void Node16::insertNode16OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         // Insert element
 
         upgradeToWriteLockOrRestart(this, version);
-        readUnlockOrRestart(parent, parentVersion, this);
+
+        // if parent exists
+        if (parent) {
+            readUnlockOrRestart(parent, parentVersion, this);
+        }
+        // no need to worry about it if parent is null
 
         // Insert element
         uint8_t keyByteFlipped = flipSign(keyByte);
@@ -80,11 +97,18 @@ void Node16::insertNode16OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
 
         writeUnlock(this);
 
-    } else 
+    } else {
         // Grow to Node48
 
-        upgradeToWriteLockOrRestart(parent, parentVersion);
-        upgradeToWriteLockOrRestart(this, version, parent);
+        // If the parent exists
+        if (parent) {
+            upgradeToWriteLockOrRestart(parent, parentVersion);
+            upgradeToWriteLockOrRestart(this, version, parent);
+        }
+        // if parent is null
+        else {
+            upgradeToWriteLockOrRestart(this, version);
+        }
 
         Node48* newNode = new Node48();
         *nodeRef = newNode;
@@ -93,13 +117,18 @@ void Node16::insertNode16OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             newNode->childIndex[flipSign(this->key[i])] = i;
         copyPrefix(this, newNode);
         newNode->count = this->count;
-        delete this;
 
         writeUnlockObsolete(this);
-        writeUnlock(parent);
+        // if parent exists
+        if (parent) {
+            writeUnlock(parent);
+        }
+
+        delete this;
 
         return newNode->insertNode48OLC(tree, nodeRef, keyByte, child, 
-            version, parent, parentVersion);
+            version, parent, parent ? parentVersion : -1);
+    }
 }
 
 void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
@@ -109,7 +138,12 @@ void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtN
         // Insert element
 
         upgradeToWriteLockOrRestart(this, version);
-        readUnlockOrRestart(parent, parentVersion, this);
+
+        // if parent exists
+        if (parent) {
+            readUnlockOrRestart(parent, parentVersion, this);
+        }
+        // no need to worry about it if parent is null
 
         unsigned pos = this->count;
         if (this->child[pos])
@@ -123,8 +157,15 @@ void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtN
     } else {
         // Grow to Node256
 
-        upgradeToWriteLockOrRestart(parent, parentVersion);
-        upgradeToWriteLockOrRestart(this, version, parent);
+        // If the parent exists
+        if (parent) {
+            upgradeToWriteLockOrRestart(parent, parentVersion);
+            upgradeToWriteLockOrRestart(this, version, parent);
+        }
+        // if parent is null
+        else {
+            upgradeToWriteLockOrRestart(this, version);
+        }
 
         Node256* newNode = new Node256();
         for (unsigned i = 0; i < 256; i++)
@@ -133,21 +174,30 @@ void Node48::insertNode48OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtN
         newNode->count = this->count;
         copyPrefix(this, newNode);
         *nodeRef = newNode;
-        delete this;
 
         writeUnlockObsolete(this);
-        writeUnlock(parent);
+
+        delete this;
+
+        // if parent exists
+        if (parent) {
+            writeUnlock(parent);
+        }
 
         return newNode->insertNode256OLC(tree, nodeRef, keyByte, child, 
-            version, parent, parentVersion);
+            version, parent, parent ? parentVersion : -1);
     }
 }
 
 void Node256::insertNode256OLC(ART* tree, ArtNode** nodeRef, uint8_t keyByte, ArtNode* child,
         uint64_t version, ArtNode* parent, uint64_t parentVersion) {
-
+    
     upgradeToWriteLockOrRestart(this, version);
-    readUnlockOrRestart(parent, parentVersion, this);
+    // if parent exists
+    if (parent) {
+        readUnlockOrRestart(parent, parentVersion, this);
+    }
+    // no need to worry about it if parent is null
 
     // Insert leaf into inner this
     this->count++;
