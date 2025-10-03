@@ -37,17 +37,35 @@ struct ThreadArgs {
 
 void worker_thread(ThreadArgs* args) {
     auto start = std::chrono::high_resolution_clock::now();
+    int total_restarts = 0;
     
     // Each thread processes its assigned range
     for (int i = args->start_idx; i < args->end_idx; i++) {
         uint8_t key4[4];
         ART::loadKey((*args->keys)[i], key4);
-        args->tree->insert(key4, (*args->keys)[i]);
+        
+        // Insert with restart support
+        bool success = false;
+        int restarts = 0;
+        
+        while (!success) {
+            try {
+                args->tree->insert(key4, (*args->keys)[i]);
+                success = true;
+            } catch (const ART::RestartException&) {
+                restarts++;
+                total_restarts++;
+                // Continue the while loop to retry
+            }
+        }
     }
     
     auto end = std::chrono::high_resolution_clock::now();
     args->execution_time[args->thread_id] = 
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+        
+    // Store restart count (you could add this to ThreadArgs struct)
+    std::cout << "Thread " << args->thread_id << " restarts: " << total_restarts << std::endl;
 }
 
 
@@ -132,6 +150,37 @@ int main(int argc, char** argv) {
         }
         std::cout << "Throughput: " << (N * 1e9 / total_time.count()) << " ops/sec" << std::endl;
     }
+
+    long long query_time = 0;
+    for (uint64_t i = 0; i < N; i++) {
+        //cout << i << endl;
+        uint8_t key[4];
+        ART::loadKey(keys[i], key);
+        auto start = chrono::high_resolution_clock::now();
+        ART::ArtNode* leaf = tree->lookup(key);
+        auto stop = chrono::high_resolution_clock::now();
+        auto duration =
+            chrono::duration_cast<chrono::nanoseconds>(stop - start);
+        query_time += duration.count();
+        
+        // Add debugging information before assertion
+        if (!ART::isLeaf(leaf) || ART::getLeafValue(leaf) != keys[i]) {
+            cout << "Assertion failure at key index: " << i << endl;
+            cout << "Key value: " << keys[i] << endl;
+            cout << "Is leaf: " << ART::isLeaf(leaf) << endl;
+            if (ART::isLeaf(leaf)) {
+                cout << "Leaf value: " << ART::getLeafValue(leaf) << endl;
+            } else {
+                cout << "Lookup returned non-leaf node" << endl;
+            }
+            cout << "Expected: " << keys[i] << endl;
+        }
+        
+        assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+    }
+
+    cout << "Insertion time (ns): " << total_time.count() << endl;
+    cout << "Query time (ns): " << query_time << endl;
     
     delete tree;
     return 0;
