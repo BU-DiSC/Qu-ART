@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 
+#include "ART.h"
 #include "ArtNode.h"
 #include "Chain.h"
 #include "Helper.h"
