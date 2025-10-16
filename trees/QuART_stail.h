@@ -149,8 +149,6 @@ class QuART_stail : public ART {
             return;
         }
     }
-
-   private:
     /* Recursive insert function that does NOT change fp_leaf value */
     void insert_recursive_preserve_fp(ArtNode* node, ArtNode** nodeRef,
                                       uint8_t key[], unsigned depth,
