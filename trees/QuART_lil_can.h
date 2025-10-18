@@ -23,7 +23,7 @@ class QuART_lil_can : public ART {
                     (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
                 if (leafByte != key[i]) {
                     //counter2++; 
-                    // If the key defers from leafByte earlier, we lil insert
+                    // If the key differs from leafByte earlier, we lil insert
                     // from root
                     this->fp_path = {this->root};
                     this->fp_path_length = 1;
