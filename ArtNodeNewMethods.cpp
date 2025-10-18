@@ -1034,7 +1034,7 @@ void Node48::lilCanInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
 
         delete this;
 
-        // There is no need for a stailInsertNode256PreserveFp method
+        // There is no need for a lilCanInsertNode256PreserveFp method
         // because Node256 can't expand further
         return newNode->insertNode256(tree, nodeRef, keyByte, child);
     }
