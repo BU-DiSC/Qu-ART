@@ -2,7 +2,7 @@
 
 #include "../ART.h"
 #include "../ArtNode.h"
-#include "trees/QuART_stail.h"
+#include "QuART_stail.h"
 
 namespace ART {
 
