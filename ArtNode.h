@@ -89,6 +89,13 @@ struct Node4 : ArtNode {
                                                    ArtNode* child);
     void stailInsertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
                                     uint8_t keyByte, ArtNode* child);
+    void lilCanInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+                                  ArtNode* child);
+    void lilCanInsertNode4PreserveFpPrefixExpansion(ART* tree, ArtNode** nodeRef,
+                                                   uint8_t keyByte,
+                                                   ArtNode* child);
+    void lilCanInsertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
+                                    uint8_t keyByte, ArtNode* child);
     // Erase function for Node4
     void eraseNode4(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
 };
@@ -118,6 +125,10 @@ struct Node16 : ArtNode {
     void stailInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
                                    uint8_t keyByte, ArtNode* child);
     void stailInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
+                                     uint8_t keyByte, ArtNode* child);
+    void lilCanInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
+                                   uint8_t keyByte, ArtNode* child);
+    void lilCanInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
                                      uint8_t keyByte, ArtNode* child);
     // Erase function for Node16
     void eraseNode16(ART* tree, ArtNode** nodeRef, ArtNode** leafPlace);
@@ -149,6 +160,10 @@ struct Node48 : ArtNode {
                                    uint8_t keyByte, ArtNode* child);
     void stailInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
                                      uint8_t keyByte, ArtNode* child);
+    void lilCanInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
+                                   uint8_t keyByte, ArtNode* child);
+    void lilCanInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
+                                     uint8_t keyByte, ArtNode* child);
     // Erase function for Node48
     void eraseNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
 };
@@ -173,6 +188,8 @@ struct Node256 : ArtNode {
                            std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
                            size_t& temp_fp_path_length, size_t depth_prev);
     void stailInsertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
+                                    uint8_t keyByte, ArtNode* child);
+    void lilCanInsertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
                                     uint8_t keyByte, ArtNode* child);
     // Erase function for Node256
     void eraseNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte);
