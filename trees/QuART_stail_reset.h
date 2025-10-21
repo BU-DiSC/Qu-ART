@@ -73,6 +73,7 @@ class QuART_stail_reset : public QuART_stail {
                     }
                     // If it is not a bridge value, insert without changing
                     else {
+                        this->reset_counter--; // decrement counter
                         QuART_stail::insert_recursive_preserve_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -102,6 +103,7 @@ class QuART_stail_reset : public QuART_stail {
                     }
                     // If it is not a bridge value, insert without changing
                     else {
+                        this->reset_counter--; // decrement counter
                         QuART_stail::insert_recursive_preserve_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -131,6 +133,7 @@ class QuART_stail_reset : public QuART_stail {
                     }
                     // If it is not a bridge value, insert without changing
                     else {
+                        this->reset_counter--; // decrement counter
                         QuART_stail::insert_recursive_preserve_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
