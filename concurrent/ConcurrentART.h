@@ -11,12 +11,34 @@ namespace ART {
 
 class ConcurrentART : public ART {
    public:
-    ConcurrentART() : ART() {}
+    ConcurrentART() : ART() , concurrent_mode{false} {}
 
     void insert(uint8_t key[], uintptr_t value) {
-        ConcurrentART::insert(this, root, &root, key, 0, value, maxPrefixLength, nullptr, 0);
+        if (!concurrent_mode) {
+            // Use sequential insert for the first insertions
+            ART::insert(key, value);
+        } else {
+            // Use concurrent insert after switching to concurrent mode
+            bool restart;
+            do {
+                restart = false;
+                try {
+                    ConcurrentART::insert(this, root, &root, key, 0, value, maxPrefixLength, nullptr, 0);
+                } catch (const RestartException&) {
+                    restart = true;
+                }
+            } while (restart);
+        }
     }
+
+    void enableConcurrentMode() {
+        concurrent_mode = true;
+    }
+
    private:
+    
+    bool concurrent_mode;
+
     void insert(ConcurrentART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], int depth, uintptr_t value, int maxKeyLength, ArtNode* parent, int parentVersion) {
         // Insert the leaf value into the tree
 
