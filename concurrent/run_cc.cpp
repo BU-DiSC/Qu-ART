@@ -149,16 +149,17 @@ public:
         }
         
         // Enable concurrent mode and continue with remaining keys
-        if (keys.size() > 2) {
+        if (config.N > 2) {
             
             if (config.num_threads == 1) {
                 // Single-threaded for remaining keys
-                for (size_t i = 2; i < keys.size(); i++) {
+                for (size_t i = 2; i < config.N; i++) {
                     uint8_t key[4];
                     ART::loadKey(keys[i], key);
                     
                     auto op_start = chrono::high_resolution_clock::now();
                     tree.insertCC(key, keys[i]);
+                    tree.printTree();
                     auto op_stop = chrono::high_resolution_clock::now();
                     
                     auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);

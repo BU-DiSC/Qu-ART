@@ -38,7 +38,9 @@ class ConcurrentART : public ART {
             if (mismatchPos != node->prefixLength) {
                 // Prefix differs, create new node
 
-                upgradeToWriteLockOrRestart(parent, parentVersion);
+                if (parent) {
+                    upgradeToWriteLockOrRestart(parent, parentVersion);
+                }
                 upgradeToWriteLockOrRestart(node, version, parent);
 
                 Node4* newNode = new Node4();
@@ -66,7 +68,7 @@ class ConcurrentART : public ART {
                                      makeLeaf(value));
 
                 writeUnlock(node);
-                writeUnlock(parent);
+                if (parent) { writeUnlock(parent); }
 
                 return;
             }
@@ -90,7 +92,7 @@ class ConcurrentART : public ART {
                     if (node4->count < 4) {
 
                         upgradeToWriteLockOrRestart(node, version);
-                        readUnlockOrRestart(parent, parentVersion, node);
+                        if (parent) { readUnlockOrRestart(parent, parentVersion, node); }
 
                         // Insert element
                         unsigned pos;
@@ -109,7 +111,9 @@ class ConcurrentART : public ART {
 
                     } else {
 
-                        upgradeToWriteLockOrRestart(parent, parentVersion);
+                        if (parent) {
+                            upgradeToWriteLockOrRestart(parent, parentVersion);
+                        }
                         upgradeToWriteLockOrRestart(node, version, parent);
 
                         // Grow to Node16
@@ -122,7 +126,7 @@ class ConcurrentART : public ART {
                         memcpy(newNode16->child, node4->child, node4->count * sizeof(uintptr_t));
 
                         writeUnlockObsolete(node);
-                        writeUnlock(parent);
+                        if (parent) { writeUnlock(parent); }
 
                         delete node4;
                         return newNode16->insertNode16(tree, nodeRef, keyByte, newNode);
@@ -139,7 +143,7 @@ class ConcurrentART : public ART {
                         // Insert element
                         
                         upgradeToWriteLockOrRestart(node, version);
-                        readUnlockOrRestart(parent, parentVersion, node);
+                        if (parent) { readUnlockOrRestart(parent, parentVersion, node); }
 
                         // Flip the sign bit of the key byte for correct ordering in signed
                         // comparisons
@@ -175,7 +179,9 @@ class ConcurrentART : public ART {
 
                     } else {
 
-                        upgradeToWriteLockOrRestart(parent, parentVersion);
+                        if (parent) {
+                            upgradeToWriteLockOrRestart(parent, parentVersion);
+                        }
                         upgradeToWriteLockOrRestart(node, version, parent);
 
                         // Grow to Node48
@@ -188,7 +194,7 @@ class ConcurrentART : public ART {
                         newNode->count = node16->count;
 
                         writeUnlockObsolete(node);
-                        writeUnlock(parent);
+                        if (parent) { writeUnlock(parent); }
 
                         delete node16;
                         return newNode->insertNode48(tree, nodeRef, keyByte, newNode);
@@ -204,7 +210,7 @@ class ConcurrentART : public ART {
                     if (node48->count < 48) {
 
                         upgradeToWriteLockOrRestart(node, version);
-                        readUnlockOrRestart(parent, parentVersion, node);
+                        if (parent) { readUnlockOrRestart(parent, parentVersion, node); }
 
                         // Insert element
                         unsigned pos = node48->count;
@@ -222,7 +228,9 @@ class ConcurrentART : public ART {
                     } else {
                         // Grow to Node256
 
-                        upgradeToWriteLockOrRestart(parent, parentVersion);
+                        if (parent) {
+                            upgradeToWriteLockOrRestart(parent, parentVersion);
+                        }
                         upgradeToWriteLockOrRestart(node, version, parent);
 
                         Node256* newNode = new Node256();
@@ -234,7 +242,7 @@ class ConcurrentART : public ART {
                         *nodeRef = newNode;
 
                         writeUnlockObsolete(node);
-                        writeUnlock(parent);
+                        if (parent) { writeUnlock(parent); }
 
                         delete node48;
                         return newNode->insertNode256(tree, nodeRef, keyByte, newNode);
@@ -247,7 +255,7 @@ class ConcurrentART : public ART {
                     uint8_t keyByte = key[depth];
 
                     upgradeToWriteLockOrRestart(node, version);
-                    readUnlockOrRestart(parent, parentVersion, node);
+                    if (parent) { readUnlockOrRestart(parent, parentVersion, node); }
 
                     // Insert leaf into inner node
                     // No memmove needed here because Node256 uses a direct mapping for all
@@ -263,7 +271,7 @@ class ConcurrentART : public ART {
             return;
         }
 
-        if (parent != nullptr) {
+        if (parent) {
             readUnlockOrRestart(parent, parentVersion);
         }
 

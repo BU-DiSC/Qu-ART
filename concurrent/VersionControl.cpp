@@ -37,7 +37,7 @@ void upgradeToWriteLockOrRestart(ArtNode* node, uint64_t version) {
 void upgradeToWriteLockOrRestart(ArtNode* node, uint64_t version, ArtNode* lockedNode) {
     uint64_t expected = version;
     if (!node->version.compare_exchange_strong(expected, setLockedBit(version))) {
-        writeUnlock(lockedNode);
+        if (lockedNode) { writeUnlock(lockedNode); }
         throw RestartException();
     }
 }
