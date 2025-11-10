@@ -89,7 +89,6 @@ public:
     
     // Query operation for a single thread
     void query_worker(const std::vector<KeyType>& keys,
-                     const std::vector<int>& random_indices,
                      size_t start_idx, size_t end_idx,
                      std::barrier<>& sync_point,
                      WorkerStats& stats) {
@@ -100,9 +99,8 @@ public:
         auto start_time = chrono::high_resolution_clock::now();
         
         for (size_t i = start_idx; i < end_idx; i++) {
-            int random = random_indices[i];
             uint8_t key[4];
-            ART::loadKey(keys[random], key);
+            ART::loadKey(keys[i], key);
             
             auto op_start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree.lookup(key);
@@ -112,7 +110,23 @@ public:
             stats.query_time += duration.count();
             stats.queries_processed++;
             
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
+            if (!leaf) {
+                cerr << "Thread query " << i << " failed: key " << keys[i]
+                     << " (index " << i << ") returned NULL" << endl;
+                abort();
+            }
+            if (!ART::isLeaf(leaf)) {
+                cerr << "Thread query " << i << " failed: key " << keys[i]
+                     << " (index " << i << ") returned non-leaf node" << endl;
+                abort();
+            }
+            uint64_t found_value = ART::getLeafValue(leaf);
+            if (found_value != keys[i]) {
+                cerr << "Thread query " << i << " failed: key " << keys[i]
+                     << " (index " << i << ") expected " << keys[i]
+                     << " but got " << found_value << endl;
+                abort();
+            }
         }
         
         auto end_time = chrono::high_resolution_clock::now();
@@ -159,38 +173,56 @@ public:
                     
                     auto op_start = chrono::high_resolution_clock::now();
                     tree.insertCC(key, keys[i]);
-                    cout << i << endl;
+                    // cout << i << endl;
                     auto op_stop = chrono::high_resolution_clock::now();
                     
                     auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
                     total_stats.insertion_time += duration.count();
                     total_stats.keys_processed++;
                 }
-                cout << "insert ended" << endl;
-                /*
-                uint8_t key[4];
-                ART::loadKey(keys[433373], key);
-                tree.insertCC(key, keys[433373]);
-                */
+                cout << "Insert has ended" << endl;
 
             } else {
-                // Multi-threaded for remaining keys
+                // Multi-threaded for remaining keys - round-robin assignment
                 vector<thread> threads;
                 vector<WorkerStats> worker_stats(config.num_threads);
                 barrier sync_point(config.num_threads);
                 
-                size_t remaining_keys = keys.size() - 2;
-                size_t keys_per_thread = remaining_keys / config.num_threads;
+                // Create per-thread key lists (round-robin distribution)
+                vector<vector<size_t>> thread_keys(config.num_threads);
+                for (size_t i = 2; i < config.N; i++) {
+                    int thread_id = (i - 2) % config.num_threads;
+                    thread_keys[thread_id].push_back(i);
+                }
                 
                 auto concurrent_start = chrono::high_resolution_clock::now();
                 
                 for (int t = 0; t < config.num_threads; t++) {
-                    size_t start_idx = 2 + t * keys_per_thread;
-                    size_t end_idx = (t == config.num_threads - 1) ? keys.size() : (2 + (t + 1) * keys_per_thread);
-                    
-                    threads.emplace_back(&Workload::insert_worker, this,
-                                       ref(keys), start_idx, end_idx,
-                                       ref(sync_point), ref(worker_stats[t]));
+                    threads.emplace_back([this, &keys, &thread_keys, t, &sync_point, &worker_stats]() {
+                        sync_point.arrive_and_wait();
+                        
+                        auto start_time = chrono::high_resolution_clock::now();
+                        
+                        for (size_t idx : thread_keys[t]) {
+                            uint8_t key[4];
+                            ART::loadKey(keys[idx], key);
+                            
+                            auto op_start = chrono::high_resolution_clock::now();
+                            tree.insertCC(key, keys[idx]);
+                            auto op_stop = chrono::high_resolution_clock::now();
+                            
+                            auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
+                            worker_stats[t].insertion_time += duration.count();
+                            worker_stats[t].keys_processed++;
+                        }
+                        
+                        auto end_time = chrono::high_resolution_clock::now();
+                        if (config.verbose) {
+                            auto total_time = chrono::duration_cast<chrono::nanoseconds>(end_time - start_time);
+                            cout << "Thread " << t << " processed " << worker_stats[t].keys_processed 
+                                 << " insertions in " << total_time.count() << " ns" << endl;
+                        }
+                    });
                 }
                 
                 for (auto& t : threads) {
@@ -199,6 +231,7 @@ public:
                 
                 auto concurrent_stop = chrono::high_resolution_clock::now();
                 auto concurrent_wall_time = chrono::duration_cast<chrono::nanoseconds>(concurrent_stop - concurrent_start);
+                cout << "Insert has ended" << endl;
                 
                 // Aggregate worker stats
                 for (const auto& stats : worker_stats) {
@@ -208,6 +241,7 @@ public:
                 total_stats.insertion_time += concurrent_wall_time.count();
                 
                 if (config.verbose) {
+                    cout << "Inserted " << total_stats.keys_processed << " keys" << endl;
                     cout << "Concurrent phase wall time: " << concurrent_wall_time.count() << " ns" << endl;
                     
                     long long total_cpu_time = 0;
@@ -225,23 +259,15 @@ public:
     // Run query workload
     pair<long long, WorkerStats> run_queries(const std::vector<KeyType>& keys) {
         WorkerStats total_stats;
-        size_t num_queries = keys.size() / 100;
-        
-        // Pre-generate random indices
-        srand(time(0));
-        vector<int> random_indices(num_queries);
-        for (size_t i = 0; i < num_queries; i++) {
-            random_indices[i] = rand() % keys.size();
-        }
+        size_t num_queries = config.N;
         
         if (config.query_threads == 1) {
             // Single-threaded queries
             auto start_time = chrono::high_resolution_clock::now();
             
             for (size_t i = 0; i < num_queries; i++) {
-                int random = random_indices[i];
                 uint8_t key[4];
-                ART::loadKey(keys[random], key);
+                ART::loadKey(keys[i], key);
                 
                 auto op_start = chrono::high_resolution_clock::now();
                 ART::ArtNode* leaf = tree.lookup(key);
@@ -251,7 +277,23 @@ public:
                 total_stats.query_time += duration.count();
                 total_stats.queries_processed++;
                 
-                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
+                if (!leaf) {
+                    cerr << "Query " << i << " failed: key " << keys[i]
+                         << " (index " << i << ") returned NULL" << endl;
+                    abort();
+                }
+                if (!ART::isLeaf(leaf)) {
+                    cerr << "Query " << i << " failed: key " << keys[i]
+                         << " (index " << i << ") returned non-leaf node" << endl;
+                    abort();
+                }
+                uint64_t found_value = ART::getLeafValue(leaf);
+                if (found_value != keys[i]) {
+                   cerr << "Query " << i << " failed: key " << keys[i]
+                        << " (index " << i << ") expected value " << keys[i]
+                         << " but got " << found_value << endl;
+                    abort();
+                }
             }
             
             auto end_time = chrono::high_resolution_clock::now();
@@ -273,7 +315,7 @@ public:
                 size_t end_idx = (t == config.query_threads - 1) ? num_queries : (t + 1) * queries_per_thread;
                 
                 threads.emplace_back(&Workload::query_worker, this,
-                                   ref(keys), ref(random_indices), 
+                                   ref(keys), 
                                    start_idx, end_idx,
                                    ref(sync_point), ref(worker_stats[t]));
             }
@@ -366,9 +408,6 @@ int main(int argc, char** argv) {
 
     // Load data
     auto keys = read_bin<uint32_t>(input_f.c_str());
-
-    cout << "Succesfully loaded " << keys.size() << " keys from "
-         << config.input_file << endl;
 
     if (config.verbose) {
         cout << "Loaded " << keys.size() << " keys" << endl;
