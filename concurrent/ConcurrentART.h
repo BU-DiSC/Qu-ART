@@ -19,7 +19,15 @@ class ConcurrentART : public ART {
     }
 
     void insertCC(uint8_t key[], uintptr_t value) {
-        ConcurrentART::insert(this, root, &root, key, 0, value, maxPrefixLength, nullptr, 0);
+        while (true) {  // Retry loop
+            try {
+                insert(this, root, &root, key, 0, value, maxPrefixLength, nullptr, 0);
+                return;  // Success - exit retry loop
+            } catch (const RestartException&) {
+                // Conflict detected - loop will retry from beginning
+                continue;
+            }
+        }
     }
 
    private:
@@ -83,11 +91,12 @@ class ConcurrentART : public ART {
         if (!*child) {
             // Insert leaf into inner node
             ArtNode* newNode = makeLeaf(value);
+            uint8_t keyByte = key[depth];
+
             switch (node->type) {
                 case NodeType4: {
                     // Cast node to Node4 to access its members
                     Node4* node4 = static_cast<Node4*>(node);
-                    uint8_t keyByte = key[depth];
                     // Insert leaf into inner node
                     if (node4->count < 4) {
 
@@ -125,18 +134,50 @@ class ConcurrentART : public ART {
                             newNode16->key[i] = flipSign(node4->key[i]);
                         memcpy(newNode16->child, node4->child, node4->count * sizeof(uintptr_t));
 
+                        // Shouldn't be deleted, other threads might still be reading it
+                        // delete node;
+
+                        // INSERT NODE 16 PART
+                        
+                        // Flip the sign bit of the key byte for correct ordering in signed
+                        // comparisons
+                        uint8_t keyByteFlipped = flipSign(keyByte);
+
+                        // SIMD: Compare keyByteFlipped with all keys in the node in parallel
+                        // _mm_set1_epi8 sets all 16 bytes of an SSE register to keyByteFlipped
+                        // _mm_loadu_si128 loads the node's keys into an SSE register
+                        // _mm_cmplt_epi8 does a signed comparison of each byte
+                        __m128i cmp = _mm_cmplt_epi8(
+                            _mm_set1_epi8(keyByteFlipped),
+                            _mm_loadu_si128(reinterpret_cast<__m128i*>(newNode16->key)));
+
+                        // _mm_movemask_epi8 creates a 16-bit mask from the comparison results
+                        // Only consider the bits for the active keys (node16->count)
+                        uint16_t bitfield =
+                            _mm_movemask_epi8(cmp) & (0xFFFF >> (16 - newNode16->count));
+
+                        // Find the position of the first set bit (i.e., where keyByteFlipped <
+                        // key[i])
+                        unsigned pos = bitfield ? ctz(bitfield) : newNode16->count;
+
+                        // Shift keys and children to the right to make space for the new
+                        // key/child. This preserves the sorted order of keys in the node.
+                        memmove(newNode16->key + pos + 1, newNode16->key + pos, newNode16->count - pos);
+                        memmove(newNode16->child + pos + 1, newNode16->child + pos,
+                                (newNode16->count - pos) * sizeof(uintptr_t));
+                        newNode16->key[pos] = keyByteFlipped;
+                        newNode16->child[pos] = newNode;
+                        newNode16->count++;
+
                         writeUnlockObsolete(node);
                         if (parent) { writeUnlock(parent); }
-
-                        delete node4;
-                        return newNode16->insertNode16(tree, nodeRef, keyByte, newNode);
+                        
                     }
                     break;
                 }
                 case NodeType16: {
                     // Cast node to Node16 to access its members
                     Node16* node16 = static_cast<Node16*>(node);
-                    uint8_t keyByte = key[depth];
 
                     // Insert leaf into inner node
                     if (node16->count < 16) {
@@ -185,26 +226,38 @@ class ConcurrentART : public ART {
                         upgradeToWriteLockOrRestart(node, version, parent);
 
                         // Grow to Node48
-                        Node48* newNode = new Node48();
-                        *nodeRef = newNode;
-                        memcpy(newNode->child, node16->child, node16->count * sizeof(uintptr_t));
+                        Node48* newNode48 = new Node48();
+                        *nodeRef = newNode48;
+                        memcpy(newNode48->child, node16->child, node16->count * sizeof(uintptr_t));
                         for (unsigned i = 0; i < node16->count; i++)
-                            newNode->childIndex[flipSign(node16->key[i])] = i;
-                        copyPrefix(node16, newNode);
-                        newNode->count = node16->count;
+                            newNode48->childIndex[flipSign(node16->key[i])] = i;
+                        copyPrefix(node16, newNode48);
+                        newNode48->count = node16->count;
+
+                        // Shouldn't be deleted, other threads might still be reading it
+                        // delete node;
+                        
+                        // INSERT NODE 48 PART
+
+                        // Insert element
+                        unsigned pos = newNode48->count;
+                        if (newNode48->child[pos])
+                            for (pos = 0; newNode48->child[pos] != NULL; pos++)
+                                ;
+                        // No memmove needed here because Node48 uses a mapping (childIndex) and
+                        // a dense array.
+                        newNode48->child[pos] = newNode;
+                        newNode48->childIndex[keyByte] = pos;
+                        newNode48->count++;
 
                         writeUnlockObsolete(node);
                         if (parent) { writeUnlock(parent); }
-
-                        delete node16;
-                        return newNode->insertNode48(tree, nodeRef, keyByte, newNode);
                     }
                     break;
                 }
                 case NodeType48: {
                     // Cast node to Node48 to access its members
                     Node48* node48 = static_cast<Node48*>(node);
-                    uint8_t keyByte = key[depth];
 
                     // Insert leaf into inner node
                     if (node48->count < 48) {
@@ -233,26 +286,35 @@ class ConcurrentART : public ART {
                         }
                         upgradeToWriteLockOrRestart(node, version, parent);
 
-                        Node256* newNode = new Node256();
+                        Node256* newNode256 = new Node256();
                         for (unsigned i = 0; i < 256; i++)
                             if (node48->childIndex[i] != 48)
-                                newNode->child[i] = node48->child[node48->childIndex[i]];
-                        newNode->count = node48->count;
-                        copyPrefix(node48, newNode);
-                        *nodeRef = newNode;
+                                newNode256->child[i] = node48->child[node48->childIndex[i]];
+                        newNode256->count = node48->count;
+                        copyPrefix(node48, newNode256);
+                        *nodeRef = newNode256;
+
+                        // tree->printTree();
+
+                        // Shouldn't be deleted, other threads might still be reading it
+                        // delete node;
+
+                        // INSERT NODE 256 PART
+
+                        // Insert leaf into inner node
+                        // No memmove needed here because Node256 uses a direct mapping for all
+                        // possible keys.
+                        newNode256->count++;
+                        newNode256->child[keyByte] = newNode;
 
                         writeUnlockObsolete(node);
                         if (parent) { writeUnlock(parent); }
-
-                        delete node48;
-                        return newNode->insertNode256(tree, nodeRef, keyByte, newNode);
                     }
                     break;
                 }
                 case NodeType256: {
                     // Cast node to Node256 to access its members
                     Node256* node256 = static_cast<Node256*>(node);
-                    uint8_t keyByte = key[depth];
 
                     upgradeToWriteLockOrRestart(node, version);
                     if (parent) { readUnlockOrRestart(parent, parentVersion, node); }

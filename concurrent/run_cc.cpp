@@ -159,13 +159,20 @@ public:
                     
                     auto op_start = chrono::high_resolution_clock::now();
                     tree.insertCC(key, keys[i]);
-                    tree.printTree();
+                    cout << i << endl;
                     auto op_stop = chrono::high_resolution_clock::now();
                     
                     auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
                     total_stats.insertion_time += duration.count();
                     total_stats.keys_processed++;
                 }
+                cout << "insert ended" << endl;
+                /*
+                uint8_t key[4];
+                ART::loadKey(keys[433373], key);
+                tree.insertCC(key, keys[433373]);
+                */
+
             } else {
                 // Multi-threaded for remaining keys
                 vector<thread> threads;
