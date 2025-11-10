@@ -71,7 +71,7 @@ public:
             ART::loadKey(keys[i], key);
             
             auto op_start = chrono::high_resolution_clock::now();
-            tree.insert(key, keys[i]);
+            tree.insertCC(key, keys[i]);
             auto op_stop = chrono::high_resolution_clock::now();
             
             auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
@@ -134,7 +134,7 @@ public:
             ART::loadKey(keys[i], key);
             
             auto op_start = chrono::high_resolution_clock::now();
-            tree.insert(key, keys[i]);
+            tree.insert(key, keys[i]); // we should use ART's insert here
             auto op_stop = chrono::high_resolution_clock::now();
             
             auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
@@ -150,7 +150,6 @@ public:
         
         // Enable concurrent mode and continue with remaining keys
         if (keys.size() > 2) {
-            tree.enableConcurrentMode();
             
             if (config.num_threads == 1) {
                 // Single-threaded for remaining keys
@@ -159,7 +158,7 @@ public:
                     ART::loadKey(keys[i], key);
                     
                     auto op_start = chrono::high_resolution_clock::now();
-                    tree.insert(key, keys[i]);
+                    tree.insertCC(key, keys[i]);
                     auto op_stop = chrono::high_resolution_clock::now();
                     
                     auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
@@ -332,6 +331,8 @@ public:
 int main(int argc, char** argv) {
     Config config;
 
+    string input_f;
+
     // Parse arguments
     for (int i = 1; i < argc;) {
         if (string(argv[i]) == "-v") {
@@ -342,6 +343,7 @@ int main(int argc, char** argv) {
             i += 2;
         } else if (string(argv[i]) == "-f") {
             config.input_file = argv[i + 1];
+            input_f = argv[i + 1];
             i += 2;
         } else if (string(argv[i]) == "-it") {
             config.num_threads = atoi(argv[i + 1]);
@@ -355,8 +357,10 @@ int main(int argc, char** argv) {
     }
 
     // Load data
-    auto keys = read_bin<uint32_t>(config.input_file.c_str());
-    config.N = keys.size();
+    auto keys = read_bin<uint32_t>(input_f.c_str());
+
+    cout << "Succesfully loaded " << keys.size() << " keys from "
+         << config.input_file << endl;
 
     if (config.verbose) {
         cout << "Loaded " << keys.size() << " keys" << endl;
@@ -364,9 +368,6 @@ int main(int argc, char** argv) {
         cout << "  Insertion threads: " << config.num_threads << endl;
         cout << "  Query threads: " << config.query_threads << endl;
     }
-
-    cout << "insertion_threads,query_threads,insertion_time_ns,query_time_ns,keys_inserted,queries_processed" << endl;
-
         
     ART::ConcurrentART tree;
     utils::executor::Workload<ART::ConcurrentART, uint32_t> workload(tree, config);
