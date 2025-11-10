@@ -22,7 +22,6 @@ struct Config {
     string input_file;
     int num_threads = 1;
     int query_threads = 1;
-    int runs = 1;
     string results_csv = "results.csv";
 };
 
@@ -350,9 +349,6 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-qt") {
             config.query_threads = atoi(argv[i + 1]);
             i += 2;
-        } else if (string(argv[i]) == "-runs") {
-            config.runs = atoi(argv[i + 1]);
-            i += 2;
         } else {
             i++;
         }
@@ -367,21 +363,14 @@ int main(int argc, char** argv) {
         cout << "Configuration:" << endl;
         cout << "  Insertion threads: " << config.num_threads << endl;
         cout << "  Query threads: " << config.query_threads << endl;
-        cout << "  Runs: " << config.runs << endl;
     }
 
     cout << "insertion_threads,query_threads,insertion_time_ns,query_time_ns,keys_inserted,queries_processed" << endl;
 
-    // Run multiple iterations
-    for (int run = 0; run < config.runs; run++) {
-        if (config.verbose && config.runs > 1) {
-            cout << "Run " << (run + 1) << "/" << config.runs << endl;
-        }
         
-        ART::ConcurrentART tree;
-        utils::executor::Workload<ART::ConcurrentART, uint32_t> workload(tree, config);
-        workload.run_all(keys);
-    }
+    ART::ConcurrentART tree;
+    utils::executor::Workload<ART::ConcurrentART, uint32_t> workload(tree, config);
+    workload.run_all(keys);
 
     return 0;
 }

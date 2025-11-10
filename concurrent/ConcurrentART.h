@@ -3,6 +3,7 @@
 #include "../ART.h"
 #include "../ArtNode.h"
 #include "VersionControl.h"
+#include "VersionControl.cpp"
 #include <mutex>
 #include <shared_mutex>
 

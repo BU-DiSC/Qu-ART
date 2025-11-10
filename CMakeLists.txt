@@ -4,7 +4,9 @@ project(ART VERSION 1.0
         DESCRIPTION "DISC fork of Adaptive Radix Tree"
         LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Default to Release only if no build type is set (and not a multi-config generator)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

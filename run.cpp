@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
             N = atoi(argv[i + 1]);
             i += 2;
         } else if (string(argv[i]) == "-f") {
-            input_file = argv[i + 1];
+            
             i += 2;
         } else if (string(argv[i]) == "-t") {
             tree_type = argv[i + 1];
