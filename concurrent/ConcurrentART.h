@@ -52,7 +52,6 @@ class ConcurrentART : public ART {
                 upgradeToWriteLockOrRestart(node, version, parent);
 
                 Node4* newNode = new Node4();
-                *nodeRef = newNode;
                 newNode->prefixLength = mismatchPos;
                 memcpy(newNode->prefix, node->prefix,
                        min(mismatchPos, maxPrefixLength));
@@ -74,7 +73,7 @@ class ConcurrentART : public ART {
                 }
                 newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
                                      makeLeaf(value));
-
+                *nodeRef = newNode;
                 writeUnlock(node);
                 if (parent) { writeUnlock(parent); }
 
@@ -127,7 +126,6 @@ class ConcurrentART : public ART {
 
                         // Grow to Node16
                         Node16* newNode16 = new Node16();
-                        *nodeRef = newNode16;
                         newNode16->count = 4;
                         copyPrefix(node4, newNode16);
                         for (unsigned i = 0; i < 4; i++)
@@ -168,6 +166,7 @@ class ConcurrentART : public ART {
                         newNode16->key[pos] = keyByteFlipped;
                         newNode16->child[pos] = newNode;
                         newNode16->count++;
+                        *nodeRef = newNode16;
 
                         writeUnlockObsolete(node);
                         if (parent) { writeUnlock(parent); }
@@ -227,7 +226,7 @@ class ConcurrentART : public ART {
 
                         // Grow to Node48
                         Node48* newNode48 = new Node48();
-                        *nodeRef = newNode48;
+                        
                         memcpy(newNode48->child, node16->child, node16->count * sizeof(uintptr_t));
                         for (unsigned i = 0; i < node16->count; i++)
                             newNode48->childIndex[flipSign(node16->key[i])] = i;
@@ -249,6 +248,7 @@ class ConcurrentART : public ART {
                         newNode48->child[pos] = newNode;
                         newNode48->childIndex[keyByte] = pos;
                         newNode48->count++;
+                        *nodeRef = newNode48;
 
                         writeUnlockObsolete(node);
                         if (parent) { writeUnlock(parent); }
@@ -292,7 +292,6 @@ class ConcurrentART : public ART {
                                 newNode256->child[i] = node48->child[node48->childIndex[i]];
                         newNode256->count = node48->count;
                         copyPrefix(node48, newNode256);
-                        *nodeRef = newNode256;
 
                         // tree->printTree();
 
@@ -306,6 +305,7 @@ class ConcurrentART : public ART {
                         // possible keys.
                         newNode256->count++;
                         newNode256->child[keyByte] = newNode;
+                        *nodeRef = newNode256;
 
                         writeUnlockObsolete(node);
                         if (parent) { writeUnlock(parent); }
@@ -356,13 +356,13 @@ class ConcurrentART : public ART {
                    min(newPrefixLength, maxPrefixLength));
             
             ArtNode* oldLeaf = *child;
-            *child = newNode;
 
             newNode->insertNode4(this, child,
                                  existingKey[depth + newPrefixLength], oldLeaf);
             newNode->insertNode4(this, child, key[depth + newPrefixLength],
                                  makeLeaf(value));
-
+            
+            *child = newNode;
             writeUnlock(node);
 
             return;

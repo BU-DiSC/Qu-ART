@@ -232,6 +232,8 @@ public:
                 auto concurrent_stop = chrono::high_resolution_clock::now();
                 auto concurrent_wall_time = chrono::duration_cast<chrono::nanoseconds>(concurrent_stop - concurrent_start);
                 cout << "Insert has ended" << endl;
+
+                // tree.printTree();
                 
                 // Aggregate worker stats
                 for (const auto& stats : worker_stats) {
@@ -259,15 +261,19 @@ public:
     // Run query workload
     pair<long long, WorkerStats> run_queries(const std::vector<KeyType>& keys) {
         WorkerStats total_stats;
-        size_t num_queries = config.N;
+        size_t num_queries = config.N / 100;
+
+        uint64_t minval = 0;
+        uint64_t maxval = config.N-1;
         
         if (config.query_threads == 1) {
             // Single-threaded queries
             auto start_time = chrono::high_resolution_clock::now();
             
             for (size_t i = 0; i < num_queries; i++) {
+                int random = rand() % (maxval - minval + 1) + minval;
                 uint8_t key[4];
-                ART::loadKey(keys[i], key);
+                ART::loadKey(keys[random], key);
                 
                 auto op_start = chrono::high_resolution_clock::now();
                 ART::ArtNode* leaf = tree.lookup(key);
@@ -278,19 +284,19 @@ public:
                 total_stats.queries_processed++;
                 
                 if (!leaf) {
-                    cerr << "Query " << i << " failed: key " << keys[i]
-                         << " (index " << i << ") returned NULL" << endl;
+                    cerr << "Query " << random << " failed: key " << keys[random]
+                         << " (index " << random << ") returned NULL" << endl;
                     abort();
                 }
                 if (!ART::isLeaf(leaf)) {
-                    cerr << "Query " << i << " failed: key " << keys[i]
-                         << " (index " << i << ") returned non-leaf node" << endl;
+                    cerr << "Query " << random << " failed: key " << keys[random]
+                         << " (index " << random << ") returned non-leaf node" << endl;
                     abort();
                 }
                 uint64_t found_value = ART::getLeafValue(leaf);
-                if (found_value != keys[i]) {
-                   cerr << "Query " << i << " failed: key " << keys[i]
-                        << " (index " << i << ") expected value " << keys[i]
+                if (found_value != keys[random]) {
+                   cerr << "Query " << random << " failed: key " << keys[random]
+                        << " (index " << random << ") expected value " << keys[random]
                          << " but got " << found_value << endl;
                     abort();
                 }
