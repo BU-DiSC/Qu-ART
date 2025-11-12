@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <sstream>
+#include <string>
 
 #include "ART.h"
 #include "ArtNode.h"
@@ -17,13 +19,29 @@
 using namespace std;
 
 template <typename key_type>
-std::vector<key_type> read_bin(const char* filename) {
-    std::ifstream inputFile(filename, std::ios::binary);
-    inputFile.seekg(0, std::ios::end);
-    const std::streampos fileSize = inputFile.tellg();
-    inputFile.seekg(0, std::ios::beg);
-    std::vector<key_type> data(fileSize / sizeof(key_type));
-    inputFile.read(reinterpret_cast<char*>(data.data()), fileSize);
+std::vector<key_type> read_txt(const char* filename) {
+    std::ifstream inputFile(filename);
+    if (!inputFile) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        exit(1);
+    }
+    
+    std::vector<key_type> data;
+    std::string line;
+    
+    while (std::getline(inputFile, line)) {
+        // Skip empty lines
+        if (line.empty()) continue;
+        
+        // Parse the number from the line
+        std::stringstream ss(line);
+        key_type key;
+        ss >> key;
+        
+        data.push_back(key);
+    }
+    
+    inputFile.close();
     return data;
 }
 
@@ -32,11 +50,6 @@ int main(int argc, char** argv) {
     int N = 500000000;         // optional argument
     string input_file;         // required argument
     string tree_type = "ART";  // default tree type
-
-    
-    // Query 1% of entries
-    uint64_t minval = 0;
-    uint64_t maxval = N-1;
 
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
@@ -57,8 +70,12 @@ int main(int argc, char** argv) {
         }
     }
 
+    // Used during querying
+    uint64_t minval = 0;
+    uint64_t maxval = N - 1;
+
     // read data
-    auto keys = read_bin<uint32_t>(input_file.c_str());
+    auto keys = read_txt<uint32_t>(input_file.c_str());
 
     if (tree_type == "ART") {
         ART::ART* tree = new ART::ART();
