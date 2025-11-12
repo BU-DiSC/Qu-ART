@@ -236,7 +236,6 @@ public:
                 auto concurrent_wall_time = chrono::duration_cast<chrono::nanoseconds>(concurrent_stop - concurrent_start);
                 cout << "Insert has ended" << endl;
 
-                // tree.printTree();
                 
                 // Aggregate worker stats
                 for (const auto& stats : worker_stats) {
