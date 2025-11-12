@@ -39,7 +39,6 @@ class ConcurrentART : public ART {
 
    private:
     
-    bool concurrent_mode;
 
     void insert(ConcurrentART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[], int depth, uintptr_t value, int maxKeyLength, ArtNode* parent, int parentVersion) {
         // Insert the leaf value into the tree
