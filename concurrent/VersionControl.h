@@ -1,3 +1,8 @@
+/*
+ * Header file for concurrency version control functions. Taken directly from 
+ * "The ART of Practical Synchronization" paper. 
+ */
+
 #pragma once
 
 #include "../ArtNode.h"

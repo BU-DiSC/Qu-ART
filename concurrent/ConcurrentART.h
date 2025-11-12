@@ -1,3 +1,10 @@
+/*
+ * Concurrent Adaptive Radix Tree (ART) implementation with concurrency control.
+ * This implementation extends the base ART to support concurrent insertions
+ * and queries using version control mechanisms. The insert function is refactored
+ * according to the implementation in "The ART of Practical Synchronization" paper.
+ */
+
 #pragma once
 
 #include "../ART.h"

@@ -1,3 +1,7 @@
+/*
+ * Concurrent ART benchmark with concurrency control (CC) insertions and queries.
+ */
+
 #include <algorithm>
 #include <chrono>
 #include <fstream>

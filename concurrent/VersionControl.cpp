@@ -1,3 +1,8 @@
+/*
+ * Implementation file for concurrency version control functions. Taken directly from 
+ * "The ART of Practical Synchronization" paper. 
+ */
+
 #include "VersionControl.h"
 
 namespace ART {
