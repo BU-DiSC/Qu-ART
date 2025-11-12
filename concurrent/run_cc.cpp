@@ -177,7 +177,6 @@ public:
                     
                     auto op_start = chrono::high_resolution_clock::now();
                     tree.insertCC(key, keys[i]);
-                    // cout << i << endl;
                     auto op_stop = chrono::high_resolution_clock::now();
                     
                     auto duration = chrono::duration_cast<chrono::nanoseconds>(op_stop - op_start);
