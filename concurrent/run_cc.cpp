@@ -391,8 +391,6 @@ public:
 int main(int argc, char** argv) {
     Config config;
 
-    string input_f;
-
     // Parse arguments
     for (int i = 1; i < argc;) {
         if (string(argv[i]) == "-v") {
@@ -403,7 +401,6 @@ int main(int argc, char** argv) {
             i += 2;
         } else if (string(argv[i]) == "-f") {
             config.input_file = argv[i + 1];
-            input_f = argv[i + 1];
             i += 2;
         } else if (string(argv[i]) == "-it") {
             config.num_threads = atoi(argv[i + 1]);
@@ -417,7 +414,7 @@ int main(int argc, char** argv) {
     }
 
     // Load data
-    auto keys = read_bin<uint32_t>(input_f.c_str());
+    auto keys = read_bin<uint32_t>(config.input_file.c_str());
 
     if (config.verbose) {
         cout << "Loaded " << keys.size() << " keys" << endl;
