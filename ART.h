@@ -44,6 +44,8 @@ class ART {
     size_t fp_depth;        // depth that will be used during fp insertion
     ArtNode** fp_ref;       // reference to fp node, used for insertion
 
+    uint64_t fp_change_count;  // counts number of fp changes
+
     // constructor
     ART()
         : root(nullptr),

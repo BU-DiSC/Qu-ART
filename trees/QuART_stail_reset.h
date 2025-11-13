@@ -21,6 +21,7 @@ class QuART_stail_reset : public QuART_stail {
         // If the root is null (i = 0), we will insert and change fp since
         // keys[0] = 1 in all cases
         if (root == nullptr) {
+            fp_change_count++;
             QuART_stail::insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
@@ -58,6 +59,7 @@ class QuART_stail_reset : public QuART_stail {
                         ((leafValue >> 8) & 0xFF) == 255) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
+                        fp_change_count++;
                         QuART_stail::insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -66,6 +68,7 @@ class QuART_stail_reset : public QuART_stail {
                     // If it is not a bridge value and counter ended, force fp change
                     else if (this->reset_counter == 0) {
                         this->reset_counter = 300; // reset counter
+                        fp_change_count++;
                         this->insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -88,6 +91,7 @@ class QuART_stail_reset : public QuART_stail {
                         ((leafValue >> 8) & 0xFF) == 255) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
+                        fp_change_count++;
                         QuART_stail::insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -96,6 +100,7 @@ class QuART_stail_reset : public QuART_stail {
                     // If it is not a bridge value and counter ended, force fp change
                     else if (this->reset_counter == 0) {
                         this->reset_counter = 300; // reset counter
+                        fp_change_count++;
                         this->insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -118,6 +123,7 @@ class QuART_stail_reset : public QuART_stail {
                         (key[1] == ((leafValue >> 8 * 2) & 0xFF))) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
+                        fp_change_count++;
                         QuART_stail::insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -126,6 +132,7 @@ class QuART_stail_reset : public QuART_stail {
                     // If it is not a bridge value and counter ended, force fp change
                     else if (this->reset_counter == 0) {
                         this->reset_counter = 300; // reset counter
+                        fp_change_count++;
                         this->insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
