@@ -31,14 +31,8 @@ int main(int argc, char** argv) {
     bool verbose = false;      // optional argument
     int N = 500000000;         // optional argument
     string input_file;         // required argument
-    string tree_type = "ART";  // default tree type
 
-    
-    // Query 1% of entries
-    uint64_t minval = 0;
-    uint64_t maxval = N-1;
-
-    // Parse arguments; make sure to increment i by 2 if you consume an argument
+     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
         if (string(argv[i]) == "-v") {
             verbose = true;

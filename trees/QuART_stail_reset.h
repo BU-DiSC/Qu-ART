@@ -45,6 +45,7 @@ class QuART_stail_reset : public QuART_stail {
             // tracking the path, as this will never be the new fp path. We
             // only update the current fp information if it changes.
             else if (key[i] < leafByte) {
+                this->reset_counter--; // decrement counter
                 QuART_stail::insert_recursive_preserve_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
                 return;
@@ -59,7 +60,9 @@ class QuART_stail_reset : public QuART_stail {
                         ((leafValue >> 8) & 0xFF) == 255) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
+                        this->reset_counter = 300; // reset counter
                         fp_change_count++;
+                        //printf("fp changed for key %u\n", (key[0] << 24) | (key[1] << 16) | (key[2] << 8) | key[3]);
                         QuART_stail::insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -69,6 +72,7 @@ class QuART_stail_reset : public QuART_stail {
                     else if (this->reset_counter == 0) {
                         this->reset_counter = 300; // reset counter
                         fp_change_count++;
+                        //printf("RESET fp changed for key %u\n", (key[0] << 24) | (key[1] << 16) | (key[2] << 8) | key[3]);
                         this->insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -91,7 +95,9 @@ class QuART_stail_reset : public QuART_stail {
                         ((leafValue >> 8) & 0xFF) == 255) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
+                        this->reset_counter = 300; // reset counter
                         fp_change_count++;
+                        //printf("fp changed for key %u\n", (key[0] << 24) | (key[1] << 16) | (key[2] << 8) | key[3]);
                         QuART_stail::insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -101,6 +107,7 @@ class QuART_stail_reset : public QuART_stail {
                     else if (this->reset_counter == 0) {
                         this->reset_counter = 300; // reset counter
                         fp_change_count++;
+                        //printf("RESET fp changed for key %u\n", (key[0] << 24) | (key[1] << 16) | (key[2] << 8) | key[3]);
                         this->insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -123,7 +130,9 @@ class QuART_stail_reset : public QuART_stail {
                         (key[1] == ((leafValue >> 8 * 2) & 0xFF))) {
                         this->fp_path = {this->root};
                         this->fp_path_length = 1;
+                        this->reset_counter = 300; // reset counter
                         fp_change_count++;
+                        //printf("fp changed for key %u\n", (key[0] << 24) | (key[1] << 16) | (key[2] << 8) | key[3]);
                         QuART_stail::insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -133,6 +142,7 @@ class QuART_stail_reset : public QuART_stail {
                     else if (this->reset_counter == 0) {
                         this->reset_counter = 300; // reset counter
                         fp_change_count++;
+                        //printf("RESET fp changed for key %u\n", (key[0] << 24) | (key[1] << 16) | (key[2] << 8) | key[3]);
                         this->insert_recursive_change_fp(
                             this->root, &this->root, key, 0, value,
                             maxPrefixLength);
@@ -155,6 +165,7 @@ class QuART_stail_reset : public QuART_stail {
         // If depth is at maxPrefixLength - 1, we do not need to worry about
         // leaf expansion of prefix mismatch, we can directly insert the new
         // leaf into fp node
+        this->reset_counter = 300; // reset counter
         if (this->fp_depth == maxPrefixLength - 1) {
             // Insert leaf into fp
             ArtNode* newNode = makeLeaf(value);
