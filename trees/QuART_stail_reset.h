@@ -165,6 +165,7 @@ class QuART_stail_reset : public QuART_stail {
         // If depth is at maxPrefixLength - 1, we do not need to worry about
         // leaf expansion of prefix mismatch, we can directly insert the new
         // leaf into fp node
+        fp_insert_count++;
         this->reset_counter = 300; // reset counter
         if (this->fp_depth == maxPrefixLength - 1) {
             // Insert leaf into fp

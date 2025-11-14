@@ -45,6 +45,7 @@ class ART {
     ArtNode** fp_ref;       // reference to fp node, used for insertion
 
     uint64_t fp_change_count;  // counts number of fp changes
+    uint64_t fp_insert_count;   // counts number of fp resets
 
     // constructor
     ART()
