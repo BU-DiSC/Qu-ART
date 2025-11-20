@@ -1,6 +1,6 @@
-# QuART
+# Qu-ART
 
-This repository contains an implementation of the Adaptive Radix Tree (ART) and several QuART (Quick Adaptive Radix Tree) variants with different fast-path strategies.
+This repository contains an implementation of the Adaptive Radix Tree (ART) and several Qu-ART (Quick Adaptive Radix Tree) variants with different fast-path strategies.
 
 ---
 
@@ -23,12 +23,7 @@ This repository contains an implementation of the Adaptive Radix Tree (ART) and 
 
 Run the executables in `build` with the following options:
 
-```shell
-./main [-v] [-N <num_keys>] -f <input_file>
-```
-```shell
-./test_range_query [-v] [-N <num_keys>] -f <input_file>
-```
+
 ```shell
 ./run [-v] [-N <num_keys>] -f <input_file> -t <tree_type>
 ```
@@ -44,16 +39,18 @@ Run the executables in `build` with the following options:
 ### Example
 
 ```shell
-./main -N 1000000 -f ../bods/workloads/workload_N1000000_K90_L10.bin
+./run -N 1000000 -f ../bods/workloads/workload_N1000000_K90_L10.bin
 ```
 
 ---
 
-## QuART Variants
+## Qu-ART Variants
 
 - **ART**: Baseline Adaptive Radix Tree.
-- **QuART_tail**: Standard QuART with tail optimization.
-- **QuART_lil**: Standard QuART with lil optimization.
+- **QuART_tail**: ART with tail optimization.
+- **QuART_lil**: ART with lil optimization.
+- **QuART_stail**: ART with stail optimization.
+- **QuART_stail_reset**: ART with stail optimization, supports fp resets too.
 
 You can run each variant by using the `run` executable in `build/` with the `-t` option to select the tree type. For example:
 
@@ -61,35 +58,11 @@ You can run each variant by using the `run` executable in `build/` with the `-t`
 ./run -f <input_file> -N <num_keys> -t ART
 ./run -f <input_file> -N <num_keys> -t QuART_tail
 ./run -f <input_file> -N <num_keys> -t QuART_lil
+./run -f <input_file> -N <num_keys> -t QuART_stail
+./run -f <input_file> -N <num_keys> -t QuART_stail_reset
 ```
 
 Replace `<input_file>` and `<num_keys>` with your workload file and desired number of keys.
-
----
-
-## How to Run Experiments
-
-To automate experiments and record results for all tree variants and workloads, use the provided shell script:
-
-```shell
-bash run_experiments.sh
-```
-
-**Note:**  
-The script expects input files to be named in the form:  
-`workload_N{N}_K{K}_L{L}.bin`  
-and located in the `../bods/workloads/` directory (relative to the project root).
-
-This script will:
-- Run all tree variants (ART, QuART_tail) on all workload files in `../bods/workloads/`
-- Repeat each experiment multiple times and record the average insertion and query times
-- Save results in the `results/` directory with a timestamped filename
-
-### Script Output
-
-- Results are written to a file like `results/results_YYYYMMDD_HHMMSS.txt`
-- Each line contains:  
-  `N,K,L,type_of_tree,avg_insert_time,avg_query_time`
 
 ---
 
@@ -97,4 +70,3 @@ This script will:
 
 - Input files should be binary files containing 32-bit unsigned integer keys.
 - You can modify `run_experiments.sh` to change the number of repetitions, workload location, or which tree variants are tested.
-- Results are saved in CSV format for easy analysis.
