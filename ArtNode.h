@@ -25,6 +25,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include <atomic> // for concurrency
+
 #include "Helper.h"
 
 namespace ART {
@@ -50,6 +52,9 @@ struct ArtNode {
     int8_t type;
     // compressed path (prefix)
     uint8_t prefix[maxPrefixLength];
+
+    // version for concurrency
+    std::atomic<uint64_t> version{0};
 
     ArtNode(int8_t type) : prefixLength(0), count(0), type(type) {}
 };

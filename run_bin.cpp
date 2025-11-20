@@ -33,11 +33,6 @@ int main(int argc, char** argv) {
     string input_file;         // required argument
     string tree_type = "ART";  // default tree type
 
-    
-    // Query 1% of entries
-    uint64_t minval = 0;
-    uint64_t maxval = N-1;
-
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
         if (string(argv[i]) == "-v") {
@@ -56,6 +51,10 @@ int main(int argc, char** argv) {
             i++;
         }
     }
+
+    // Used during querying
+    uint64_t minval = 0;
+    uint64_t maxval = N - 1;
 
     // read data
     auto keys = read_bin<uint32_t>(input_file.c_str());
