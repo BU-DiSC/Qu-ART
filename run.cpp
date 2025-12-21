@@ -36,7 +36,6 @@ int main(int argc, char** argv) {
     
     // Query 1% of entries
     uint64_t minval = 0;
-    uint64_t maxval = N-1;
 
     // Parse arguments; make sure to increment i by 2 if you consume an argument
     for (int i = 1; i < argc;) {
@@ -57,6 +56,8 @@ int main(int argc, char** argv) {
         }
     }
 
+    uint64_t maxval = N-1;
+
     // read data
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
@@ -68,6 +69,9 @@ int main(int argc, char** argv) {
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
+
+            tree->printTree();
+
             auto stop = chrono::high_resolution_clock::now();
             auto duration =
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
