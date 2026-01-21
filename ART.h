@@ -43,6 +43,7 @@ class ART {
     ArtNode* fp_leaf;       // pointer to leaf node in fast path
     size_t fp_depth;        // depth that will be used during fp insertion
     ArtNode** fp_ref;       // reference to fp node, used for insertion
+    ArtNode* bl_ptr;        // pointer to bulk load node
 
     // constructor
     ART()
@@ -52,7 +53,8 @@ class ART {
           fp_path_length(0),
           fp_leaf(nullptr),
           fp_depth(0),
-          fp_ref(nullptr) {}
+          fp_ref(nullptr),
+          bl_ptr(nullptr) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         insert(this, root, &root, key, 0, value, maxPrefixLength);
@@ -171,6 +173,77 @@ class ART {
         // If we exit the loop without returning, the path is incorrect
         std::cerr << "Error: fp_path does not lead to the fp." << std::endl;
         return false;
+    }
+
+    void bulkLoad(const std::vector<uint32_t>& keys, const std::vector<uint32_t>& values) {
+        std::array<int8_t, 3> bl_pf_bytes; // key bytes for d1, d2, d3 nodes
+
+        // Calculate number of complete groups of 256
+        size_t num_complete_groups = keys.size() / 256;
+        size_t remaining_keys = keys.size() % 256;
+        // Special case: handle first group when root is null
+        if (root == nullptr) {
+            // Create root -> d1 -> d2 -> d3 (Node256) for first 256 keys
+            Node4* root_node = new Node4();
+            root_node->prefixLength = 0;
+            this->root = root_node;
+            
+            Node4* d1_node = new Node4();
+            d1_node->prefixLength = 0;
+            root_node->insertNode4(this, &this->root, 0, d1_node);
+            
+            Node4* d2_node = new Node4();
+            d2_node->prefixLength = 0;
+            d1_node->insertNode4(this, findChild(this->root, 0), 0, d2_node);
+            
+            Node256* d3_node = new Node256();
+            d3_node->prefixLength = 0;
+            d2_node->insertNode4(this, findChild(*findChild(this->root, 0), 0), 0, d3_node);
+            
+            bl_ptr = d2_node;
+            bl_pf_bytes = {0, 0, 0};
+            
+            // Insert 256 keys into this group
+            for (size_t i = 1; i < 256; i++) {
+                uint8_t b3 = keys[i] & 0xFF;
+                d3_node->child[b3] = makeLeaf(values[i]);
+            }
+        }
+        
+        // Process complete groups of 256 keys
+        for (size_t group = 1; group < num_complete_groups; group++) {
+            size_t start_idx = group * 256;
+            
+            // Separate start_idx into big endian bytes
+            uint8_t b0 = (start_idx >> 24) & 0xFF;
+            uint8_t b1 = (start_idx >> 16) & 0xFF;
+            uint8_t b2 = (start_idx >> 8) & 0xFF;
+
+            // Check if this is a bridge value (transitioning to new prefix)
+            bool is_bridge = false;
+
+            // Bridge at byte 0: b0 changed, b1=0, b2=0, previous b0 was at max (255)
+            if (b0 != bl_pf_bytes[0] && b1 == 0 && b2 == 0 && 
+                bl_pf_bytes[1] == -1 && bl_pf_bytes[2] == -1) {
+                is_bridge = true;
+            }
+            // Bridge at byte 1: b0 same, b1 changed, b2=0, previous b1 was at max
+            else if (b0 == bl_pf_bytes[0] && b1 != bl_pf_bytes[1] && b2 == 0 && 
+                    bl_pf_bytes[2] == -1) {
+                is_bridge = true;
+                // Navigate from root->d1 to create new d2->d3 path
+            }
+            // Bridge at byte 2: b0 same, b1 same, b2 changed, previous b2 was at max
+            else if (b0 == bl_pf_bytes[0] && b1 == bl_pf_bytes[1] && b2 != bl_pf_bytes[2] &&
+                    bl_pf_bytes[2] == -1) {
+                is_bridge = true;
+                // Reuse bl_ptr (d2 node), create new d3 (Node256) under it
+            }
+            
+        }
+        
+        this->printTree();
+        return;
     }
 
    private:

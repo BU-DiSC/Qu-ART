@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
     int N = 500000000;         // optional argument
     string input_file;         // required argument
     string tree_type = "ART";  // default tree type
+    bool use_bulkload = false; // optional argument
 
     
     // Query 1% of entries
@@ -51,6 +52,9 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-t") {
             tree_type = argv[i + 1];
             i += 2;
+        } else if (string(argv[i]) == "--bulkload") {
+            use_bulkload = true;
+            i++;
         } else {
             i++;
         }
@@ -64,18 +68,25 @@ int main(int argc, char** argv) {
     if (tree_type == "ART") {
         ART::ART* tree = new ART::ART();
         long long insertion_time = 0;
-        for (uint64_t i = 0; i < N; i++) {
-            uint8_t key[4];
-            ART::loadKey(keys[i], key);
+        if (use_bulkload) {
+
+            // Shift all values 1 to the right so that keys[1] = 1, keys[2] = 2, etc.
+            keys.insert(keys.begin(), 0);
+
             auto start = chrono::high_resolution_clock::now();
-            tree->insert(key, keys[i]);
-
-            tree->printTree();
-
+            tree->bulkLoad(keys, keys);
             auto stop = chrono::high_resolution_clock::now();
-            auto duration =
-                chrono::duration_cast<chrono::nanoseconds>(stop - start);
-            insertion_time += duration.count();
+            insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+        } else {
+            for (uint64_t i = 0; i < N; i++) {
+                uint8_t key[4];
+                ART::loadKey(keys[i], key);
+                auto start = chrono::high_resolution_clock::now();
+                tree->insert(key, keys[i]);
+                auto stop = chrono::high_resolution_clock::now();
+                auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
+                insertion_time += duration.count();
+            }
         }
 
         if (verbose) {
@@ -93,11 +104,9 @@ int main(int argc, char** argv) {
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
             auto stop = chrono::high_resolution_clock::now();
-            auto duration =
-                chrono::duration_cast<chrono::nanoseconds>(stop - start);
+            auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) &&
-                   ART::getLeafValue(leaf) == keys[random]);
+            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
         }
 
         if (verbose) {

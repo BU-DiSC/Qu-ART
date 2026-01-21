@@ -21,6 +21,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 
 # Targets
-add_executable(main main.cpp)
-add_executable(insert_profiling insert_profiling.cpp)
+# add_executable(main main.cpp)
+# add_executable(insert_profiling insert_profiling.cpp)
 add_executable(run run.cpp)
