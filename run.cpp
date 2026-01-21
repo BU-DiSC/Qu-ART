@@ -13,6 +13,7 @@
 #include "trees/QuART_stail.h"
 #include "trees/QuART_lil_can.h"
 #include "trees/QuART_stail_reset.h"
+#include "ArtNodeBulkLoadMethods.cpp"
 
 using namespace std;
 
@@ -69,12 +70,13 @@ int main(int argc, char** argv) {
         ART::ART* tree = new ART::ART();
         long long insertion_time = 0;
         if (use_bulkload) {
-
             // Shift all values 1 to the right so that keys[1] = 1, keys[2] = 2, etc.
             keys.insert(keys.begin(), 0);
 
             auto start = chrono::high_resolution_clock::now();
-            tree->bulkLoad(keys, keys);
+            // Create a subvector from index 1 to N (bulk load only the N keys we want)
+            std::vector<uint32_t> keys_to_load(keys.begin(), keys.begin() + 1 + N);
+            tree->bulkLoad(keys_to_load, keys_to_load);
             auto stop = chrono::high_resolution_clock::now();
             insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
         } else {

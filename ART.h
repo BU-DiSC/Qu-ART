@@ -43,7 +43,6 @@ class ART {
     ArtNode* fp_leaf;       // pointer to leaf node in fast path
     size_t fp_depth;        // depth that will be used during fp insertion
     ArtNode** fp_ref;       // reference to fp node, used for insertion
-    ArtNode* bl_ptr;        // pointer to bulk load node
 
     // constructor
     ART()
@@ -53,8 +52,7 @@ class ART {
           fp_path_length(0),
           fp_leaf(nullptr),
           fp_depth(0),
-          fp_ref(nullptr),
-          bl_ptr(nullptr) {}
+          fp_ref(nullptr) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         insert(this, root, &root, key, 0, value, maxPrefixLength);
@@ -176,6 +174,8 @@ class ART {
     }
 
     void bulkLoad(const std::vector<uint32_t>& keys, const std::vector<uint32_t>& values) {
+        ArtNode* bl_ptr = nullptr; // pointer to current bulk load node
+        ArtNode** bl_ptr_ref = &this->root; // reference to current bulk load node
         std::array<int8_t, 3> bl_pf_bytes; // key bytes for d1, d2, d3 nodes
 
         // Calculate number of complete groups of 256
@@ -198,9 +198,11 @@ class ART {
             
             Node256* d3_node = new Node256();
             d3_node->prefixLength = 0;
+            
             d2_node->insertNode4(this, findChild(*findChild(this->root, 0), 0), 0, d3_node);
             
             bl_ptr = d2_node;
+            bl_ptr_ref = findChild(*findChild(this->root, 0), 0);
             bl_pf_bytes = {0, 0, 0};
             
             // Insert 256 keys into this group
@@ -209,6 +211,8 @@ class ART {
                 d3_node->child[b3] = makeLeaf(values[i]);
             }
         }
+
+        this->printTree();
         
         // Process complete groups of 256 keys
         for (size_t group = 1; group < num_complete_groups; group++) {
@@ -238,6 +242,49 @@ class ART {
                     bl_pf_bytes[2] == -1) {
                 is_bridge = true;
                 // Reuse bl_ptr (d2 node), create new d3 (Node256) under it
+            }
+
+            if (!is_bridge) {
+                // Navigate from bl_ptr (d2 node) to get/create d3 node at position b2
+                ArtNode** d3_ref = findChild(bl_ptr, b2);
+                Node256* d3_node;
+                
+                if (*d3_ref == nullptr) {
+                    // Create new d3 node
+                    d3_node = new Node256();
+                    d3_node->prefixLength = 0;
+                    // Insert into bl_ptr (d2 node)
+                    switch (bl_ptr->type) {
+                        case NodeType4:
+                            static_cast<Node4*>(bl_ptr)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                            break;
+                        case NodeType16:
+                            static_cast<Node16*>(bl_ptr)->bulkLoadInsertNode16(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                            break;
+                        case NodeType48:
+                            static_cast<Node48*>(bl_ptr)->bulkLoadInsertNode48(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                            break;
+                        case NodeType256:
+                            static_cast<Node256*>(bl_ptr)->bulkLoadInsertNode256(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                            break;
+                    }
+                    // Re-get the reference after potential expansion
+                    d3_ref = findChild(bl_ptr, b2);
+                    d3_node = static_cast<Node256*>(*d3_ref);
+                } else {
+                    d3_node = static_cast<Node256*>(*d3_ref);
+                }
+                
+                // Insert 256 keys into d3 node
+                for (size_t i = 0; i < 256; i++) {
+                    uint8_t b3 = keys[start_idx + i] & 0xFF;
+                    d3_node->child[b3] = makeLeaf(values[start_idx + i]);
+                }
+                
+                // Update bl_pf_bytes to track current position
+                bl_pf_bytes[2] = b2;
+
+                this->printTree();
             }
             
         }
