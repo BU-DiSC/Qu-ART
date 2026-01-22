@@ -342,10 +342,18 @@ class ART {
             bl_pf_bytes[2] = b2;
 
             //this->printTree();
-            
         }
         
-        //this->printTree();
+        // Handle remaining keys, insert them using the standard insert method
+        size_t start_idx = num_complete_groups * 256;
+        for (size_t i = 0; i < remaining_keys; i++) {
+            uint8_t key_bytes[4];
+            key_bytes[0] = (keys[start_idx + i] >> 24) & 0xFF;
+            key_bytes[1] = (keys[start_idx + i] >> 16) & 0xFF;
+            key_bytes[2] = (keys[start_idx + i] >> 8) & 0xFF;
+            key_bytes[3] = keys[start_idx + i] & 0xFF;
+            insert(this, root, &root, key_bytes, 0, values[start_idx + i], maxPrefixLength);
+        }
         return;
     }
 
