@@ -79,6 +79,26 @@ int main(int argc, char** argv) {
             tree->bulkLoad(keys_to_load, keys_to_load);
             auto stop = chrono::high_resolution_clock::now();
             insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+
+            long long query_time = 0;
+            for (uint64_t i = 1; i < N+1; i++) {
+                uint8_t key[4];
+                ART::loadKey(keys[i], key);
+                auto start = chrono::high_resolution_clock::now();
+                ART::ArtNode* leaf = tree->lookup(key);
+                auto stop = chrono::high_resolution_clock::now();
+                auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
+                query_time += duration.count();
+                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+            }
+
+             if (verbose) {
+                cout << "Tree type: " << tree_type << endl;
+                cout << "Insertion time: " << insertion_time << " ns" << endl;
+                cout << "Query time: " << query_time << " ns" << endl;
+            }
+
+            return 0;
         } else {
             for (uint64_t i = 0; i < N; i++) {
                 uint8_t key[4];
