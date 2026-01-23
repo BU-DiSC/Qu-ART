@@ -9,10 +9,10 @@ namespace ART {
 class QuART_stail_reset_bidir : public QuART_stail {
    private:
     int reset_counter;
-    int dir;
+    bool dir;
 
    public:
-    QuART_stail_reset_bidir() : QuART_stail(), reset_counter(300), dir(1) {}
+    QuART_stail_reset_bidir() : QuART_stail(), reset_counter(300), dir(true) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         /* Check if we can tail insert */
@@ -31,7 +31,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
         int leafValue = getLeafValue(this->fp_leaf);
 
 
-        if (dir == 1) {
+        if (dir) {
             // For each byte in the key excluding the last byte,
             // check if it matches the corresponding byte in the leaf value
             for (size_t i = 0; i < maxPrefixLength - 1; i++) {
@@ -150,6 +150,11 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         }
                     }
                 }
+            }
+            uint8_t lastLeafByte = leafValue & 0xFF;
+            if (key[maxPrefixLength - 1] > lastLeafByte) {
+                dir = false;
+                //printf("Direction changed to -1\n"); 
             }
         }
         else {
@@ -271,20 +276,13 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         }
                     }
                 }
+                uint8_t lastLeafByte = leafValue & 0xFF;
+                if (key[maxPrefixLength - 1] > lastLeafByte) {
+                    dir = false;
+                    //printf("Direction changed to -1\n"); 
+                }
             }
         }
-
-        // compare last bytes, if direction needs to change, change direction
-        uint8_t leafByte = leafValue & 0xFF;
-        if (dir == 1 && key[maxPrefixLength - 1] < leafByte) {
-            dir = -1;
-            //printf("Direction changed to -1\n");
-        }
-        else if (dir == -1 && key[maxPrefixLength - 1] > leafByte) {
-            dir = 1;
-            //printf("Direction changed to 1\n");
-        }
-
         /* If the algorithm reaches here, it means that fp insert will happen */
 
         // If depth is at maxPrefixLength - 1, we do not need to worry about

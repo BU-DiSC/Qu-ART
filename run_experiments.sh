@@ -10,7 +10,7 @@ echo "N,K,L,type_of_tree,avg_insert_time,avg_query_time" > "$RESULTS"
 
 REPEAT=5
 
-for FILE in ../bods/workloads/workload_N*_K*_L*.bin; do
+for FILE in /home/grad1/cgokmen/bods/workloads/workload_N*_K*_L*.bin; do
     [ -f "$FILE" ] || continue
 
     BASENAME=$(basename "$FILE")
