@@ -24,3 +24,6 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 add_executable(main main.cpp)
 add_executable(insert_profiling insert_profiling.cpp)
 add_executable(run run.cpp)
+
+# Optimization flags for Release builds
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -march=native -DNDEBUG")

@@ -69,6 +69,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         // If it is not a bridge value and counter ended, force fp change
                         else if (this->reset_counter == 0) {
                             this->reset_counter = 300; // reset counter
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
@@ -99,6 +101,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         // If it is not a bridge value and counter ended, force fp change
                         else if (this->reset_counter == 0) {
                             this->reset_counter = 300; // reset counter
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
@@ -129,6 +133,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         // If it is not a bridge value and counter ended, force fp change
                         else if (this->reset_counter == 0) {
                             this->reset_counter = 300; // reset counter
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
@@ -184,6 +190,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         // If it is not a bridge value and counter ended, force fp change
                         else if (this->reset_counter == 0) {
                             this->reset_counter = 300; // reset counter
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
@@ -214,6 +222,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         // If it is not a bridge value and counter ended, force fp change
                         else if (this->reset_counter == 0) {
                             this->reset_counter = 300; // reset counter
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
@@ -244,6 +254,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         // If it is not a bridge value and counter ended, force fp change
                         else if (this->reset_counter == 0) {
                             this->reset_counter = 300; // reset counter
+                            this->fp_path = {this->root};
+                            this->fp_path_length = 1;
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);

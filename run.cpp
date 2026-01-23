@@ -189,13 +189,16 @@ int main(int argc, char** argv) {
         cout << insertion_time << "," << query_time << endl;
     } else if (tree_type == "QuART_stail_reset_bidir") {
         ART::QuART_stail_reset_bidir* tree = new ART::QuART_stail_reset_bidir();
-        keys = {100, 99, 98, 97, 123, 124};
         long long insertion_time = 0;
         for (int64_t i = 0; i < N; i++) {
-            //cout << i << endl;
+            //cout << i << " " << keys[i] << endl;
+            //cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << endl;
             uint8_t key[4];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
+
+            //tree->printTree();
+            
             /*
             // print fp path
             printf("fp_path_length: %zu\n", tree->fp_path_length);
@@ -205,6 +208,7 @@ int main(int argc, char** argv) {
             }
             printf("\n");
             */
+            
             tree->insert(key, keys[i]);
             auto stop = chrono::high_resolution_clock::now();
             auto duration =

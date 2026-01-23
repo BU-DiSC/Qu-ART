@@ -2,7 +2,7 @@
 SUFFIX=$(date +"%Y%m%d_%H%M%S")
 RESULTSDIR="results"
 RESULTS="${RESULTSDIR}/results_${SUFFIX}.txt"
-LOGDIR="${RESULTSDIR}/logs"
+LOGDIR="${RESULTSDIR}/logs_${SUFFIX}"
 
 mkdir -p "$LOGDIR"
 
