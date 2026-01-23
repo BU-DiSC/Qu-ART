@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
         long long insertion_time = 0;
         for (int64_t i = 0; i < N; i++) {
             //cout << i << " " << keys[i] << endl;
-            //cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << endl;
+            cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << endl;
             uint8_t key[4];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
@@ -240,6 +240,8 @@ int main(int argc, char** argv) {
 
         if (verbose) {
             cout << "Query time: " << query_time << " ns" << endl;
+            cout << "Number of fp inserts: " << tree->number_of_fp_inserts << endl;
+            cout << "Number of top inserts: " << tree->number_of_top_inserts << endl;
         }
 
         // Output the times in csv format, including tree type
