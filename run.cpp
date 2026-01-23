@@ -13,6 +13,7 @@
 #include "trees/QuART_stail.h"
 #include "trees/QuART_lil_can.h"
 #include "trees/QuART_stail_reset.h"
+#include "trees/QuART_stail_reset_bidir.h"
 
 using namespace std;
 
@@ -186,13 +187,24 @@ int main(int argc, char** argv) {
 
         // Output the times in csv format, including tree type
         cout << insertion_time << "," << query_time << endl;
-    } else if (tree_type == "QuART_stail") {
-        ART::QuART_stail* tree = new ART::QuART_stail();
+    } else if (tree_type == "QuART_stail_reset_bidir") {
+        ART::QuART_stail_reset_bidir* tree = new ART::QuART_stail_reset_bidir();
+        keys = {100, 99, 98, 97, 123, 124};
         long long insertion_time = 0;
-        for (uint64_t i = 0; i < N; i++) {
+        for (int64_t i = 0; i < N; i++) {
+            //cout << i << endl;
             uint8_t key[4];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
+            /*
+            // print fp path
+            printf("fp_path_length: %zu\n", tree->fp_path_length);
+            printf("fp_path: ");
+            for (size_t j = 0; j < tree->fp_path_length; j++) {
+                printf("%p ", (void*)tree->fp_path[j]);
+            }
+            printf("\n");
+            */
             tree->insert(key, keys[i]);
             auto stop = chrono::high_resolution_clock::now();
             auto duration =
