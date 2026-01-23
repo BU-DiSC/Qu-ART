@@ -30,7 +30,6 @@ class QuART_stail_reset_bidir : public QuART_stail {
         // Store leafValue, it will be used a lot
         int leafValue = getLeafValue(this->fp_leaf);
 
-
         if (dir) {
             // For each byte in the key excluding the last byte,
             // check if it matches the corresponding byte in the leaf value
@@ -152,9 +151,9 @@ class QuART_stail_reset_bidir : public QuART_stail {
                 }
             }
             uint8_t lastLeafByte = leafValue & 0xFF;
-            if (key[maxPrefixLength - 1] > lastLeafByte) {
+            if (key[maxPrefixLength - 1] < lastLeafByte) {
                 dir = false;
-                //printf("Direction changed to -1\n"); 
+                printf("Direction changed to -1 for key %u\n", value); 
             }
         }
         else {
@@ -276,11 +275,11 @@ class QuART_stail_reset_bidir : public QuART_stail {
                         }
                     }
                 }
-                uint8_t lastLeafByte = leafValue & 0xFF;
-                if (key[maxPrefixLength - 1] > lastLeafByte) {
-                    dir = false;
-                    //printf("Direction changed to -1\n"); 
-                }
+            }
+            uint8_t lastLeafByte = leafValue & 0xFF;
+            if (key[maxPrefixLength - 1] > lastLeafByte) {
+                dir = false;
+                //printf("Direction changed to -1\n"); 
             }
         }
         /* If the algorithm reaches here, it means that fp insert will happen */
