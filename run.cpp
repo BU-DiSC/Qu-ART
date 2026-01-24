@@ -305,8 +305,8 @@ int main(int argc, char** argv) {
 
         if (verbose) {
             cout << "Query time: " << query_time << " ns" << endl;
-            cout << "Number of fp inserts: " << tree->number_of_fp_inserts << endl;
-            cout << "Number of top inserts: " << tree->number_of_top_inserts << endl;
+            //cout << "Number of fp inserts: " << tree->number_of_fp_inserts << endl;
+            //cout << "Number of top inserts: " << tree->number_of_top_inserts << endl;
         }
 
         // Output the times in csv format, including tree type

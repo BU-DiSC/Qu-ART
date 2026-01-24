@@ -11,8 +11,8 @@ class QuART_stail_reset_bidir : public QuART_stail {
    public:
     bool dir;
     int reset_counter;
-    int number_of_fp_inserts = 0;
-    int number_of_top_inserts = 0;
+    //int number_of_fp_inserts = 0;
+    //int number_of_top_inserts = 0;
 
     QuART_stail_reset_bidir() : QuART_stail(), reset_counter(300), dir(true), number_of_fp_inserts(0), number_of_top_inserts(0) {}
 
@@ -26,7 +26,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
         if (root == nullptr) {
             QuART_stail::insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
-            this->number_of_top_inserts++;
+            //this->number_of_top_inserts++;
             return;
         }
 
@@ -52,7 +52,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                     this->reset_counter--;
                     QuART_stail::insert_recursive_preserve_fp(
                         this->root, &this->root, key, 0, value, maxPrefixLength);
-                        this->number_of_top_inserts++;
+                        //this->number_of_top_inserts++;
                     return;
                 }
                 // Key byte is greater than leaf byte
@@ -69,7 +69,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value and counter ended, force fp change
@@ -81,7 +81,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value, insert without changing
@@ -90,7 +90,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_preserve_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                     }
@@ -106,7 +106,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value and counter ended, force fp change
@@ -118,7 +118,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value, insert without changing
@@ -127,7 +127,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_preserve_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                     }
@@ -143,7 +143,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value and counter ended, force fp change
@@ -155,7 +155,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value, insert without changing
@@ -164,7 +164,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_preserve_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                     }
@@ -197,7 +197,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                     this->reset_counter--;
                     QuART_stail::insert_recursive_preserve_fp(
                         this->root, &this->root, key, 0, value, maxPrefixLength);
-                    this->number_of_top_inserts++;
+                    //this->number_of_top_inserts++;
                     return;
                 }
                 // Key byte is greater than leaf byte
@@ -214,7 +214,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value and counter ended, force fp change
@@ -226,7 +226,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value, insert without changing
@@ -235,7 +235,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_preserve_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                     }
@@ -251,7 +251,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value and counter ended, force fp change
@@ -263,7 +263,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value, insert without changing
@@ -272,7 +272,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_preserve_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                     }
@@ -288,7 +288,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value and counter ended, force fp change
@@ -300,7 +300,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             this->insert_recursive_change_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                         // If it is not a bridge value, insert without changing
@@ -309,7 +309,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
                             QuART_stail::insert_recursive_preserve_fp(
                                 this->root, &this->root, key, 0, value,
                                 maxPrefixLength);
-                            this->number_of_top_inserts++;
+                            //this->number_of_top_inserts++;
                             return;
                         }
                     }
@@ -325,11 +325,11 @@ class QuART_stail_reset_bidir : public QuART_stail {
         }
         /* If the algorithm reaches here, it means that fp insert will happen */
 
-        // If depth is at maxPrefixLength - 1, we do not need to worry about
+        // If depth is at maxPrefixLengtsh - 1, we do not need to worry about
         // leaf expansion of prefix mismatch, we can directly insert the new
         // leaf into fp node
         this->reset_counter = 300;
-        this->number_of_fp_inserts++;
+        //this->number_of_fp_inserts++;
         //printf("fp insert for key %u\n", value);
         if (this->fp_depth == maxPrefixLength - 1) {
             // Insert leaf into fp
