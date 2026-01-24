@@ -190,9 +190,14 @@ int main(int argc, char** argv) {
     } else if (tree_type == "QuART_stail_reset_bidir") {
         ART::QuART_stail_reset_bidir* tree = new ART::QuART_stail_reset_bidir();
         long long insertion_time = 0;
-        for (int64_t i = 0; i < N; i++) {
+        for (int64_t i = 0; i < 500000000; i++) {
+            /*
+            if (keys[i] == 163752268) {
+                cout << i << endl;
+            }
+            */
             //cout << i << " " << keys[i] << endl;
-            cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << endl;
+            //cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << " " << i << " " << keys[i] << endl;
             uint8_t key[4];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
@@ -215,6 +220,66 @@ int main(int argc, char** argv) {
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             insertion_time += duration.count();
         }
+
+        /*
+        // insert for i = 188496940, 188496941, 188496942, 188496943
+        for (int64_t i = 188496935; i < 188498000; i++) {
+            //cout << i << " " << keys[i] << endl;
+            cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << " i: " << i << ", keys[i]: " << keys[i] << endl;
+            cout << "Direction: " << tree->dir << endl;
+            cout << "Reset counter : " << tree->reset_counter << endl;
+            cout << "Number of fp inserts: " << tree->number_of_fp_inserts << endl;
+            cout << "Number of top inserts: " << tree->number_of_top_inserts << endl;
+            cout << endl;
+            uint8_t key[4];
+            ART::loadKey(keys[i], key);
+            auto start = chrono::high_resolution_clock::now();
+
+            //tree->printTree();
+            
+            // print fp path
+            printf("fp_path_length: %zu\n", tree->fp_path_length);
+            printf("fp_path: ");
+            for (size_t j = 0; j < tree->fp_path_length; j++) {
+                printf("%p ", (void*)tree->fp_path[j]);
+            }
+            printf("\n");
+            
+            tree->insert(key, keys[i]);
+            auto stop = chrono::high_resolution_clock::now();
+            auto duration =
+                chrono::duration_cast<chrono::nanoseconds>(stop - start);
+            insertion_time += duration.count();
+        }
+        */
+        /*
+        for (int64_t i = 300000000; i < N; i++) {
+            //cout << tree->dir << endl;
+            //cout << i << " " << keys[i] << endl;
+            cout << "Current leafValue: " << ART::getLeafValue(tree->fp_leaf) << " " << i << " " << keys[i] << endl;
+            cout << tree->number_of_fp_inserts << endl;
+            cout << ART::getLeafValue(tree->fp_leaf) << endl;
+            uint8_t key[4];
+            ART::loadKey(keys[i], key);
+            auto start = chrono::high_resolution_clock::now();
+
+            //tree->printTree();
+            
+            // print fp path
+            printf("fp_path_length: %zu\n", tree->fp_path_length);
+            printf("fp_path: ");
+            for (size_t j = 0; j < tree->fp_path_length; j++) {
+                printf("%p ", (void*)tree->fp_path[j]);
+            }
+            printf("\n");
+            
+            tree->insert(key, keys[i]);
+            auto stop = chrono::high_resolution_clock::now();
+            auto duration =
+                chrono::duration_cast<chrono::nanoseconds>(stop - start);
+            insertion_time += duration.count();
+        }
+        */
 
         if (verbose) {
             cout << "Tree type: " << tree_type << endl;
