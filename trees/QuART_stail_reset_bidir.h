@@ -14,7 +14,7 @@ class QuART_stail_reset_bidir : public QuART_stail {
     //int number_of_fp_inserts = 0;
     //int number_of_top_inserts = 0;
 
-    QuART_stail_reset_bidir() : QuART_stail(), reset_counter(300), dir(true), number_of_fp_inserts(0), number_of_top_inserts(0) {}
+    QuART_stail_reset_bidir() : QuART_stail(), reset_counter(300), dir(true) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         /* Check if we can tail insert */
