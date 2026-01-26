@@ -117,7 +117,9 @@ int main(int argc, char** argv) {
             }
 
             return 0;
-        } else {
+        } 
+        // Regular ART insertion
+        else {
             for (uint64_t i = 0; i < N; i++) {
                 uint8_t key[4];
                 ART::loadKey(keys[i], key);
