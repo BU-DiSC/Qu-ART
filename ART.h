@@ -357,6 +357,12 @@ class ART {
         return;
     }
 
+    int compressTree() {
+        int compressed_nodes = 0;
+        compressTreeHelper(root, &root, compressed_nodes, 1);
+        return compressed_nodes;
+    }
+
    private:
     // Void insert function
     void insert(ART* tree, ArtNode* node, ArtNode** nodeRef, uint8_t key[],
@@ -669,6 +675,125 @@ class ART {
                     }
                 }
                 break;
+            }
+        }
+    }
+
+    void compressTreeHelper(ArtNode* node, ArtNode** nodeRef, int& compressed_nodes, int depth) {
+        if (!node || isLeaf(node) || depth == 4) return;
+        
+        // First, recursively compress children
+        switch (node->type) {
+            case NodeType4: {
+                Node4* n = static_cast<Node4*>(node);
+                for (unsigned i = 0; i < n->count; i++) {
+                    compressTreeHelper(n->child[i], &n->child[i], compressed_nodes, depth + 1);
+                }
+                break;
+            }
+            case NodeType16: {
+                Node16* n = static_cast<Node16*>(node);
+                for (unsigned i = 0; i < n->count; i++) {
+                    compressTreeHelper(n->child[i], &n->child[i], compressed_nodes, depth + 1);
+                }
+                break;
+            }
+            case NodeType48: {
+                Node48* n = static_cast<Node48*>(node);
+                for (unsigned i = 0; i < 256; i++) {
+                    if (n->childIndex[i] != emptyMarker) {
+                        compressTreeHelper(n->child[n->childIndex[i]], 
+                                        &n->child[n->childIndex[i]], 
+                                        compressed_nodes, depth + 1);
+                    }
+                }
+                break;
+            }
+            case NodeType256: {
+                Node256* n = static_cast<Node256*>(node);
+                for (unsigned i = 0; i < 256; i++) {
+                    if (n->child[i]) {
+                        compressTreeHelper(n->child[i], &n->child[i], compressed_nodes, depth + 1);
+                    }
+                }
+                break;
+            }
+        }
+        
+        // After compressing children, check if this node has count == 1
+        if (node->count == 1) {
+            // Find the single child
+            ArtNode* single_child = nullptr;
+            uint8_t child_key = 0;
+            
+            switch (node->type) {
+                case NodeType4: {
+                    Node4* n = static_cast<Node4*>(node);
+                    single_child = n->child[0];
+                    child_key = n->key[0];
+                    break;
+                }
+                case NodeType16: {
+                    Node16* n = static_cast<Node16*>(node);
+                    single_child = n->child[0];
+                    child_key = n->key[0];
+                    break;
+                }
+                case NodeType48: {
+                    Node48* n = static_cast<Node48*>(node);
+                    for (unsigned i = 0; i < 256; i++) {
+                        if (n->childIndex[i] != emptyMarker) {
+                            single_child = n->child[n->childIndex[i]];
+                            child_key = i;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case NodeType256: {
+                    Node256* n = static_cast<Node256*>(node);
+                    for (unsigned i = 0; i < 256; i++) {
+                        if (n->child[i]) {
+                            single_child = n->child[i];
+                            child_key = i;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            
+            // Only compress if the child is not a leaf (to preserve tree structure)
+            if (single_child && !isLeaf(single_child)) {
+                // Combine prefixes: current node's prefix + child_key + child's prefix
+                uint8_t combined_prefix[maxPrefixLength];
+                unsigned combined_length = 0;
+                
+                // Copy current node's prefix
+                unsigned copy_len = min(node->prefixLength, maxPrefixLength);
+                memcpy(combined_prefix, node->prefix, copy_len);
+                combined_length += copy_len;
+                
+                // Add the child key byte
+                if (combined_length < maxPrefixLength) {
+                    combined_prefix[combined_length++] = child_key;
+                }
+                
+                // Add child's prefix
+                if (combined_length < maxPrefixLength) {
+                    unsigned child_prefix_len = min(single_child->prefixLength, maxPrefixLength - combined_length);
+                    memcpy(combined_prefix + combined_length, single_child->prefix, child_prefix_len);
+                    combined_length += child_prefix_len;
+                }
+                
+                // Update child's prefix
+                single_child->prefixLength = node->prefixLength + 1 + single_child->prefixLength;
+                memcpy(single_child->prefix, combined_prefix, min(combined_length, maxPrefixLength));
+                
+                // Replace current node with the child
+                *nodeRef = single_child;
+                delete node;
+                compressed_nodes++;
             }
         }
     }
