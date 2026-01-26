@@ -4,7 +4,7 @@
 # Configuration
 RESULTSDIR="results"
 RESULTS="${RESULTSDIR}/bulkload_comparison_$(date +"%Y%m%d_%H%M%S").csv"
-LOGDIR="${RESULTSDIR}/bulkload_logs"
+LOGDIR="${RESULTSDIR}/bulkload_logs_$(date +"%Y%m%d_%H%M%S")"
 
 mkdir -p "$LOGDIR"
 
@@ -16,10 +16,10 @@ echo "N,insertion_method,insertion_time_ns,query_time_ns" > "$RESULTS"
 TEST_SIZES=(100000000 250000000 500000000 750000000 1000000000 1500000000 2000000000)
 
 # Number of repetitions for averaging
-REPEAT=3
+REPEAT=5
 
 # Input file - adjust path as needed
-INPUT_FILE="../bods/workloads/workload_large.bin"
+INPUT_FILE="/home/grad1/cgokmen/bods/workloads/workload_N500000000_K0_L0.bin"
 
 echo "Starting bulk load comparison..."
 echo "Results will be saved to: $RESULTS"
@@ -34,12 +34,16 @@ for N in "${TEST_SIZES[@]}"; do
     INSERT_SUM=0
     QUERY_SUM=0
     
+    LOGFILE="${LOGDIR}/log_N${N}_regular.txt"
+    echo "=== Regular insertion for N=$N ===" > "$LOGFILE"
+    echo "" >> "$LOGFILE"
+    
     for ((i=1; i<=REPEAT; i++)); do
-        LOGFILE="${LOGDIR}/log_N${N}_regular_run${i}.txt"
-        echo "Run $i/$REPEAT for N=$N (regular insertion)" > "$LOGFILE"
+        echo "--- Run $i/$REPEAT ---" >> "$LOGFILE"
         
         OUTPUT=$(./build/run -f "$INPUT_FILE" -N "$N" -t ART 2>>"$LOGFILE")
         echo "$OUTPUT" >> "$LOGFILE"
+        echo "" >> "$LOGFILE"
         
         CSV_LINE=$(echo "$OUTPUT" | tail -1)
         INSERT_TIME=$(echo "$CSV_LINE" | cut -d',' -f1 | xargs)
@@ -61,12 +65,16 @@ for N in "${TEST_SIZES[@]}"; do
     INSERT_SUM=0
     QUERY_SUM=0
     
+    LOGFILE="${LOGDIR}/log_N${N}_bulkload.txt"
+    echo "=== Bulk load insertion for N=$N ===" > "$LOGFILE"
+    echo "" >> "$LOGFILE"
+    
     for ((i=1; i<=REPEAT; i++)); do
-        LOGFILE="${LOGDIR}/log_N${N}_bulkload_run${i}.txt"
-        echo "Run $i/$REPEAT for N=$N (bulk load)" > "$LOGFILE"
+        echo "--- Run $i/$REPEAT ---" >> "$LOGFILE"
         
         OUTPUT=$(./build/run -f "$INPUT_FILE" -N "$N" -t ART --bulkload 2>>"$LOGFILE")
         echo "$OUTPUT" >> "$LOGFILE"
+        echo "" >> "$LOGFILE"
         
         CSV_LINE=$(echo "$OUTPUT" | tail -1)
         INSERT_TIME=$(echo "$CSV_LINE" | cut -d',' -f1 | xargs)

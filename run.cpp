@@ -32,7 +32,7 @@ std::vector<key_type> read_bin(const char* filename) {
 int main(int argc, char** argv) {
     bool verbose = false;      // optional argument
     int N = 500000000;         // optional argument
-    string input_file;         // required argument
+    string input_file = "/home/grad1/cgokmen/bods/workloads/workload_N500000000_K0_L0.bin";         // required argument
     string tree_type = "ART";  // default tree type
     bool use_bulkload = false; // optional argument
 
@@ -69,10 +69,11 @@ int main(int argc, char** argv) {
 
     if (tree_type == "ART") {
         // Create keys vector with 0 at the beginning, followed by N keys from file
-        std::vector<uint32_t> keys_to_load(N + 1);
-        keys_to_load[0] = 0;
+        std::vector<uint32_t> keys_to_load;
+        keys_to_load.reserve(N + 1);
+        keys_to_load.push_back(0);
         for (uint32_t i = 1; i <= N; i++) {
-            keys_to_load[i] = i;
+            keys_to_load.push_back(i);
         }
 
         ART::ART* tree = new ART::ART();
@@ -93,18 +94,7 @@ int main(int argc, char** argv) {
                 auto stop = chrono::high_resolution_clock::now();
                 auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
                 query_time += duration.count();
-                
-                if (!ART::isLeaf(leaf) || ART::getLeafValue(leaf) != keys_to_load[i]) {
-                    cout << "LOOKUP FAILED at index " << i << endl;
-                    cout << "  Expected key: " << keys_to_load[i] << endl;
-                    cout << "  Is leaf: " << ART::isLeaf(leaf) << endl;
-                    if (ART::isLeaf(leaf)) {
-                        cout << "  Got value: " << ART::getLeafValue(leaf) << endl;
-                    } else {
-                        cout << "  Not a leaf node!" << endl;
-                    }
-                    assert(false);
-                }
+                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys_to_load[i]);
             }
 
              if (verbose) {
@@ -125,15 +115,15 @@ int main(int argc, char** argv) {
         } 
         // Regular ART insertion
         else {
+            auto start = chrono::high_resolution_clock::now();
             for (uint64_t i = 1; i <= N; i++) {
                 uint8_t key[4];
                 ART::loadKey(keys_to_load[i], key);
-                auto start = chrono::high_resolution_clock::now();
                 tree->insert(key, keys_to_load[i]);
-                auto stop = chrono::high_resolution_clock::now();
-                auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
-                insertion_time += duration.count();
             }
+            int compressed = tree->compressTree();
+            auto stop = chrono::high_resolution_clock::now();
+            insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
         }
 
         srand(time(0));
@@ -147,7 +137,7 @@ int main(int argc, char** argv) {
             auto stop = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys_to_load[i]);
         }
         
         if (verbose) {

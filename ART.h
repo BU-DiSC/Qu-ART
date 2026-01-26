@@ -369,7 +369,7 @@ class ART {
         // Insert remaining keys that don't make a full group of 256
         size_t start_idx2 = num_complete_groups * 256;
         for (size_t i = 0; i <= remaining_keys; i++) {
-            printf("Inserting remaining key %zu: %u\n", i, keys[start_idx2 + i]);
+            //printf("Inserting remaining key %zu: %u\n", i, keys[start_idx2 + i]);
             uint8_t key_bytes[4];
             key_bytes[0] = (keys[start_idx2 + i] >> 24) & 0xFF;
             key_bytes[1] = (keys[start_idx2 + i] >> 16) & 0xFF;
