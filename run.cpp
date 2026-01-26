@@ -89,13 +89,29 @@ int main(int argc, char** argv) {
                 auto stop = chrono::high_resolution_clock::now();
                 auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
                 query_time += duration.count();
-                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+                
+                if (!ART::isLeaf(leaf) || ART::getLeafValue(leaf) != keys[i]) {
+                    cout << "LOOKUP FAILED at index " << i << endl;
+                    cout << "  Expected key: " << keys[i] << endl;
+                    cout << "  Is leaf: " << ART::isLeaf(leaf) << endl;
+                    if (ART::isLeaf(leaf)) {
+                        cout << "  Got value: " << ART::getLeafValue(leaf) << endl;
+                    } else {
+                        cout << "  Not a leaf node!" << endl;
+                    }
+                    assert(false);
+                }
             }
 
              if (verbose) {
                 cout << "Tree type: " << tree_type << endl;
                 cout << "Insertion time: " << insertion_time << " ns" << endl;
                 cout << "Query time: " << query_time << " ns" << endl;
+            }
+
+            int compressed = tree->compressTree();
+            if (verbose) {
+                cout << "Compressed nodes: " << compressed << endl;
             }
 
             return 0;
