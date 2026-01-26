@@ -68,23 +68,24 @@ int main(int argc, char** argv) {
     auto keys = read_bin<uint32_t>(input_file.c_str());
 
     if (tree_type == "ART") {
+        // Create keys vector with 0 at the beginning, followed by N keys from file
+        std::vector<uint32_t> keys_to_load(N + 1);
+        keys_to_load[0] = 0;
+        for (uint32_t i = 1; i <= N; i++) {
+            keys_to_load[i] = i;
+        }
+
         ART::ART* tree = new ART::ART();
         long long insertion_time = 0;
         if (use_bulkload) {
-            // Create keys vector with 0 at the beginning, followed by N keys from file
-            std::vector<uint32_t> keys_to_load(N + 1);
-            keys_to_load[0] = 0;
-            for (uint32_t i = 1; i <= N; i++) {
-                keys_to_load[i] = i;
-            }
-
             auto start = chrono::high_resolution_clock::now();
             tree->bulkLoad(keys_to_load, keys_to_load);
+            int compressed = tree->compressTree();
             auto stop = chrono::high_resolution_clock::now();
             insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
 
             long long query_time = 0;
-            for (uint64_t i = 1; i < N+1; i++) {
+            for (uint64_t i = 1; i <= N; i++) {
                 uint8_t key[4];
                 ART::loadKey(keys_to_load[i], key);
                 auto start = chrono::high_resolution_clock::now();
@@ -112,47 +113,46 @@ int main(int argc, char** argv) {
                 cout << "Query time: " << query_time << " ns" << endl;
             }
 
-            int compressed = tree->compressTree();
+            cout << insertion_time << "," << query_time << endl;
+
+            /*
             if (verbose) {
                 cout << "Compressed nodes: " << compressed << endl;
             }
+            */
 
             return 0;
         } 
         // Regular ART insertion
         else {
-            for (uint64_t i = 0; i < N; i++) {
+            for (uint64_t i = 1; i <= N; i++) {
                 uint8_t key[4];
-                ART::loadKey(keys[i], key);
+                ART::loadKey(keys_to_load[i], key);
                 auto start = chrono::high_resolution_clock::now();
-                tree->insert(key, keys[i]);
+                tree->insert(key, keys_to_load[i]);
                 auto stop = chrono::high_resolution_clock::now();
                 auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
                 insertion_time += duration.count();
             }
         }
 
-        if (verbose) {
-            cout << "Tree type: " << tree_type << endl;
-            cout << "Insertion time: " << insertion_time << " ns" << endl;
-        }
-
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (N / 100); i++) {
-            int random = rand() % (maxval - minval + 1) + minval;
+        for (uint64_t i = 1; i <= N; i++) {
             uint8_t key[4];
-            ART::loadKey(keys[random], key);
+            ART::loadKey(keys_to_load[i], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
             auto stop = chrono::high_resolution_clock::now();
             auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
+            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
         }
-
+        
         if (verbose) {
+            cout << "Tree type: " << tree_type << endl;
+            cout << "Insertion time: " << insertion_time << " ns" << endl;
             cout << "Query time: " << query_time << " ns" << endl;
         }
 
