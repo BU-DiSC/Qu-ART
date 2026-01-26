@@ -179,8 +179,8 @@ class ART {
         std::array<uint8_t, 3> bl_pf_bytes; // key bytes for d1, d2, d3 nodes
 
         // Calculate number of complete groups of 256
-        size_t num_complete_groups = keys.size() / 256;
-        size_t remaining_keys = keys.size() % 256;
+        size_t num_complete_groups = (keys.size()-1) / 256;
+        size_t remaining_keys = (keys.size()-1) % 256;
         // Special case: handle first group when root is null
         if (root == nullptr) {
             // Create root -> d1 -> d2 -> d3 (Node256) for first 256 keys
@@ -215,7 +215,7 @@ class ART {
         //this->printTree();
         
         // Process complete groups of 256 keys
-        for (size_t group = 1; group < 809879; group++) {
+        for (size_t group = 1; group < num_complete_groups; group++) {
             size_t start_idx = group * 256;
             
             // Separate the first key of this group into big endian bytes
@@ -343,139 +343,142 @@ class ART {
 
             //this->printTree();
         }
-            size_t start_idx = 809879 * 256;
-            
-            // Separate the first key of this group into big endian bytes
-            uint8_t b0 = (keys[start_idx] >> 24) & 0xFF;
-            uint8_t b1 = (keys[start_idx] >> 16) & 0xFF;
-            uint8_t b2 = (keys[start_idx] >> 8) & 0xFF;
+        /*
+        size_t start_idx = KK * 256;
+        
+        // Separate the first key of this group into big endian bytes
+        uint8_t b0 = (keys[start_idx] >> 24) & 0xFF;
+        uint8_t b1 = (keys[start_idx] >> 16) & 0xFF;
+        uint8_t b2 = (keys[start_idx] >> 8) & 0xFF;
 
-            // Bridge at byte 0: b0 changed, b1=0, b2=0, previous b0 was at max (255)
-            if (b0 != bl_pf_bytes[0] && b1 == 0 && b2 == 0) {
-                Node4* new_d1_node = new Node4();
-                new_d1_node->prefixLength = 0;
-                switch (this->root->type) {
-                    case NodeType4:
-                        static_cast<Node4*>(this->root)->bulkLoadInsertNode4(this, &this->root, b0, new_d1_node, bl_ptr);
-                        break;
-                    case NodeType16:
-                        static_cast<Node16*>(this->root)->bulkLoadInsertNode16(this, &this->root, b0, new_d1_node, bl_ptr);
-                        break;
-                    case NodeType48:
-                        static_cast<Node48*>(this->root)->bulkLoadInsertNode48(this, &this->root, b0, new_d1_node, bl_ptr);
-                        break;
-                    case NodeType256:
-                        static_cast<Node256*>(this->root)->bulkLoadInsertNode256(this, &this->root, b0, new_d1_node, bl_ptr);
-                        break;
-                }
-                // insert a d2 node under new d1 node
-                ArtNode** d1_ref = findChild(this->root, b0);
-                ArtNode* d1_node = *d1_ref;
-                Node4* new_d2_node = new Node4();
-                new_d2_node->prefixLength = 0;
-                static_cast<Node4*>(d1_node)->bulkLoadInsertNode4(this, d1_ref, b1, new_d2_node, bl_ptr);
-                // Update bl_ptr to new d2 node
-                bl_ptr = new_d2_node;
-                bl_ptr_ref = findChild(*d1_ref, b1);
-                bl_pf_bytes = {b0, 0, 0};
+        // Bridge at byte 0: b0 changed, b1=0, b2=0, previous b0 was at max (255)
+        if (b0 != bl_pf_bytes[0] && b1 == 0 && b2 == 0) {
+            Node4* new_d1_node = new Node4();
+            new_d1_node->prefixLength = 0;
+            switch (this->root->type) {
+                case NodeType4:
+                    static_cast<Node4*>(this->root)->bulkLoadInsertNode4(this, &this->root, b0, new_d1_node, bl_ptr);
+                    break;
+                case NodeType16:
+                    static_cast<Node16*>(this->root)->bulkLoadInsertNode16(this, &this->root, b0, new_d1_node, bl_ptr);
+                    break;
+                case NodeType48:
+                    static_cast<Node48*>(this->root)->bulkLoadInsertNode48(this, &this->root, b0, new_d1_node, bl_ptr);
+                    break;
+                case NodeType256:
+                    static_cast<Node256*>(this->root)->bulkLoadInsertNode256(this, &this->root, b0, new_d1_node, bl_ptr);
+                    break;
+            }
+            // insert a d2 node under new d1 node
+            ArtNode** d1_ref = findChild(this->root, b0);
+            ArtNode* d1_node = *d1_ref;
+            Node4* new_d2_node = new Node4();
+            new_d2_node->prefixLength = 0;
+            static_cast<Node4*>(d1_node)->bulkLoadInsertNode4(this, d1_ref, b1, new_d2_node, bl_ptr);
+            // Update bl_ptr to new d2 node
+            bl_ptr = new_d2_node;
+            bl_ptr_ref = findChild(*d1_ref, b1);
+            bl_pf_bytes = {b0, 0, 0};
 
-                // insert the grouped keys into d3 node under new d2 node
-                Node256* d3_node = new Node256();
-                d3_node->prefixLength = 0;
-                static_cast<Node4*>(new_d2_node)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
-                // Insert 256 keys into d3 node
-                for (size_t i = 0; i < 256; i++) {
-                    uint8_t b3 = keys[start_idx + i] & 0xFF;
-                    d3_node->child[b3] = makeLeaf(values[start_idx + i]);
-                }
-            }
-            // Bridge at byte 1: b0 same, b1 changed, b2=0, previous b1 was at max
-            else if (b0 == bl_pf_bytes[0] && b1 != bl_pf_bytes[1] && b2 == 0) {
-                ArtNode** d1_ref = findChild(this->root, b0);
-                ArtNode* d1_node = *d1_ref;
-                // Create new d2 node
-                Node4* new_d2_node = new Node4();
-                new_d2_node->prefixLength = 0;
-                switch (d1_node->type) {
-                    case NodeType4:
-                        static_cast<Node4*>(d1_node)->bulkLoadInsertNode4(this, d1_ref, b1, new_d2_node, bl_ptr);
-                        break;
-                    case NodeType16:
-                        static_cast<Node16*>(d1_node)->bulkLoadInsertNode16(this, d1_ref, b1, new_d2_node, bl_ptr);
-                        break;
-                    case NodeType48:
-                        static_cast<Node48*>(d1_node)->bulkLoadInsertNode48(this, d1_ref, b1, new_d2_node, bl_ptr);
-                        break;
-                    case NodeType256:
-                        static_cast<Node256*>(d1_node)->bulkLoadInsertNode256(this, d1_ref, b1, new_d2_node, bl_ptr);
-                        break;
-                }
-                // Update bl_ptr to new d2 node
-                bl_ptr = new_d2_node;
-                bl_ptr_ref = findChild(*d1_ref, b1);
-                bl_pf_bytes[1] = b1;
-                bl_pf_bytes[2] = 0;
-                
-                // insert the grouped keys into d3 node under new d2 node
-                Node256* d3_node = new Node256();
-                d3_node->prefixLength = 0;
-                static_cast<Node4*>(new_d2_node)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
-                // Insert 256 keys into d3 node
-                for (size_t i = 0; i < 256; i++) {
-                    uint8_t b3 = keys[start_idx + i] & 0xFF;
-                    d3_node->child[b3] = makeLeaf(values[start_idx + i]);
-                }              
-            }
-
-            // Navigate from bl_ptr (d2 node) to get/create d3 node at position b2
-            ArtNode** d3_ref = findChild(bl_ptr, b2);
-            Node256* d3_node;
-            
-            if (*d3_ref == nullptr) {
-                // Create new d3 node
-                d3_node = new Node256();
-                d3_node->prefixLength = 0;
-                // Insert into bl_ptr (d2 node)
-                switch (bl_ptr->type) {
-                    case NodeType4:
-                        static_cast<Node4*>(bl_ptr)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
-                        break;
-                    case NodeType16:
-                        static_cast<Node16*>(bl_ptr)->bulkLoadInsertNode16(this, bl_ptr_ref, b2, d3_node, bl_ptr);
-                        break;
-                    case NodeType48:
-                        static_cast<Node48*>(bl_ptr)->bulkLoadInsertNode48(this, bl_ptr_ref, b2, d3_node, bl_ptr);
-                        break;
-                    case NodeType256:
-                        static_cast<Node256*>(bl_ptr)->bulkLoadInsertNode256(this, bl_ptr_ref, b2, d3_node, bl_ptr);
-                        break;
-                }
-                // Re-get the reference after potential expansion
-                d3_ref = findChild(bl_ptr, b2);
-                d3_node = static_cast<Node256*>(*d3_ref);
-            } else {
-                d3_node = static_cast<Node256*>(*d3_ref);
-            }
-            
+            // insert the grouped keys into d3 node under new d2 node
+            Node256* d3_node = new Node256();
+            d3_node->prefixLength = 0;
+            static_cast<Node4*>(new_d2_node)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
             // Insert 256 keys into d3 node
             for (size_t i = 0; i < 256; i++) {
                 uint8_t b3 = keys[start_idx + i] & 0xFF;
                 d3_node->child[b3] = makeLeaf(values[start_idx + i]);
             }
-            
-            // Update bl_pf_bytes to track current position
-            bl_pf_bytes[2] = b2;
-        
-        // Handle remaining keys, insert them using the standard insert method
-        size_t start_idx = num_complete_groups * 256;
-        for (size_t i = 0; i < remaining_keys; i++) {
-            uint8_t key_bytes[4];
-            key_bytes[0] = (keys[start_idx + i] >> 24) & 0xFF;
-            key_bytes[1] = (keys[start_idx + i] >> 16) & 0xFF;
-            key_bytes[2] = (keys[start_idx + i] >> 8) & 0xFF;
-            key_bytes[3] = keys[start_idx + i] & 0xFF;
-            insert(this, root, &root, key_bytes, 0, values[start_idx + i], maxPrefixLength);
         }
+        // Bridge at byte 1: b0 same, b1 changed, b2=0, previous b1 was at max
+        else if (b0 == bl_pf_bytes[0] && b1 != bl_pf_bytes[1] && b2 == 0) {
+            ArtNode** d1_ref = findChild(this->root, b0);
+            ArtNode* d1_node = *d1_ref;
+            // Create new d2 node
+            Node4* new_d2_node = new Node4();
+            new_d2_node->prefixLength = 0;
+            switch (d1_node->type) {
+                case NodeType4:
+                    static_cast<Node4*>(d1_node)->bulkLoadInsertNode4(this, d1_ref, b1, new_d2_node, bl_ptr);
+                    break;
+                case NodeType16:
+                    static_cast<Node16*>(d1_node)->bulkLoadInsertNode16(this, d1_ref, b1, new_d2_node, bl_ptr);
+                    break;
+                case NodeType48:
+                    static_cast<Node48*>(d1_node)->bulkLoadInsertNode48(this, d1_ref, b1, new_d2_node, bl_ptr);
+                    break;
+                case NodeType256:
+                    static_cast<Node256*>(d1_node)->bulkLoadInsertNode256(this, d1_ref, b1, new_d2_node, bl_ptr);
+                    break;
+            }
+            // Update bl_ptr to new d2 node
+            bl_ptr = new_d2_node;
+            bl_ptr_ref = findChild(*d1_ref, b1);
+            bl_pf_bytes[1] = b1;
+            bl_pf_bytes[2] = 0;
+            
+            // insert the grouped keys into d3 node under new d2 node
+            Node256* d3_node = new Node256();
+            d3_node->prefixLength = 0;
+            static_cast<Node4*>(new_d2_node)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+            // Insert 256 keys into d3 node
+            for (size_t i = 0; i < 256; i++) {
+                uint8_t b3 = keys[start_idx + i] & 0xFF;
+                d3_node->child[b3] = makeLeaf(values[start_idx + i]);
+            }              
+        }
+
+        // Navigate from bl_ptr (d2 node) to get/create d3 node at position b2
+        ArtNode** d3_ref = findChild(bl_ptr, b2);
+        Node256* d3_node;
+        
+        if (*d3_ref == nullptr) {
+            // Create new d3 node
+            d3_node = new Node256();
+            d3_node->prefixLength = 0;
+            // Insert into bl_ptr (d2 node)
+            switch (bl_ptr->type) {
+                case NodeType4:
+                    static_cast<Node4*>(bl_ptr)->bulkLoadInsertNode4(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                    break;
+                case NodeType16:
+                    static_cast<Node16*>(bl_ptr)->bulkLoadInsertNode16(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                    break;
+                case NodeType48:
+                    static_cast<Node48*>(bl_ptr)->bulkLoadInsertNode48(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                    break;
+                case NodeType256:
+                    static_cast<Node256*>(bl_ptr)->bulkLoadInsertNode256(this, bl_ptr_ref, b2, d3_node, bl_ptr);
+                    break;
+            }
+            // Re-get the reference after potential expansion
+            d3_ref = findChild(bl_ptr, b2);
+            d3_node = static_cast<Node256*>(*d3_ref);
+        } else {
+            d3_node = static_cast<Node256*>(*d3_ref);
+        }
+        
+        // Insert 256 keys into d3 node
+        for (size_t i = 0; i < 256; i++) {
+            uint8_t b3 = keys[start_idx + i] & 0xFF;
+            d3_node->child[b3] = makeLeaf(values[start_idx + i]);
+        }
+        
+        // Update bl_pf_bytes to track current position
+        bl_pf_bytes[2] = b2;
+        */
+        
+        size_t start_idx2 = num_complete_groups * 256;
+        for (size_t i = 0; i <= remaining_keys; i++) {
+            printf("Inserting remaining key %zu: %u\n", i, keys[start_idx2 + i]);
+            uint8_t key_bytes[4];
+            key_bytes[0] = (keys[start_idx2 + i] >> 24) & 0xFF;
+            key_bytes[1] = (keys[start_idx2 + i] >> 16) & 0xFF;
+            key_bytes[2] = (keys[start_idx2 + i] >> 8) & 0xFF;
+            key_bytes[3] = keys[start_idx2 + i] & 0xFF;
+            insert(this, root, &root, key_bytes, 0, values[start_idx2 + i], maxPrefixLength);
+        }
+        
         return;
     }
 
