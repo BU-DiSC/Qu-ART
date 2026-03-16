@@ -5,3 +5,5 @@ build/
 .vscode/tasks.json
 results/
 workloads/
+bods/
+tpcc/benchmarksql_workdir/

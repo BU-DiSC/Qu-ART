@@ -20,22 +20,39 @@ using namespace std;
 
 template <typename key_type>
 std::vector<key_type> read_bin(const char* filename) {
-    std::ifstream inputFile(filename, std::ios::binary);
-    inputFile.seekg(0, std::ios::end);
-    const std::streampos fileSize = inputFile.tellg();
+    std::ifstream inputFile(filename, std::ios::binary | std::ios::ate);
+    std::streamsize size = inputFile.tellg();
     inputFile.seekg(0, std::ios::beg);
-    std::vector<key_type> data(fileSize / sizeof(key_type));
-    inputFile.read(reinterpret_cast<char*>(data.data()), fileSize);
+    std::vector<key_type> data(size / sizeof(key_type));
+    inputFile.read(reinterpret_cast<char*>(data.data()), size);
     return data;
+}
+
+template <typename key_type>
+std::vector<key_type> read_txt(const char* filename) {
+    std::ifstream inputFile(filename);
+    std::vector<key_type> data;
+    key_type val;
+    while (inputFile >> val) {
+        data.push_back(val);
+    }
+    return data;
+}
+
+template <typename key_type>
+std::vector<key_type> read_file(const std::string& filename) {
+    if (filename.size() >= 4 && filename.substr(filename.size() - 4) == ".txt") {
+        return read_txt<key_type>(filename.c_str());
+    }
+    return read_bin<key_type>(filename.c_str());
 }
 
 int main(int argc, char** argv) {
     bool verbose = false;      // optional argument
     int N = 500000000;         // optional argument
-    string input_file = "/home/grad1/cgokmen/bods/workloads/workload_N500000000_K0_L0.bin";         // required argument
+    string input_file = "/scratch/cgokmen/Qu-ART/tpch/benchmarksql_workdir/workload.txt";         // required argument
     string tree_type = "ART";  // default tree type
     bool use_bulkload = false; // optional argument
-
     
     // Query 1% of entries
     uint64_t minval = 0;
@@ -65,20 +82,19 @@ int main(int argc, char** argv) {
     uint64_t maxval = N-1;
 
     // read data
-    auto keys = read_bin<uint32_t>(input_file.c_str());
+    auto keys = read_file<uint32_t>(input_file);
 
     if (tree_type == "ART") {
-        // Create keys vector with 0 at the beginning, followed by N keys from file
-        std::vector<uint32_t> keys_to_load;
-        keys_to_load.reserve(N + 1);
-        keys_to_load.push_back(0);
-        for (uint32_t i = 1; i <= N; i++) {
-            keys_to_load.push_back(i);
-        }
-
         ART::ART* tree = new ART::ART();
         long long insertion_time = 0;
         if (use_bulkload) {
+            // Create keys vector with 0 at the beginning, followed by N keys from file
+            std::vector<uint32_t> keys_to_load;
+            keys_to_load.reserve(N + 1);
+            keys_to_load.push_back(0);
+            for (uint32_t i = 1; i <= N; i++) {
+                keys_to_load.push_back(i);
+            }
             auto start = chrono::high_resolution_clock::now();
             tree->bulkLoad(keys_to_load, keys_to_load);
             int compressed = tree->compressTree();
@@ -97,57 +113,47 @@ int main(int argc, char** argv) {
                 assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys_to_load[i]);
             }
 
-             if (verbose) {
+            if (verbose) {
                 cout << "Tree type: " << tree_type << endl;
                 cout << "Insertion time: " << insertion_time << " ns" << endl;
                 cout << "Query time: " << query_time << " ns" << endl;
             }
 
             cout << insertion_time << "," << query_time << endl;
-
-            /*
-            if (verbose) {
-                cout << "Compressed nodes: " << compressed << endl;
-            }
-            */
-
             return 0;
-        } 
-        // Regular ART insertion
-        else {
-            auto start = chrono::high_resolution_clock::now();
-            for (uint64_t i = 1; i <= N; i++) {
+        } else {
+            // Regular ART insertion
+            for (uint64_t i = 0; i < N; i++) {
                 uint8_t key[4];
-                ART::loadKey(keys_to_load[i], key);
-                tree->insert(key, keys_to_load[i]);
+                ART::loadKey(keys[i], key);
+                auto start = chrono::high_resolution_clock::now();
+                tree->insert(key, keys[i]);
+                auto stop = chrono::high_resolution_clock::now();
+                auto duration =
+                    chrono::duration_cast<chrono::nanoseconds>(stop - start);
+                insertion_time += duration.count();
             }
-            int compressed = tree->compressTree();
-            auto stop = chrono::high_resolution_clock::now();
-            insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
-        }
 
-        srand(time(0));
+            long long query_time = 0;
+            for (uint64_t i = 0; i < N; i++) {
+                uint8_t key[4];
+                ART::loadKey(keys[i], key);
+                auto start = chrono::high_resolution_clock::now();
+                ART::ArtNode* leaf = tree->lookup(key);
+                auto stop = chrono::high_resolution_clock::now();
+                auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
+                query_time += duration.count();
+                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+            }
 
-        long long query_time = 0;
-        for (uint64_t i = 1; i <= N; i++) {
-            uint8_t key[4];
-            ART::loadKey(keys_to_load[i], key);
-            auto start = chrono::high_resolution_clock::now();
-            ART::ArtNode* leaf = tree->lookup(key);
-            auto stop = chrono::high_resolution_clock::now();
-            auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
-            query_time += duration.count();
-            assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys_to_load[i]);
-        }
-        
-        if (verbose) {
-            cout << "Tree type: " << tree_type << endl;
-            cout << "Insertion time: " << insertion_time << " ns" << endl;
-            cout << "Query time: " << query_time << " ns" << endl;
-        }
+            if (verbose) {
+                cout << "Tree type: " << tree_type << endl;
+                cout << "Insertion time: " << insertion_time << " ns" << endl;
+                cout << "Query time: " << query_time << " ns" << endl;
+            }
 
-        // Output the times in csv format, including tree type
-        cout << insertion_time << "," << query_time << endl;
+            cout << insertion_time << "," << query_time << endl;
+        }
     } else if (tree_type == "QuART_tail") {
         ART::QuART_tail* tree = new ART::QuART_tail();
         long long insertion_time = 0;
