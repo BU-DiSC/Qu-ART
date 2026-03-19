@@ -7,3 +7,4 @@ results/
 workloads/
 bods/
 tpcc/benchmarksql_workdir/
+quick-insertion-tree/

@@ -25,3 +25,20 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 # add_executable(insert_profiling insert_profiling.cpp)
 add_executable(run run.cpp)
 add_executable(test_compress test/test_compress.cpp)
+
+# QuIT variants — all use 256-key leaf nodes (BLOCK_SIZE_BYTES=2060: 256*8+12).
+# Each target is a separate binary because the tree variant is selected at compile time.
+add_executable(run_quit_simple run_quit.cpp)
+target_compile_definitions(run_quit_simple PRIVATE INMEMORY BLOCK_SIZE_BYTES=2060)
+
+add_executable(run_quit_tail run_quit.cpp)
+target_compile_definitions(run_quit_tail PRIVATE TAIL_FAT INMEMORY BLOCK_SIZE_BYTES=2060)
+
+add_executable(run_quit_lil run_quit.cpp)
+target_compile_definitions(run_quit_lil PRIVATE LIL_FAT INMEMORY BLOCK_SIZE_BYTES=2060)
+
+add_executable(run_quit_lol run_quit.cpp)
+target_compile_definitions(run_quit_lol PRIVATE LOL_FAT INMEMORY BLOCK_SIZE_BYTES=2060)
+
+add_executable(run_quit run_quit.cpp)
+target_compile_definitions(run_quit PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=2060)
