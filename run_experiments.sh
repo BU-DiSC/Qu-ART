@@ -2,15 +2,15 @@
 SUFFIX=$(date +"%Y%m%d_%H%M%S")
 RESULTSDIR="results"
 RESULTS="${RESULTSDIR}/results_${SUFFIX}.txt"
-LOGDIR="${RESULTSDIR}/logs"
+LOGDIR="${RESULTSDIR}/logs_${SUFFIX}"
 
 mkdir -p "$LOGDIR"
 
 echo "N,K,L,type_of_tree,avg_insert_time,avg_query_time" > "$RESULTS"
 
-REPEAT=1
+REPEAT=5
 
-for FILE in ../bods/workloads/workload_N*_K*_L*.bin; do
+for FILE in /home/grad1/cgokmen/bods/workloads/workload_N*_K*_L*.bin; do
     [ -f "$FILE" ] || continue
 
     BASENAME=$(basename "$FILE")
@@ -19,7 +19,7 @@ for FILE in ../bods/workloads/workload_N*_K*_L*.bin; do
     L=$(echo "$BASENAME" | sed -n 's/.*_N[0-9]*_K[0-9]*_L\([0-9]*\).bin/\1/p')
     LOGFILE="${LOGDIR}/log_${BASENAME%.txt}_${SUFFIX}.txt"
 
-    for TREE in ART QuART_tail QuART_lil; do
+    for TREE in ART QuART_tail QuART_lil QuART_stail_reset_2 QuART_stail_reset_bidir; do
         INSERT_SUM=0
         QUERY_SUM=0
 

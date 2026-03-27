@@ -87,40 +87,14 @@ class QuART_stail_reset_2 : public QuART_stail {
     }
 
     KeyType getKeyType(uint8_t key[]) {
-        int leafValue = getLeafValue(this->fp_leaf);
-        uint8_t leaf[3];
-        leaf[0] = (leafValue >> 24) & 0xFF;
-        leaf[1] = (leafValue >> 16) & 0xFF;
-        leaf[2] = (leafValue >> 8)  & 0xFF;
+        uint32_t leafUpper = (uint32_t)(getLeafValue(this->fp_leaf) >> 8) & 0xFFFFFF;
+        uint32_t keyUpper  = ((uint32_t)key[0] << 16) | ((uint32_t)key[1] << 8) | key[2];
 
-        // All 3 upper bytes match → fp insert
-        if (key[0] == leaf[0] && key[1] == leaf[1] && key[2] == leaf[2])
+        if (keyUpper == leafUpper)
             return KeyType::FP_INSERT;
-
-        // bytes 0,1 equal, byte 2 adjacent in either direction
-        if (key[0] == leaf[0] && key[1] == leaf[1]) {
-            if (key[2] == (uint8_t)(leaf[2] + 1) || leaf[2] == (uint8_t)(key[2] + 1))
-                return KeyType::BRIDGE;
-        }
-
-        // byte 0 equal, byte 1 carries over byte 2 boundary
-        if (key[0] == leaf[0]) {
-            // ascending: n 255 → n+1 0
-            if (key[1] == (uint8_t)(leaf[1] + 1) && key[2] == 0   && leaf[2] == 255)
-                return KeyType::BRIDGE;
-            // descending: n+1 0 → n 255
-            if (leaf[1] == (uint8_t)(key[1] + 1) && leaf[2] == 0  && key[2] == 255)
-                return KeyType::BRIDGE;
-        }
-
-        // byte 0 carries over bytes 1,2 boundary
-        // ascending: n 255 255 → n+1 0 0
-        if (key[0] == (uint8_t)(leaf[0] + 1) && key[1] == 0  && key[2] == 0  && leaf[1] == 255 && leaf[2] == 255)
+        if (((keyUpper + 1) & 0xFFFFFF) == leafUpper ||
+            ((leafUpper + 1) & 0xFFFFFF) == keyUpper)
             return KeyType::BRIDGE;
-        // descending: n+1 0 0 → n 255 255
-        if (leaf[0] == (uint8_t)(key[0] + 1) && leaf[1] == 0 && leaf[2] == 0 && key[1] == 255  && key[2] == 255)
-            return KeyType::BRIDGE;
-
         return KeyType::OTHER;
     }
 };
