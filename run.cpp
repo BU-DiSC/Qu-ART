@@ -14,6 +14,7 @@
 #include "trees/QuART_lil_can.h"
 #include "trees/QuART_stail_reset.h"
 #include "trees/QuART_stail_reset_bidir.h"
+#include "trees/QuART_stail_reset_2.h"
 #include "ArtNodeBulkLoadMethods.cpp"
 
 using namespace std;
@@ -367,6 +368,48 @@ int main(int argc, char** argv) {
     }
      else if (tree_type == "QuART_stail_reset_bidir") {
         ART::QuART_stail_reset_bidir* tree = new ART::QuART_stail_reset_bidir();
+        long long insertion_time = 0;
+        for (uint64_t i = 0; i < N; i++) {
+            uint8_t key[4];
+            ART::loadKey(keys[i], key);
+            auto start = chrono::high_resolution_clock::now();
+            tree->insert(key, keys[i]);
+            auto stop = chrono::high_resolution_clock::now();
+            auto duration =
+                chrono::duration_cast<chrono::nanoseconds>(stop - start);
+            insertion_time += duration.count();
+        }
+
+        if (verbose) {
+            cout << "Tree type: " << tree_type << endl;
+            cout << "Insertion time: " << insertion_time << " ns" << endl;
+        }
+
+        srand(time(0));
+
+        long long query_time = 0;
+        for (uint64_t i = 0; i < N; i++) {
+            uint8_t key[4];
+            ART::loadKey(keys[i], key);
+            auto start = chrono::high_resolution_clock::now();
+            ART::ArtNode* leaf = tree->lookup(key);
+            auto stop = chrono::high_resolution_clock::now();
+            auto duration =
+                chrono::duration_cast<chrono::nanoseconds>(stop - start);
+            query_time += duration.count();
+            assert(ART::isLeaf(leaf) &&
+                   ART::getLeafValue(leaf) == keys[i]);
+        }
+
+        if (verbose) {
+            cout << "Query time: " << query_time << " ns" << endl;
+        }
+
+        // Output the times in csv format, including tree type
+        cout << insertion_time << "," << query_time << endl;
+    }
+    else if (tree_type == "QuART_stail_reset_2") {
+        ART::QuART_stail_reset_2* tree = new ART::QuART_stail_reset_2();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
             uint8_t key[4];

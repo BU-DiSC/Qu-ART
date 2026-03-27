@@ -72,9 +72,11 @@ for WORKLOAD_FILE in "${WORKLOAD_DIR}"/*.bin; do
     echo ""
     echo ">>> Workload: $WORKLOAD_NAME  (N=$N)"
 
-    run_config "run"      "-f $WORKLOAD_FILE -N $N -t ART"                     "ART"                     "$WORKLOAD_NAME"
-    run_config "run"      "-f $WORKLOAD_FILE -N $N -t QuART_stail_reset_bidir" "QuART_stail_reset_bidir"  "$WORKLOAD_NAME"
-    run_config "run_quit" "-f $WORKLOAD_FILE -N $N"                             "QuIT"                    "$WORKLOAD_NAME"
+    run_config "run"             "-f $WORKLOAD_FILE -N $N -t ART"                     "ART"                     "$WORKLOAD_NAME"
+    run_config "run"             "-f $WORKLOAD_FILE -N $N -t QuART_stail_reset_bidir" "QuART_stail_reset_bidir"  "$WORKLOAD_NAME"
+    run_config "run_quit_simple" "-f $WORKLOAD_FILE -N $N"                             "BPTree_256"              "$WORKLOAD_NAME"
+    run_config "run_quit"        "-f $WORKLOAD_FILE -N $N"                             "QuIT_256"                "$WORKLOAD_NAME"
+    run_config "run_quit_512"    "-f $WORKLOAD_FILE -N $N"                             "QuIT_512"                "$WORKLOAD_NAME"
 done
 
 echo ""
