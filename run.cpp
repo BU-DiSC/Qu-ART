@@ -16,6 +16,8 @@
 #include "trees/QuART_stail_reset_bidir.h"
 #include "trees/QuART_stail_reset_2.h"
 #include "ArtNodeBulkLoadMethods.cpp"
+#include "quick-insertion-tree/src/bptree/memory_block_manager.h"
+#include "quick-insertion-tree/src/bptree/bp_tree.h"
 
 using namespace std;
 
@@ -102,16 +104,18 @@ int main(int argc, char** argv) {
             auto stop = chrono::high_resolution_clock::now();
             insertion_time = chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
 
+            srand(time(0));
             long long query_time = 0;
-            for (uint64_t i = 1; i <= N; i++) {
+            for (uint64_t i = 0; i < (uint64_t)N; i++) {
+                int random = rand() % N + 1;
                 uint8_t key[4];
-                ART::loadKey(keys_to_load[i], key);
+                ART::loadKey(keys_to_load[random], key);
                 auto start = chrono::high_resolution_clock::now();
                 ART::ArtNode* leaf = tree->lookup(key);
                 auto stop = chrono::high_resolution_clock::now();
                 auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
                 query_time += duration.count();
-                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys_to_load[i]);
+                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys_to_load[random]);
             }
 
             if (verbose) {
@@ -135,16 +139,18 @@ int main(int argc, char** argv) {
                 insertion_time += duration.count();
             }
 
+            srand(time(0));
             long long query_time = 0;
-            for (uint64_t i = 0; i < N; i++) {
+            for (uint64_t i = 0; i < (uint64_t)N; i++) {
+                int random = rand() % (maxval - minval + 1) + minval;
                 uint8_t key[4];
-                ART::loadKey(keys[i], key);
+                ART::loadKey(keys[random], key);
                 auto start = chrono::high_resolution_clock::now();
                 ART::ArtNode* leaf = tree->lookup(key);
                 auto stop = chrono::high_resolution_clock::now();
                 auto duration = chrono::duration_cast<chrono::nanoseconds>(stop - start);
                 query_time += duration.count();
-                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[i]);
+                assert(ART::isLeaf(leaf) && ART::getLeafValue(leaf) == keys[random]);
             }
 
             if (verbose) {
@@ -163,6 +169,8 @@ int main(int argc, char** argv) {
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
+            //cout << "Inserted key: " << keys[i] << endl;
+            //cout  << "Current fp_leaf value: " << (tree->fp_leaf ? ART::getLeafValue(tree->fp_leaf) : -1) << endl;
             auto stop = chrono::high_resolution_clock::now();
             auto duration =
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
@@ -177,7 +185,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (N / 100); i++) {
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -187,8 +195,10 @@ int main(int argc, char** argv) {
             auto duration =
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
-            assert(ART::isLeaf(leaf) &&
-                   ART::getLeafValue(leaf) == keys[random]);
+            if (!ART::isLeaf(leaf) || ART::getLeafValue(leaf) != keys[random]) {
+                cerr << "Query failed: index=" << random << " key=" << keys[random] << " got=" << (ART::isLeaf(leaf) ? (int)ART::getLeafValue(leaf) : -1) << endl;
+                assert(false);
+            }
         }
 
         if (verbose) {
@@ -219,7 +229,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (N / 100); i++) {
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -261,7 +271,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (N / 100); i++) {
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -303,7 +313,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (N / 100); i++) {
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -345,7 +355,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (N / 100); i++) {
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -388,9 +398,10 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+            int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
-            ART::loadKey(keys[i], key);
+            ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
             auto stop = chrono::high_resolution_clock::now();
@@ -398,7 +409,7 @@ int main(int argc, char** argv) {
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
             assert(ART::isLeaf(leaf) &&
-                   ART::getLeafValue(leaf) == keys[i]);
+                   ART::getLeafValue(leaf) == keys[random]);
         }
 
         if (verbose) {
@@ -430,9 +441,10 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
+            int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
-            ART::loadKey(keys[i], key);
+            ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
             auto stop = chrono::high_resolution_clock::now();
@@ -440,7 +452,7 @@ int main(int argc, char** argv) {
                 chrono::duration_cast<chrono::nanoseconds>(stop - start);
             query_time += duration.count();
             assert(ART::isLeaf(leaf) &&
-                   ART::getLeafValue(leaf) == keys[i]);
+                   ART::getLeafValue(leaf) == keys[random]);
         }
 
         if (verbose) {
@@ -448,6 +460,41 @@ int main(int argc, char** argv) {
         }
 
         // Output the times in csv format, including tree type
+        cout << insertion_time << "," << query_time << endl;
+    }
+    else if (tree_type == "QuIT_2k") {
+        size_t blocks_needed = (size_t)N / 100 + 10000;
+        InMemoryBlockManager manager("", (uint32_t)blocks_needed);
+        bp_tree<uint32_t, uint32_t> tree(manager);
+
+        long long insertion_time = 0;
+        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+            auto start = chrono::high_resolution_clock::now();
+            tree.insert(keys[i], keys[i]);
+            auto stop = chrono::high_resolution_clock::now();
+            insertion_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+        }
+
+        if (verbose) {
+            cout << "Tree type: " << tree_type << endl;
+            cout << "Insertion time: " << insertion_time << " ns" << endl;
+        }
+
+        srand(time(0));
+        long long query_time = 0;
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
+            int random = rand() % (maxval - minval + 1) + minval;
+            auto start = chrono::high_resolution_clock::now();
+            bool found = tree.contains(keys[random]);
+            auto stop = chrono::high_resolution_clock::now();
+            query_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+            (void)found;
+        }
+
+        if (verbose) {
+            cout << "Query time: " << query_time << " ns" << endl;
+        }
+
         cout << insertion_time << "," << query_time << endl;
     }
     else {

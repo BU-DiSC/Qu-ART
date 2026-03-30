@@ -19,7 +19,7 @@ for FILE in /home/grad1/cgokmen/bods/workloads/workload_N*_K*_L*.bin; do
     L=$(echo "$BASENAME" | sed -n 's/.*_N[0-9]*_K[0-9]*_L\([0-9]*\).bin/\1/p')
     LOGFILE="${LOGDIR}/log_${BASENAME%.txt}_${SUFFIX}.txt"
 
-    for TREE in ART QuART_tail QuART_lil QuART_stail_reset_2 QuART_stail_reset_bidir; do
+    for TREE in QuART_stail_reset_2; do
         INSERT_SUM=0
         QUERY_SUM=0
 

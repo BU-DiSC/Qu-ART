@@ -10,10 +10,11 @@ namespace ART {
 
 class QuART_stail_reset_2 : public QuART_stail {
    private:
+    static constexpr int RESET_COUNTER_INIT = 16;
     int reset_counter;
 
    public:
-    QuART_stail_reset_2() : QuART_stail(), reset_counter(300) {}
+    QuART_stail_reset_2() : QuART_stail(), reset_counter(RESET_COUNTER_INIT) {}
 
     void insert(uint8_t key[], uintptr_t value) {
         /* Check if we can tail insert */
@@ -31,7 +32,8 @@ class QuART_stail_reset_2 : public QuART_stail {
         KeyType type = getKeyType(key);
 
         if (type == KeyType::FP_INSERT) {
-            this->reset_counter = 300;
+            if (this->reset_counter != RESET_COUNTER_INIT)
+                this->reset_counter = RESET_COUNTER_INIT;
             if (this->fp_depth == maxPrefixLength - 1) {
                 // Insert leaf into fp
                 ArtNode* newNode = makeLeaf(value);
@@ -64,7 +66,8 @@ class QuART_stail_reset_2 : public QuART_stail {
                 return;
             }
         } else if (type == KeyType::BRIDGE) {
-            this->reset_counter = 300;
+            if (this->reset_counter != RESET_COUNTER_INIT)
+                this->reset_counter = RESET_COUNTER_INIT;
             this->fp_path = {this->root};
             this->fp_path_length = 1;
             QuART_stail::insert_recursive_change_fp(
@@ -72,7 +75,7 @@ class QuART_stail_reset_2 : public QuART_stail {
             return;
         } else { // OTHER (both greater and less)
             if (this->reset_counter == 0) {
-                this->reset_counter = 300;
+                this->reset_counter = RESET_COUNTER_INIT;
                 this->fp_path = {this->root};
                 this->fp_path_length = 1;
                 QuART_stail::insert_recursive_change_fp(
