@@ -34,3 +34,9 @@ target_compile_definitions(run_quit_2k PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBU
 # Full QuIT — 4k bytes
 add_executable(run_quit_4k run_quit.cpp)
 target_compile_definitions(run_quit_4k PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=4096)
+
+# TPC-C insert experiment (ART paper replication, warehouse=1)
+# Note: ArtNodeNewMethods.cpp is #include'd from the QuART headers,
+# so it must NOT be listed as a separate translation unit here.
+add_executable(tpcc_art tpcc/tpcc_art.cpp)
+target_compile_options(tpcc_art PRIVATE -march=native)
