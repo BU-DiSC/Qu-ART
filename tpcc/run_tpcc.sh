@@ -2,7 +2,7 @@
 # Run the TPC-C insert experiment for both ART and QuART_stail_reset_2
 # and write results to tpcc/results_tpcc_<timestamp>.csv
 #
-# Usage: bash tpcc/run_tpcc.sh [num_transactions] [repeats]
+# Usage: bash tpcc/run_tpcc.sh [num_transactions] [repeats] [batch_size]
 
 set -euo pipefail
 
@@ -15,7 +15,9 @@ N=${1:-500000}      # number of NewOrder transactions (~5M keys on average)
 REPEATS=${2:-5}     # repeats per tree
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-OUTFILE="$SCRIPT_DIR/results_tpcc_${TIMESTAMP}.csv"
+RESULTS_DIR="$SCRIPT_DIR/results"
+mkdir -p "$RESULTS_DIR"
+OUTFILE="$RESULTS_DIR/results_tpcc_${TIMESTAMP}.csv"
 
 # Build if binary missing or sources newer
 if [[ ! -f "$BINARY" ]] || \
@@ -27,14 +29,12 @@ fi
 
 echo "tree_type,workload,num_keys,avg_insert_ns,avg_insert_ns_per_key" > "$OUTFILE"
 
-for WORKLOAD in "random" "batch" "sequential"; do
-    WFLAG="-w $WORKLOAD"
-    [[ "$WORKLOAD" == "batch" ]] && WFLAG="-w batch -B 100"
-    for TREE in ART QuART_stail_reset_2; do
-        echo "Running $TREE  workload=$WORKLOAD  (N=$N transactions, $REPEATS repeats)..."
-        "$BINARY" -N "$N" -t "$TREE" -r "$REPEATS" -v $WFLAG 2>&1 1>/dev/null | cat
-        "$BINARY" -N "$N" -t "$TREE" -r "$REPEATS" $WFLAG | tee -a "$OUTFILE"
-    done
+B=${3:-100}   # batch size, default 100
+
+for TREE in ART QuART_stail_reset_2; do
+    echo "Running $TREE  workload=batch(${B})  (N=$N transactions, $REPEATS repeats)..."
+    "$BINARY" -N "$N" -t "$TREE" -r "$REPEATS" -v -w batch -B "$B" 2>&1 1>/dev/null | cat
+    "$BINARY" -N "$N" -t "$TREE" -r "$REPEATS" -w batch -B "$B" | tee -a "$OUTFILE"
 done
 
 echo ""
