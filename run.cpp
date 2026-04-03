@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 
             srand(time(0));
             long long query_time = 0;
-            for (uint64_t i = 0; i < (uint64_t)N; i++) {
+            for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
                 int random = rand() % N + 1;
                 uint8_t key[4];
                 ART::loadKey(keys_to_load[random], key);
@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 
             srand(time(0));
             long long query_time = 0;
-            for (uint64_t i = 0; i < (uint64_t)N; i++) {
+            for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
                 int random = rand() % (maxval - minval + 1) + minval;
                 uint8_t key[4];
                 ART::loadKey(keys[random], key);
@@ -185,7 +185,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -229,7 +229,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -313,7 +313,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
@@ -398,7 +398,7 @@ int main(int argc, char** argv) {
         srand(time(0));
 
         long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
+        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
             uint8_t key[4];
             ART::loadKey(keys[random], key);
