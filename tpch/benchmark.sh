@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# benchmark.sh — Run ART and QuART_stail_reset_2 30 times each and report averages.
+# benchmark.sh — Run ART and QuART_stail 30 times each and report averages.
 
 set -euo pipefail
 
-RUNS=30
+RUNS=200
 WORKLOAD="/scratch/cgokmen/bods/workloads/workload_N6000000_K9667_L01.bin"
 N=6000000
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD="$(cd "$SCRIPT_DIR/../build" && pwd)"
 RUN="$BUILD/run"
+RUN_QUIT="$BUILD/run_quit_2k"
 RESULTS_DIR="$SCRIPT_DIR/results"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 CSV_FILE="$RESULTS_DIR/benchmark_${TIMESTAMP}.csv"
@@ -26,6 +27,7 @@ echo "tree_type,repeat,N,K,L,insertion_ns,query_ns" > "$CSV_FILE"
 
 run_tree() {
   local tree="$1"
+  local binary="${2:-$RUN}"
   local log="$LOG_DIR/${tree}.log"
   local total_ins=0
   local total_qry=0
@@ -33,7 +35,7 @@ run_tree() {
   echo "=== $tree ($RUNS runs) ===" | tee "$log"
   for i in $(seq 1 "$RUNS"); do
     # Last line of output is "insertion_ns,query_ns"
-    result=$("$RUN" -t "$tree" -f "$WORKLOAD" -v -N "$N" | tail -n1)
+    result=$("$binary" -t "$tree" -f "$WORKLOAD" -v -N "$N" | tail -n1)
     ins=$(echo "$result" | cut -d',' -f1)
     qry=$(echo "$result" | cut -d',' -f2)
     echo "  run $i: ins=${ins} ns  qry=${qry} ns" | tee -a "$log"
@@ -51,7 +53,11 @@ run_tree() {
 echo "CSV:  $CSV_FILE"
 echo "Logs: $LOG_DIR"
 
+run_tree "BPTree"              "$RUN_QUIT"
+run_tree "QuIT"                "$RUN_QUIT"
 run_tree "ART"
-run_tree "QuART_stail_reset_2"
+run_tree "QuART_stail"
+run_tree "QuART_lil"
+run_tree "QuART_tail"
 
 echo "Done."

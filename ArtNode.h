@@ -69,32 +69,16 @@ struct Node4 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
-    void lilInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                        ArtNode* child);
-
     // Base ART insert function for Node4
     void insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                      ArtNode* child);
-    // Insert function used in base tail insert. Checks if fp structures need
-    // to be updated and updates if necessary
-    void tailInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                         ArtNode* child,
-                         std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-                         size_t& temp_fp_path_length, size_t depth_prev);
 
-    void stailInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
+    void insertNode4ChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                                   ArtNode* child);
-    void stailInsertNode4PreserveFpPrefixExpansion(ART* tree, ArtNode** nodeRef,
+    void insertNode4PreserveFpPrefixExpansion(ART* tree, ArtNode** nodeRef,
                                                    uint8_t keyByte,
                                                    ArtNode* child);
-    void stailInsertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
-                                    uint8_t keyByte, ArtNode* child);
-    void lilCanInsertNode4ChangeFp(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                                  ArtNode* child);
-    void lilCanInsertNode4PreserveFpPrefixExpansion(ART* tree, ArtNode** nodeRef,
-                                                   uint8_t keyByte,
-                                                   ArtNode* child);
-    void lilCanInsertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
+    void insertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
                                     uint8_t keyByte, ArtNode* child);
     void bulkLoadInsertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                           ArtNode* child, ArtNode*& bl_ptr);
@@ -112,25 +96,13 @@ struct Node16 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
-    void lilInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                         ArtNode* child);
-
     // Base ART insert function for Node16
     void insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
-    // Insert function used in base tail insert. Checks if fp structures need
-    // to be updated and updates if necessary.
-    void tailInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                          ArtNode* child,
-                          std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-                          size_t& temp_fp_path_length, size_t depth_prev);
-    void stailInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
+
+    void insertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
                                    uint8_t keyByte, ArtNode* child);
-    void stailInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
-                                     uint8_t keyByte, ArtNode* child);
-    void lilCanInsertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
-                                   uint8_t keyByte, ArtNode* child);
-    void lilCanInsertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
+    void insertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
                                      uint8_t keyByte, ArtNode* child);
     void bulkLoadInsertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                           ArtNode* child, ArtNode*& bl_ptr);
@@ -148,25 +120,13 @@ struct Node48 : ArtNode {
         memset(child, 0, sizeof(child));
     }
 
-    void lilInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                         ArtNode* child);
-
     // Base ART insert function for Node48
     void insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                       ArtNode* child);
-    // Insert function used in base tail insert. Checks if fp structures need
-    // to be updated and updates if necessary.
-    void tailInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                          ArtNode* child,
-                          std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-                          size_t& temp_fp_path_length, size_t depth_prev);
-    void stailInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
+
+    void insertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
                                    uint8_t keyByte, ArtNode* child);
-    void stailInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
-                                     uint8_t keyByte, ArtNode* child);
-    void lilCanInsertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
-                                   uint8_t keyByte, ArtNode* child);
-    void lilCanInsertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
+    void insertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
                                      uint8_t keyByte, ArtNode* child);
     void bulkLoadInsertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                           ArtNode* child, ArtNode*& bl_ptr);
@@ -180,22 +140,11 @@ struct Node256 : ArtNode {
 
     Node256() : ArtNode(NodeType256) { memset(child, 0, sizeof(child)); }
 
-    void lilInsertNode256(ART* tree [[maybe_unused]],
-                          ArtNode** nodeRef [[maybe_unused]], uint8_t keyByte,
-                          ArtNode* child);
-
     // Base ART insert function for Node256
     void insertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                        ArtNode* child);
-    // Insert function used in base tail insert. Checks if fp structures need
-    // to be updated and updates if necessary.
-    void tailInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
-                           ArtNode* child,
-                           std::array<ArtNode*, maxPrefixLength>& temp_fp_path,
-                           size_t& temp_fp_path_length, size_t depth_prev);
-    void stailInsertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
-                                    uint8_t keyByte, ArtNode* child);
-    void lilCanInsertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
+
+    void insertNode256ChangeFp(ART* tree, ArtNode** nodeRef,
                                     uint8_t keyByte, ArtNode* child);
     void bulkLoadInsertNode256(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
                           ArtNode* child, ArtNode*& bl_ptr);

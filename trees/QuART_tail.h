@@ -2,20 +2,20 @@
 
 #include "../ART.h"
 #include "../ArtNode.h"
-#include "QuART_stail.h"
+#include "QuART.h"
 
 namespace ART {
 
 // QuART_tail: fp always points to the node on the path to the largest key.
 // Inserts a new key using insert_recursive_change_fp when the new key is
 // greater than the current maximum, and insert_recursive_preserve_fp otherwise.
-class QuART_tail : public QuART_stail {
+class QuART_tail : public QuART {
    public:
-    QuART_tail() : QuART_stail() {}
+    QuART_tail() : QuART() {}
 
     void insert(uint8_t key[], uintptr_t value) {
         if (this->root == nullptr) {
-            QuART_stail::insert_recursive_change_fp(
+            insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         }
@@ -30,12 +30,12 @@ class QuART_tail : public QuART_stail {
                 // New key is greater: it becomes the new maximum.
                 this->fp_path = {this->root};
                 this->fp_path_length = 1;
-                QuART_stail::insert_recursive_change_fp(
+                insert_recursive_change_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
                 return;
             } else if (key[i] < leafByte) {
                 // New key is smaller: current maximum is preserved.
-                QuART_stail::insert_recursive_preserve_fp(
+                insert_recursive_preserve_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
                 return;
             }
@@ -47,19 +47,19 @@ class QuART_tail : public QuART_stail {
                 ArtNode* newNode = makeLeaf(value);
                 switch (this->fp->type) {
                     case NodeType4:
-                        static_cast<Node4*>(this->fp)->stailInsertNode4ChangeFp(
+                        static_cast<Node4*>(this->fp)->insertNode4ChangeFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                     case NodeType16:
-                        static_cast<Node16*>(this->fp)->stailInsertNode16ChangeFp(
+                        static_cast<Node16*>(this->fp)->insertNode16ChangeFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                     case NodeType48:
-                        static_cast<Node48*>(this->fp)->stailInsertNode48ChangeFp(
+                        static_cast<Node48*>(this->fp)->insertNode48ChangeFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                     case NodeType256:
-                        static_cast<Node256*>(this->fp)->stailInsertNode256ChangeFp(
+                        static_cast<Node256*>(this->fp)->insertNode256ChangeFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                 }
@@ -68,7 +68,7 @@ class QuART_tail : public QuART_stail {
                 // fp_depth / prefix double-counting issues.
                 this->fp_path = {this->root};
                 this->fp_path_length = 1;
-                QuART_stail::insert_recursive_change_fp(
+                insert_recursive_change_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
             }
         }
@@ -79,15 +79,15 @@ class QuART_tail : public QuART_stail {
                 ArtNode* newNode = makeLeaf(value);
                 switch (this->fp->type) {
                     case NodeType4:
-                        static_cast<Node4*>(this->fp)->stailInsertNode4PreserveFp(
+                        static_cast<Node4*>(this->fp)->insertNode4PreserveFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                     case NodeType16:
-                        static_cast<Node16*>(this->fp)->stailInsertNode16PreserveFp(
+                        static_cast<Node16*>(this->fp)->insertNode16PreserveFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                     case NodeType48:
-                        static_cast<Node48*>(this->fp)->stailInsertNode48PreserveFp(
+                        static_cast<Node48*>(this->fp)->insertNode48PreserveFp(
                             this, this->fp_ref, key[fp_depth], newNode);
                         break;
                     case NodeType256:
@@ -100,7 +100,7 @@ class QuART_tail : public QuART_stail {
                 // fp_depth / prefix double-counting issues.
                 this->fp_path = {this->root};
                 this->fp_path_length = 1;
-                QuART_stail::insert_recursive_preserve_fp(
+                insert_recursive_preserve_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
             }
 

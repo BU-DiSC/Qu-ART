@@ -43,6 +43,11 @@ int main(int argc, char** argv) {
     bool verbose = false;
     int N = 500000000;
     string input_file = "";
+#ifdef QUIT_FAT
+    string tree_type = "QuIT";
+#else
+    string tree_type = "BPTree";
+#endif
 
     for (int i = 1; i < argc;) {
         if (string(argv[i]) == "-v") {
@@ -54,13 +59,21 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "-f") {
             input_file = argv[i + 1];
             i += 2;
+        } else if (string(argv[i]) == "-t") {
+            tree_type = argv[i + 1];
+            i += 2;
         } else {
             i++;
         }
     }
 
     if (input_file.empty()) {
-        cerr << "Usage: " << argv[0] << " -f <input_file> [-N <count>] [-v]\n";
+        cerr << "Usage: " << argv[0] << " -f <input_file> [-N <count>] [-t BPTree|QuIT] [-v]\n";
+        return 1;
+    }
+
+    if (tree_type != "BPTree" && tree_type != "QuIT") {
+        cerr << "Unknown tree type: " << tree_type << ". Use BPTree or QuIT.\n";
         return 1;
     }
 
@@ -74,23 +87,36 @@ int main(int argc, char** argv) {
     bp_tree<key_type, value_type> tree(manager);
 
     long long insertion_time = 0;
-    for (int i = 0; i < N; i++) {
-        auto start = chrono::high_resolution_clock::now();
-        tree.insert(keys[i], keys[i]);
-        auto stop = chrono::high_resolution_clock::now();
-        insertion_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+    if (tree_type == "BPTree") {
+        for (int i = 0; i < N; i++) {
+            auto start = chrono::high_resolution_clock::now();
+            tree.top_insert(keys[i], keys[i]);
+            auto stop = chrono::high_resolution_clock::now();
+            insertion_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+        }
+    } else {
+        for (int i = 0; i < N; i++) {
+            auto start = chrono::high_resolution_clock::now();
+            tree.insert(keys[i], keys[i]);
+            auto stop = chrono::high_resolution_clock::now();
+            insertion_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
+        }
     }
 
+    srand(time(0));
+    int Q = N / 100;
     long long query_time = 0;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < Q; i++) {
+        int idx = rand() % N;
         auto start = chrono::high_resolution_clock::now();
-        bool found = tree.contains(keys[i]);
+        bool found = tree.contains(keys[idx]);
         auto stop = chrono::high_resolution_clock::now();
         query_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
         (void)found;
     }
 
     if (verbose) {
+        cerr << "Tree type: " << tree_type << "\n";
         cerr << "Insertion time: " << insertion_time << " ns\n";
         cerr << "Query time: " << query_time << " ns\n";
     }

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Runs all bods workloads with ART, QuART_stail_reset_bidir, and QuIT.
+# Runs all bods workloads with ART, QuART_stail, and QuIT.
 # Queries all N inserted keys after insertion.
 # Run from the repo root: bash run_experiments_quit.sh
 
@@ -72,7 +72,7 @@ for WORKLOAD_FILE in "${WORKLOAD_DIR}"/*.bin; do
     echo ""
     echo ">>> Workload: $WORKLOAD_NAME  (N=$N)"
 
-    run_config "run"             "-f $WORKLOAD_FILE -N $N -t QuART_stail_reset_2" "QuART_stail_reset_2"  "$WORKLOAD_NAME"
+    run_config "run"             "-f $WORKLOAD_FILE -N $N -t QuART_stail" "QuART_stail"  "$WORKLOAD_NAME"
     run_config "run"             "-f $WORKLOAD_FILE -N $N -t QuIT_2k"                "QuIT_2k"                "$WORKLOAD_NAME"
 done
 

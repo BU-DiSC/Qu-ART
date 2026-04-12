@@ -27,16 +27,18 @@ add_executable(run run.cpp)
 target_compile_definitions(run PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=2048)
 add_executable(test_compress test/test_compress.cpp)
 
+# Base B+ tree — 2k bytes (no fast-path / QUIT features)
+add_executable(run_quit_base_2k run_quit.cpp)
+target_compile_definitions(run_quit_base_2k PRIVATE INMEMORY BLOCK_SIZE_BYTES=2048)
+
 # Full QuIT — 2k bytes
 add_executable(run_quit_2k run_quit.cpp)
 target_compile_definitions(run_quit_2k PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=2048)
 
-# Full QuIT — 4k bytes
-add_executable(run_quit_4k run_quit.cpp)
-target_compile_definitions(run_quit_4k PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=4096)
-
 # TPC-C insert experiment (ART paper replication, warehouse=1)
 # Note: ArtNodeNewMethods.cpp is #include'd from the QuART headers,
 # so it must NOT be listed as a separate translation unit here.
-add_executable(tpcc_art tpcc/tpcc_art.cpp)
-target_compile_options(tpcc_art PRIVATE -march=native)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
+    add_executable(tpcc_art tpcc/tpcc_art.cpp)
+    target_compile_options(tpcc_art PRIVATE -march=native)
+endif()
