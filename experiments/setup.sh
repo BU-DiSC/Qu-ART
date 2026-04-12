@@ -5,7 +5,7 @@
 # Run once (or call from any experiment run.sh) to:
 #   1. Clone and build BoDS workload generator (https://github.com/BU-DiSC/bods)
 #   2. Generate all workload .bin files needed by the experiments
-#   3. Clone the quick-insertion-tree dependency (https://github.com/BU-DiSC/quick-insertion-tree)
+#   3. Clone the quick-insertion-tree dependency into experiments/5.2-quart-vs-quit/
 #   4. Build the Qu-ART project (CMake)
 #
 # Already-done steps are skipped automatically (idempotent).
@@ -15,7 +15,7 @@
 #   source experiments/setup.sh        # source from a run.sh (inherits WORKLOAD_DIR etc.)
 #
 # Environment variables (all optional):
-#   BODS_DIR   – where to clone/find BoDS  (default: <repo-root>/bods)
+#   BODS_DIR   – where to clone/find BoDS  (default: experiments/bods)
 #   JOBS       – parallel make jobs        (default: nproc)
 
 set -euo pipefail
@@ -23,8 +23,8 @@ set -euo pipefail
 EXPERIMENTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$EXPERIMENTS_DIR/.." && pwd)"
 BUILD="$REPO_ROOT/build"
-BODS_DIR="${BODS_DIR:-$REPO_ROOT/bods}"
-QUIT_DIR="$REPO_ROOT/quick-insertion-tree"
+BODS_DIR="${BODS_DIR:-$EXPERIMENTS_DIR/bods}"
+QUIT_DIR="$EXPERIMENTS_DIR/5.2-quart-vs-quit/quick-insertion-tree"
 JOBS="${JOBS:-$(nproc)}"
 
 echo "=== Qu-ART artifact setup ==="
@@ -34,29 +34,58 @@ echo "  BUILD     : $BUILD"
 echo ""
 
 # ---------------------------------------------------------------------------
-# 1. Clone and build BoDS
+# Helper: returns 0 if every expected workload file exists in a given dir
 # ---------------------------------------------------------------------------
-if [[ ! -d "$BODS_DIR" ]]; then
-    echo "[setup] Cloning BoDS..."
-    git clone https://github.com/BU-DiSC/bods.git "$BODS_DIR"
-else
-    echo "[setup] BoDS already present at $BODS_DIR"
+_all_workloads_present() {
+    local DIR="$1"
+    [[ -f "$DIR/workload_N500000000_K0_L0.bin" ]] || return 1
+    for K in 1 5 10 25 100; do
+        for L in 1 5 10 25 100; do
+            [[ -f "$DIR/workload_N500000000_K${K}_L${L}.bin" ]] || return 1
+        done
+    done
+    [[ -f "$DIR/workload_N6000000_K9667_L01.bin" ]] || return 1
+    return 0
+}
+
+# If WORKLOAD_DIR is not set, check whether the repo ships the workloads
+# (e.g. workloads/ at the repo root) before falling back to bods/workloads.
+if [[ -z "${WORKLOAD_DIR:-}" ]]; then
+    if _all_workloads_present "$REPO_ROOT/workloads"; then
+        WORKLOAD_DIR="$REPO_ROOT/workloads"
+        echo "[setup] Workloads found in repo at $WORKLOAD_DIR — skipping BoDS and generation."
+        export WORKLOAD_DIR
+    fi
 fi
 
-BODS_BUILD="$BODS_DIR/build"
-if [[ ! -x "$BODS_BUILD/sortedness_data_generator" ]]; then
-    echo "[setup] Building BoDS..."
-    mkdir -p "$BODS_BUILD"
-    cmake -S "$BODS_DIR" -B "$BODS_BUILD" -DCMAKE_BUILD_TYPE=Release -Wno-dev
-    make -C "$BODS_BUILD" -j"$JOBS"
-else
-    echo "[setup] BoDS already built"
+# ---------------------------------------------------------------------------
+# 1. Clone and build BoDS  (skipped when all workloads are already present)
+# ---------------------------------------------------------------------------
+if [[ -z "${WORKLOAD_DIR:-}" ]] || ! _all_workloads_present "${WORKLOAD_DIR:-__none__}"; then
+
+    if [[ ! -d "$BODS_DIR" ]]; then
+        echo "[setup] Cloning BoDS..."
+        git clone https://github.com/BU-DiSC/bods.git "$BODS_DIR"
+    else
+        echo "[setup] BoDS already present at $BODS_DIR"
+    fi
+
+    BODS_BUILD="$BODS_DIR/build"
+    if [[ ! -x "$BODS_BUILD/sortedness_data_generator" ]]; then
+        echo "[setup] Building BoDS..."
+        mkdir -p "$BODS_BUILD"
+        cmake -S "$BODS_DIR" -B "$BODS_BUILD" -DCMAKE_BUILD_TYPE=Release -Wno-dev
+        make -C "$BODS_BUILD" -j"$JOBS"
+    else
+        echo "[setup] BoDS already built"
+    fi
+
+    GENERATOR="$BODS_BUILD/sortedness_data_generator"
+
 fi
 
-GENERATOR="$BODS_BUILD/sortedness_data_generator"
-
 # ---------------------------------------------------------------------------
-# 2. Generate workloads
+# 2. Generate workloads  (skipped when all workloads are already present)
 # ---------------------------------------------------------------------------
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # WARNING: LARGE DISK USAGE
@@ -67,16 +96,13 @@ GENERATOR="$BODS_BUILD/sortedness_data_generator"
 #   To skip generation, set WORKLOAD_DIR to a directory containing
 #   pre-generated .bin files before running this script.
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#
-# Workloads are always generated into $BODS_DIR/workloads.
-# After generation, WORKLOAD_DIR is set to point there so that run.sh scripts
-# referencing $WORKLOAD_DIR pick up the right directory.  A caller may set
-# WORKLOAD_DIR beforehand to an existing directory containing pre-generated
-# .bin files; in that case generation is skipped entirely.
-if [[ -z "${WORKLOAD_DIR:-}" ]]; then
-    WORKLOAD_DIR="$BODS_DIR/workloads"
-fi
-mkdir -p "$WORKLOAD_DIR"
+if [[ -n "${WORKLOAD_DIR:-}" ]] && _all_workloads_present "$WORKLOAD_DIR"; then
+    echo "[setup] All workloads already present in $WORKLOAD_DIR — skipping generation."
+else
+    if [[ -z "${WORKLOAD_DIR:-}" ]]; then
+        WORKLOAD_DIR="$BODS_DIR/workloads"
+    fi
+    mkdir -p "$WORKLOAD_DIR"
 
 # Helper: write a TOML and generate the .bin file if missing
 generate_workload() {
@@ -159,6 +185,8 @@ else
     echo "[setup] TPC-H workload already present"
 fi
 
+fi  # end: workloads not already present
+
 # Export so run.sh scripts pick it up without extra flags
 export WORKLOAD_DIR
 
@@ -176,7 +204,7 @@ fi
 # 4. Build Qu-ART
 # ---------------------------------------------------------------------------
 mkdir -p "$BUILD"
-if [[ ! -x "$BUILD/run" || ! -x "$BUILD/run_quit_2k" ]]; then
+if [[ ! -x "$BUILD/run" ]]; then
     echo "[setup] Building Qu-ART..."
     cmake -S "$REPO_ROOT" -B "$BUILD" -DCMAKE_BUILD_TYPE=Release
     make -C "$BUILD" -j"$JOBS"
