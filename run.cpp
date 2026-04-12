@@ -12,8 +12,6 @@
 #include "trees/QuART_tail.h"
 #include "trees/QuART_stail.h"
 #include "ArtNodeBulkLoadMethods.cpp"
-#include "quick-insertion-tree/src/bptree/memory_block_manager.h"
-#include "quick-insertion-tree/src/bptree/bp_tree.h"
 
 using namespace std;
 
@@ -328,41 +326,6 @@ int main(int argc, char** argv) {
         }
 
         // Output the times in csv format, including tree type
-        cout << insertion_time << "," << query_time << endl;
-    }
-    else if (tree_type == "QuIT_2k") {
-        size_t blocks_needed = (size_t)N / 100 + 10000;
-        InMemoryBlockManager manager("", (uint32_t)blocks_needed);
-        bp_tree<uint32_t, uint32_t> tree(manager);
-
-        long long insertion_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N; i++) {
-            auto start = chrono::high_resolution_clock::now();
-            tree.insert(keys[i], keys[i]);
-            auto stop = chrono::high_resolution_clock::now();
-            insertion_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
-        }
-
-        if (verbose) {
-            cout << "Tree type: " << tree_type << endl;
-            cout << "Insertion time: " << insertion_time << " ns" << endl;
-        }
-
-        srand(time(0));
-        long long query_time = 0;
-        for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
-            int random = rand() % (maxval - minval + 1) + minval;
-            auto start = chrono::high_resolution_clock::now();
-            bool found = tree.contains(keys[random]);
-            auto stop = chrono::high_resolution_clock::now();
-            query_time += chrono::duration_cast<chrono::nanoseconds>(stop - start).count();
-            (void)found;
-        }
-
-        if (verbose) {
-            cout << "Query time: " << query_time << " ns" << endl;
-        }
-
         cout << insertion_time << "," << query_time << endl;
     }
     else {

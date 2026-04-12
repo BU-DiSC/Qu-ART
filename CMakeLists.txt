@@ -24,16 +24,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 # add_executable(main main.cpp)
 # add_executable(insert_profiling insert_profiling.cpp)
 add_executable(run run.cpp)
-target_compile_definitions(run PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=2048)
 add_executable(test_compress test/test_compress.cpp)
-
-# Base B+ tree — 2k bytes (no fast-path / QUIT features)
-add_executable(run_quit_base_2k run_quit.cpp)
-target_compile_definitions(run_quit_base_2k PRIVATE INMEMORY BLOCK_SIZE_BYTES=2048)
-
-# Full QuIT — 2k bytes
-add_executable(run_quit_2k run_quit.cpp)
-target_compile_definitions(run_quit_2k PRIVATE LOL_FAT VARIABLE_SPLIT REDISTRIBUTE LOL_RESET INMEMORY BLOCK_SIZE_BYTES=2048)
 
 # TPC-C insert experiment (ART paper replication, warehouse=1)
 # Note: ArtNodeNewMethods.cpp is #include'd from the QuART headers,

@@ -5,7 +5,7 @@ build/
 .vscode/tasks.json
 results/
 workloads/
-bods/
-quick-insertion-tree/
+experiments/bods/
+experiments/5.2-quart-vs-quit/quick-insertion-tree/
+experiments/5.2-quart-vs-quit/build/
 tpcc/benchmarksql_workdir/
-quick-insertion-tree/
