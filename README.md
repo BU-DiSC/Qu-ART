@@ -1,72 +1,68 @@
 # Qu-ART
 
-This repository contains an implementation of the Adaptive Radix Tree (ART) and several Qu-ART (Quick Adaptive Radix Tree) variants with different fast-path strategies.
+## Requirements
 
----
+- **Linux x86-64**: the codebase uses x86 SSE/AVX-512 intrinsics (`emmintrin.h`, `immintrin.h`) and the POSIX `sys/time.h` header. macOS and non-x86 systems are not supported.
+- CMake ≥ 3.10, a C++17-capable compiler (GCC or Clang), and `make`.
 
-## How to Build
+## Running Experiments
 
-1. Create a `build` directory and switch to it:
-    ```shell
-    mkdir build/
-    cd build/
-    ```
-2. Compile using CMake:
-    ```shell
-    cmake ..
-    make
-    ```
+All experiments are self-contained and idempotent. Running any `run.sh` will automatically invoke `experiments/setup.sh` to clone dependencies, generate workloads, and build binaries if not already done.
 
----
-
-## How to Run
-
-Run the executables in `build` with the following options:
-
+### Setup (automatic, but can be run manually)
 
 ```shell
-./run [-v] [-N <num_keys>] -f <input_file> -t <tree_type>
+bash experiments/setup.sh
 ```
 
+### Experiment 5.1 — Benefits of QuART
 
-### Arguments
-
-- `-f <input_file>`: Path to the binary file that contains keys 
-- `-N <num_keys>`: Number of keys to insert and query (optional, default = 5,000,000)
-- `-v`: Verbose mode (optional, default = false)
-- `-t <tree_type>`: Type of tree to use (`ART`, `QuART_tail`, or `QuART_lil`)
-
-### Example
+Reproduces Figures 7 and 8 (fast-path insert distributions and insertion speedup heatmaps over the K-L sortedness grid, N=500M).
 
 ```shell
-./run -N 1000000 -f ../bods/workloads/workload_N1000000_K90_L10.bin
+bash experiments/5.1-quart-benefits/run.sh
 ```
 
----
+Results: `experiments/5.1-quart-benefits/results/results_<TIMESTAMP>.csv`
 
-## Qu-ART Variants
+Optional env vars:
+- `WORKLOAD_DIR` – path to BoDS workload `.bin` files (default: `/scratch/cgokmen/bods/workloads`)
+- `REPEAT` – repetitions per configuration (default: 1; use 5 for paper-quality averages)
 
-- **ART**: Baseline Adaptive Radix Tree.
-- **QuART_tail**: ART with tail optimization.
-- **QuART_lil**: ART with lil optimization.
-- **QuART_stail**: ART with stail optimization.
-- **QuART_stail_reset**: ART with stail optimization, supports fp resets too.
+### Experiment 5.2 — QuART vs. QuIT
 
-You can run each variant by using the `run` executable in `build/` with the `-t` option to select the tree type. For example:
+Reproduces Figure 9 (stail insertion and lookup speedup over QuIT across the K-L grid, N=500M).
 
 ```shell
-./run -f <input_file> -N <num_keys> -t ART
-./run -f <input_file> -N <num_keys> -t QuART_tail
-./run -f <input_file> -N <num_keys> -t QuART_lil
-./run -f <input_file> -N <num_keys> -t QuART_stail
-./run -f <input_file> -N <num_keys> -t QuART_stail_reset
+bash experiments/5.2-quart-vs-quit/run.sh
 ```
 
-Replace `<input_file>` and `<num_keys>` with your workload file and desired number of keys.
+Results: `experiments/5.2-quart-vs-quit/results/results_<TIMESTAMP>.csv`
 
----
+Optional env vars: `WORKLOAD_DIR`, `REPEAT` (default: 1; use 5 for paper numbers)
 
-## Notes
+### Experiment 5.3 — TPC-H Workload
 
-- Input files should be binary files containing 32-bit unsigned integer keys.
-- You can modify `run_experiments.sh` to change the number of repetitions, workload location, or which tree variants are tested.
+Reproduces Figure 10 (insertion and query throughput on TPC-H near-sorted workload, N=6M).
+
+```shell
+bash experiments/5.3-tpch/run.sh
+```
+
+Results: `experiments/5.3-tpch/results/results_<TIMESTAMP>.csv`
+
+Optional env vars:
+- `WORKLOAD_FILE` – path to the TPC-H `.bin` file (default: `/scratch/cgokmen/bods/workloads/workload_N6000000_K9667_L01.bin`)
+- `REPEAT` – repetitions (default: 10; use 200 for paper numbers)
+
+### Experiment 5.4 — Bulk Loading Performance
+
+Reproduces Figure 11 (insertion time vs. number of elements, 100M–2B, fully sorted keys).
+
+```shell
+bash experiments/5.4-bulkload/run.sh
+```
+
+Results: `experiments/5.4-bulkload/results/results_<TIMESTAMP>.csv`
+
+Optional env vars: `REPEAT` (default: 5)
