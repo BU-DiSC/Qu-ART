@@ -11,7 +11,8 @@
 # Environment variables (all optional):
 #   WORKLOAD_DIR  – directory containing BoDS workload .bin files
 #                   (default: /scratch/cgokmen/bods/workloads)
-#   REPEAT        – number of timed repetitions per configuration (default: 5)
+#   REPEAT        – number of timed repetitions per configuration (default: 1)
+#                   (set to 5 to reproduce the paper's numbers; substantially longer)
 #
 # Output:
 #   experiments/5.2-quart-vs-quit/results/results_<TIMESTAMP>.csv
@@ -42,7 +43,7 @@ if [[ ! -x "$QUIT_BUILD/run_quit_2k" ]]; then
 fi
 
 WORKLOAD_DIR="${WORKLOAD_DIR:-$WORKLOAD_DIR}"
-REPEAT="${REPEAT:-5}"
+REPEAT="${REPEAT:-1}"  # paper used 5; increase for publication-quality averages
 N=500000000
 
 SUFFIX=$(date +"%Y%m%d_%H%M%S")
@@ -64,7 +65,7 @@ echo ""
 # ---------------------------------------------------------------------------
 echo "workload,K,L,tree_type,avg_insert_ns,avg_query_ns" > "$RESULTS_FILE"
 
-TREES=(QuART_stail QuIT_2k)
+TREES=(QuART_stail QuIT)
 
 # ---------------------------------------------------------------------------
 # Helper: run one (workload, tree) configuration REPEAT times and average
@@ -73,7 +74,7 @@ run_config() {
     local FILE="$1" N_VAL="$2" K_VAL="$3" L_VAL="$4" TREE="$5"
     local WNAME LOG INSERT_SUM QUERY_SUM FAILED BINARY
     WNAME="$(basename "$FILE" .bin)"
-    LOG="$LOG_DIR/${WNAME}_${TREE}.log"
+    LOG="$LOG_DIR/${WNAME}.log"
     INSERT_SUM=0
     QUERY_SUM=0
     FAILED=0
@@ -85,7 +86,7 @@ run_config() {
         BINARY="$BUILD/run"
     fi
 
-    echo "=== workload=$WNAME  tree=$TREE ===" > "$LOG"
+    echo "=== workload=$WNAME  tree=$TREE ===" >> "$LOG"
 
     for ((i=1; i<=REPEAT; i++)); do
         echo "--- Run $i/$REPEAT ---" >> "$LOG"
@@ -98,7 +99,7 @@ run_config() {
         if [[ $STATUS -ne 0 || -z "$OUTPUT" ]]; then
             echo "  [WARN] run failed: K=$K_VAL L=$L_VAL tree=$TREE run=$i" >&2
             FAILED=1
-            break
+            continue
         fi
 
         CSV_LINE=$(echo "$OUTPUT" | tail -1)

@@ -5,17 +5,13 @@
 # for increasing numbers of sorted keys (100M to 2B).  Output corresponds to
 # Figure 11 in the paper: insertion time vs. number of elements.
 #
-# The bulk-load path generates sequential keys 1..N synthetically (independent
-# of the workload file) to guarantee a fully sorted input.  The regular-insert
-# path reads the first N keys from the sorted workload file; sizes larger than
-# the file are skipped automatically.
+# Both regular and bulk-load paths generate sequential keys 1..N synthetically
+# (no workload file required), guaranteeing a fully sorted input.
 #
 # Usage:
 #   bash experiments/5.4-bulkload/run.sh
 #
 # Environment variables (all optional):
-#   WORKLOAD_FILE  – sorted (K=0) .bin workload file
-#                    (default: /scratch/cgokmen/bods/workloads/workload_N500000000_K0_L0.bin)
 #   REPEAT         – number of timed repetitions per configuration (default: 5)
 #
 # Output:
@@ -36,7 +32,6 @@ BUILD="$REPO_ROOT/build"
 # Bootstrap: clone deps, generate workloads, build binaries (idempotent)
 source "$SCRIPT_DIR/../setup.sh"
 
-WORKLOAD_FILE="${WORKLOAD_FILE:-$WORKLOAD_DIR/workload_N500000000_K0_L0.bin}"
 REPEAT="${REPEAT:-5}"
 
 # Test sizes matching Figure 11 (100M to 2B)
@@ -49,10 +44,7 @@ LOG_DIR="$RESULTS_DIR/logs_${SUFFIX}"
 
 mkdir -p "$RESULTS_DIR" "$LOG_DIR"
 
-# Determine number of keys available in the workload file
-FILE_KEYS=$(( $(stat -c%s "$WORKLOAD_FILE") / 4 ))
 echo "Experiment 5.4 — Bulk Loading Performance"
-echo "  WORKLOAD_FILE : $WORKLOAD_FILE  (${FILE_KEYS} keys)"
 echo "  REPEAT        : $REPEAT"
 echo "  Results       : $RESULTS_FILE"
 echo "  Logs          : $LOG_DIR"
@@ -68,8 +60,8 @@ echo "N,insertion_method,avg_insert_ns,avg_query_ns" > "$RESULTS_FILE"
 # ---------------------------------------------------------------------------
 run_config() {
     local N_VAL="$1" METHOD="$2"
-    local EXTRA_ARGS=""
-    [[ "$METHOD" == "bulkload" ]] && EXTRA_ARGS="--bulkload"
+    local EXTRA_ARGS="--synthetic"
+    [[ "$METHOD" == "bulkload" ]] && EXTRA_ARGS="--synthetic --bulkload"
 
     local LOG="$LOG_DIR/N${N_VAL}_${METHOD}.log"
     local INSERT_SUM=0 QUERY_SUM=0 FAILED=0
@@ -79,7 +71,7 @@ run_config() {
     for ((i=1; i<=REPEAT; i++)); do
         echo "--- Run $i/$REPEAT ---" >> "$LOG"
         # shellcheck disable=SC2086
-        OUTPUT=$("$BUILD/run" -f "$WORKLOAD_FILE" -N "$N_VAL" -t ART $EXTRA_ARGS 2>>"$LOG") || true
+        OUTPUT=$("$BUILD/run" -N "$N_VAL" -t ART $EXTRA_ARGS 2>>"$LOG") || true
         STATUS=$?
         echo "$OUTPUT" >> "$LOG"
 
@@ -110,16 +102,10 @@ run_config() {
 for N in "${TEST_SIZES[@]}"; do
     echo ">>> N=$N"
 
-    # Regular insertion requires the file to have enough keys
-    if (( N <= FILE_KEYS )); then
-        echo "  [regular]"
-        run_config "$N" "regular"
-    else
-        echo "  [regular] SKIP — workload file has only ${FILE_KEYS} keys (need $N)" >&2
-        echo "$N,regular,SKIPPED,SKIPPED" >> "$RESULTS_FILE"
-    fi
+    echo "  [regular]"
+    run_config "$N" "regular"
 
-    # Bulk load always works: it generates sequential keys 1..N synthetically
+    # Bulk load uses grouped insertion on the same synthetic key sequence
     echo "  [bulkload]"
     run_config "$N" "bulkload"
 done

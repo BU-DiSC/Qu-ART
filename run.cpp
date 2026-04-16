@@ -11,7 +11,7 @@
 #include "trees/QuART_lil.h"
 #include "trees/QuART_tail.h"
 #include "trees/QuART_stail.h"
-#include "ArtNodeBulkLoadMethods.cpp"
+#include "QuArtNodeBulkLoadMethods.cpp"
 
 using namespace std;
 
@@ -47,9 +47,10 @@ std::vector<key_type> read_file(const std::string& filename) {
 int main(int argc, char** argv) {
     bool verbose = false;      // optional argument
     int N = 500000000;         // optional argument
-    string input_file = "/scratch/cgokmen/Qu-ART/tpch/benchmarksql_workdir/workload.txt";         // required argument
+    string input_file = "";                // optional argument (-f)
     string tree_type = "ART";  // default tree type
     bool use_bulkload = false; // optional argument
+    bool use_synthetic = false; // optional argument: generate keys 1..N instead of reading a file
     
     // Query 1% of entries
     uint64_t minval = 0;
@@ -71,6 +72,9 @@ int main(int argc, char** argv) {
         } else if (string(argv[i]) == "--bulkload") {
             use_bulkload = true;
             i++;
+        } else if (string(argv[i]) == "--synthetic") {
+            use_synthetic = true;
+            i++;
         } else {
             i++;
         }
@@ -79,7 +83,13 @@ int main(int argc, char** argv) {
     uint64_t maxval = N-1;
 
     // read data
-    auto keys = read_file<uint32_t>(input_file);
+    std::vector<uint32_t> keys;
+    if (use_synthetic) {
+        keys.resize(N);
+        for (int i = 0; i < N; i++) keys[i] = static_cast<uint32_t>(i + 1);
+    } else {
+        keys = read_file<uint32_t>(input_file);
+    }
 
     if (tree_type == "ART") {
         ART::ART* tree = new ART::ART();

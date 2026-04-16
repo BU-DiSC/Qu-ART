@@ -270,4 +270,4 @@ class QuART : public ART {
 
 }  // namespace ART
 
-#include "../ArtNodeNewMethods.cpp"
+#include "../QuArtNodeMethods.cpp"

@@ -12,7 +12,8 @@
 # Environment variables (all optional):
 #   WORKLOAD_FILE  – path to the TPC-H .bin workload file
 #                    (default: /scratch/cgokmen/bods/workloads/workload_N6000000_K9667_L01.bin)
-#   REPEAT         – number of timed repetitions per configuration (default: 5)
+#   REPEAT         – number of timed repetitions per configuration (default: 10)
+#                    (set to 200 to reproduce the paper's numbers; substantially longer)
 #
 # Output:
 #   experiments/5.3-tpch/results/results_<TIMESTAMP>.csv
@@ -43,7 +44,7 @@ if [[ ! -x "$QUIT_BUILD/run_quit_2k" || ! -x "$QUIT_BUILD/run_quit_base_2k" ]]; 
 fi
 
 WORKLOAD_FILE="${WORKLOAD_FILE:-$WORKLOAD_DIR/workload_N6000000_K9667_L01.bin}"
-REPEAT="${REPEAT:-5}"
+REPEAT="${REPEAT:-10}"  # paper used 200; increase for publication-quality averages
 N=6000000
 
 SUFFIX=$(date +"%Y%m%d_%H%M%S")

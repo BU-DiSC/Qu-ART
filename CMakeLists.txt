@@ -24,10 +24,9 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
 # add_executable(main main.cpp)
 # add_executable(insert_profiling insert_profiling.cpp)
 add_executable(run run.cpp)
-add_executable(test_compress test/test_compress.cpp)
 
 # TPC-C insert experiment (ART paper replication, warehouse=1)
-# Note: ArtNodeNewMethods.cpp is #include'd from the QuART headers,
+# Note: QuArtNodeMethods.cpp is #include'd from the QuART headers,
 # so it must NOT be listed as a separate translation unit here.
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
     add_executable(tpcc_art tpcc/tpcc_art.cpp)
