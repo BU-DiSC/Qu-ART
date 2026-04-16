@@ -6,7 +6,6 @@
 
 #include "ART.h"
 #include "ArtNode.h"
-#include "Chain.h"
 #include "Helper.h"
 #include "trees/QuART_lil.h"
 #include "trees/QuART_tail.h"

@@ -27,7 +27,6 @@
 #include <stdexcept>
 
 #include "ArtNode.h"  // ArtNode definitions
-#include "Chain.h"    // Chain definitions
 #include "Helper.h"   // Helper functions
 
 namespace ART {
@@ -60,12 +59,6 @@ class ART {
 
     ArtNode* lookup(uint8_t key[]) {
         return lookup(root, key, maxPrefixLength, 0, maxPrefixLength);
-    }
-
-    Chain* rangelookup(uint8_t l_key[], unsigned l_keyLength, uint8_t h_key[],
-                       uint8_t h_keyLength, unsigned maxKeyLength) {
-        return rangelookup(root, l_key, l_keyLength, h_key, h_keyLength,
-                           maxKeyLength);
     }
 
     void printTree() { printTree(this->root, 0); }
@@ -571,84 +564,6 @@ class ART {
             // Recurse
             erase(*child, child, key, keyLength, depth + 1, maxKeyLength);
         }
-    }
-
-    // Range lookup function, returns a Chain of ArtNode
-    Chain* rangelookup(ArtNode* node, uint8_t l_key[], unsigned l_keyLength,
-                       uint8_t h_key[], uint8_t h_keyLength,
-                       unsigned maxKeyLength) {
-        // Find the node with a matching key, optimistic version
-        Chain* queue =
-            new Chain((ChainItem*)new ChainItemWithDepth(node, 0, true, true));
-        Chain* result = new Chain();
-
-        while (!queue->isEmpty()) {
-            ChainItemWithDepth* item = (ChainItemWithDepth*)queue->pop_front();
-            node = item->nodeptr();
-
-            int depth = item->depth_;
-            bool lequ = item->lequ_, hequ = item->hequ_;
-            bool continue_flag =
-                0;  // true means the range vialates the key range
-            unsigned pos;
-            auto compare_and_set = [&](unsigned pos,
-                                       uint8_t compared_byte) -> void {
-                uint8_t lkey = pos >= l_keyLength ? 0 : l_key[pos];
-                uint8_t hkey = pos >= h_keyLength ? 0 : l_key[pos];
-
-                if (lkey < compared_byte)
-                    lequ = 0;
-                else if (lkey > compared_byte)
-                    continue_flag = 1;
-
-                if (hkey < compared_byte)
-                    continue_flag = 1;
-                else if (hkey > compared_byte)
-                    hequ = 0;
-            };
-            if (isLeaf(node)) {
-                uint8_t leafKey[maxKeyLength];
-                loadKey(getLeafValue(node), leafKey);
-                for (unsigned i = depth;
-                     i < maxKeyLength && !continue_flag && (lequ || hequ); i++)
-                    compare_and_set(i, leafKey[i]);
-                if (!continue_flag) {
-                    result->extend_item(new ChainItem(node));
-                }
-                continue;
-            }
-
-            if (node->prefixLength > maxPrefixLength) {
-                for (pos = 0;
-                     pos < maxPrefixLength && !continue_flag && (lequ || hequ);
-                     pos++) {
-                    compare_and_set(depth + pos, node->prefix[pos]);
-                }
-                uint8_t minKey[maxKeyLength];
-                loadKey(getLeafValue(minimum(node)), minKey);
-                for (; pos < node->prefixLength && !continue_flag &&
-                       (lequ || hequ);
-                     pos++) {
-                    compare_and_set(depth + pos, minKey[depth + pos]);
-                }
-            } else {
-                for (pos = 0; pos < node->prefixLength && !continue_flag &&
-                              (lequ || hequ);
-                     pos++) {
-                    compare_and_set(depth + pos, node->prefix[pos]);
-                }
-            }
-            if (continue_flag) continue;
-            depth += node->prefixLength;
-
-            std::unique_ptr<Chain> newly_added =
-                std::move(std::unique_ptr<Chain>(newly_added->findChildbyRange(
-                    item->nodeptr(), lequ ? l_key[depth] : 0,
-                    hequ ? h_key[depth] : 255, depth, lequ, hequ)));
-            queue->extend(std::move(newly_added));
-        }
-        delete queue;
-        return result;
     }
 
     void printTree(ArtNode* node, int depth) {
