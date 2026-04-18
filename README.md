@@ -9,7 +9,7 @@
 
 All experiments are self-contained and idempotent. Running any `run.sh` will automatically invoke `experiments/setup.sh` to clone dependencies, generate workloads, and build binaries if not already done.
 
-### Setup (automatic, but can be run manually)
+### Setup
 
 ```shell
 bash experiments/setup.sh
