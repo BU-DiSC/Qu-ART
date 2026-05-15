@@ -7,5 +7,3 @@ build/
 workloads/
 experiments/bods/
 experiments/5.1-bods-experiments/quick-insertion-tree/
-experiments/5.2-quart-vs-quit/build/
-tpcc/benchmarksql_workdir/
