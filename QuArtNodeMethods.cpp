@@ -38,9 +38,6 @@ void Node4::insertNode4ChangeFp(ART* tree, ArtNode** nodeRef,
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
 
-        // Add the newNode to the fast path
-        tree->fp_path[tree->fp_path_length - 1] = newNode;
-
         delete this;
         return newNode->insertNode16ChangeFp(tree, nodeRef, keyByte,
                                                   child);
@@ -83,9 +80,6 @@ void Node16::insertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
         copyPrefix(this, newNode);
         newNode->count = this->count;
 
-        // Add the newNode to the fast path
-        tree->fp_path[tree->fp_path_length - 1] = newNode;
-
         delete this;
         return newNode->insertNode48ChangeFp(tree, nodeRef, keyByte,
                                                   child);
@@ -120,9 +114,6 @@ void Node48::insertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
         newNode->count = this->count;
         copyPrefix(this, newNode);
         *nodeRef = newNode;
-
-        // Add the newNode to the fast path
-        tree->fp_path[tree->fp_path_length - 1] = newNode;
 
         delete this;
         return newNode->insertNode256ChangeFp(tree, nodeRef, keyByte,
@@ -194,14 +185,12 @@ void Node4::insertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
 
         // If the changing node is the fast path node
         if (tree->fp == this) {
-            // Adjust fp information
             tree->fp = newNode;
-            tree->fp_path[tree->fp_path_length - 1] = newNode;
             tree->fp_ref = nodeRef;
         }
-        // If the changing node hosts the cell fp_ref points to
-        else if (tree->fp_path_length >= 2 && tree->fp_path[tree->fp_path_length - 2] == this) {
-            tree->fp_path[tree->fp_path_length - 2] = newNode;
+        // If the changing node is the parent of the fast path node
+        else if (tree->fp_prev == this) {
+            tree->fp_prev = newNode;
             // Find the cell that points to the fast path node
             // and update the fp_ref to point to the cell
             for (size_t i = 0; i < newNode->count; i++) {
@@ -252,12 +241,11 @@ void Node16::insertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
         // If the changing node is the fast path node
         if (tree->fp == this) {
             tree->fp = newNode;
-            tree->fp_path[tree->fp_path_length - 1] = newNode;
             tree->fp_ref = nodeRef;
         }
-        // If the changing node hosts the cell fp_ref points to
-        else if (tree->fp_path_length >= 2 && tree->fp_path[tree->fp_path_length - 2] == this) {
-            tree->fp_path[tree->fp_path_length - 2] = newNode;
+        // If the changing node is the parent of the fast path node
+        else if (tree->fp_prev == this) {
+            tree->fp_prev = newNode;
             // Find the cell that points to the fast path node
             // and update the fp_ref to point to the cell
             for (size_t i = 0; i < newNode->count; i++) {
@@ -300,12 +288,11 @@ void Node48::insertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
         // If the changing node is the fast path node
         if (tree->fp == this) {
             tree->fp = newNode;
-            tree->fp_path[tree->fp_path_length - 1] = newNode;
             tree->fp_ref = nodeRef;
         }
-        // If the changing node hosts the cell fp_ref points to
-        else if (tree->fp_path_length >= 2 && tree->fp_path[tree->fp_path_length - 2] == this) {
-            tree->fp_path[tree->fp_path_length - 2] = newNode;
+        // If the changing node is the parent of the fast path node
+        else if (tree->fp_prev == this) {
+            tree->fp_prev = newNode;
             // Find the cell that points to the fast path node
             // and update the fp_ref to point to the cell
             for (size_t i = 0; i < newNode->count; i++) {

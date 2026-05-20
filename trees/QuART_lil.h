@@ -20,8 +20,6 @@ class QuART_lil : public QuART {
 
         // If the root is null or a single leaf, insert from the root.
         if (root == nullptr || isLeaf(root)) {
-            this->fp_path = {this->root};
-            this->fp_path_length = 1;
             insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
@@ -35,8 +33,6 @@ class QuART_lil : public QuART {
                 (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
             if (leafByte != key[i]) {
                 // Upper bytes differ: restart from root.
-                this->fp_path = {this->root};
-                this->fp_path_length = 1;
                 insert_recursive_change_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
                 return;
@@ -68,8 +64,6 @@ class QuART_lil : public QuART {
         } else {
             // fp is at an intermediate level; recurse from root to avoid
             // fp_depth / prefix double-counting issues.
-            this->fp_path = {this->root};
-            this->fp_path_length = 1;
             insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
         }

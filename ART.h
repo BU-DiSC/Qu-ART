@@ -33,22 +33,18 @@ namespace ART {
 
 class ART {
    public:
-    ArtNode* root;  // pointer to root node of tree
-    ArtNode* fp;    // pointer to fast path node
-    std::array<ArtNode*, maxPrefixLength> fp_path;  // path that leads to fp
-    std::array<ArtNode**, maxPrefixLength>
-        fp_path_ref;        // references to nodes on fp_path
-    size_t fp_path_length;  // stores length of fp path
-    ArtNode* fp_leaf;       // pointer to leaf node in fast path
-    size_t fp_depth;        // depth that will be used during fp insertion
-    ArtNode** fp_ref;       // reference to fp node, used for insertion
+    ArtNode* root;     // pointer to root node of tree
+    ArtNode* fp;       // pointer to fast path node
+    ArtNode* fp_prev;  // parent node of fp (holds the cell fp_ref points into)
+    ArtNode* fp_leaf;  // pointer to leaf node in fast path
+    size_t fp_depth;   // depth that will be used during fp insertion
+    ArtNode** fp_ref;  // reference to fp node, used for insertion
 
     // constructor
     ART()
         : root(nullptr),
           fp(nullptr),
-          fp_path{nullptr},
-          fp_path_length(0),
+          fp_prev(nullptr),
           fp_leaf(nullptr),
           fp_depth(0),
           fp_ref(nullptr) {}
@@ -63,106 +59,18 @@ class ART {
 
     void printTree() { printTree(this->root, 0); }
 
-    // Method to verify the tail path after each insertion
-    // Returns true if the fast path (fp_path) leads to the correct fp and
-    // fp_leaf
+    // Method to verify the fast path after each insertion.
+    // Returns true if fp has fp_leaf as its maximum leaf.
     bool verifyTailPath() {
-        if (this->fp_path_length == 0) {
-            // No fast path to verify
+        if (this->fp == nullptr) {
             return true;
         }
-
-        ArtNode* current = this->root;
-        // Traverse the tree following the fp_path
-        for (size_t i = 0; i < this->fp_path_length; i++) {
-            // If we're at the last node in the fp_path, check if it's the fp
-            // node
-            if (i == this->fp_path_length - 1) {
-                if (current == this->fp) {
-                    // Check if the leaf value matches the expected fp_leaf
-                    if (getLeafValue(maximum(current)) ==
-                        getLeafValue(this->fp_leaf)) {
-                        return true;
-                    } else {
-                        std::cerr << "Error: fp_leaf mismatch. Expected "
-                                  << getLeafValue(maximum(current)) << ", got "
-                                  << getLeafValue(this->fp_leaf) << "."
-                                  << std::endl;
-                        return false;
-                    }
-                } else {
-                    std::cerr << "Error: last node in fp_path is not the fp. "
-                                 "Expected "
-                              << static_cast<void*>(current) << ", got "
-                              << static_cast<void*>(this->fp) << "."
-                              << std::endl;
-                    return false;
-                }
-            }
-
-            // Move to the rightmost child for each node type
-            switch (current->type) {
-                case NodeType4: {
-                    Node4* node = static_cast<Node4*>(current);
-                    if (node->count > 0) {
-                        // Move to the last child (rightmost)
-                        current = node->child[node->count - 1];
-                    } else {
-                        std::cerr << "Error: NodeType4 has no children."
-                                  << std::endl;
-                        return false;
-                    }
-                    break;
-                }
-                case NodeType16: {
-                    Node16* node = static_cast<Node16*>(current);
-                    if (node->count > 0) {
-                        // Move to the last child (rightmost)
-                        current = node->child[node->count - 1];
-                    } else {
-                        std::cerr << "Error: NodeType16 has no children."
-                                  << std::endl;
-                        return false;
-                    }
-                    break;
-                }
-                case NodeType48: {
-                    Node48* node = static_cast<Node48*>(current);
-                    unsigned pos = 255;
-                    // Find the rightmost valid child
-                    while (pos > 0 && node->childIndex[pos] == emptyMarker)
-                        pos--;
-                    if (node->childIndex[pos] != emptyMarker) {
-                        current = node->child[node->childIndex[pos]];
-                    } else {
-                        std::cerr << "Error: NodeType48 has no valid children."
-                                  << std::endl;
-                        return false;
-                    }
-                    break;
-                }
-                case NodeType256: {
-                    Node256* node = static_cast<Node256*>(current);
-                    unsigned pos = 255;
-                    // Find the rightmost valid child
-                    while (pos > 0 && !node->child[pos]) pos--;
-                    if (node->child[pos]) {
-                        current = node->child[pos];
-                    } else {
-                        std::cerr << "Error: NodeType256 has no valid children."
-                                  << std::endl;
-                        return false;
-                    }
-                    break;
-                }
-                default:
-                    std::cerr << "Error: Unknown node type." << std::endl;
-                    return false;
-            }
+        if (getLeafValue(maximum(this->fp)) == getLeafValue(this->fp_leaf)) {
+            return true;
         }
-
-        // If we exit the loop without returning, the path is incorrect
-        std::cerr << "Error: fp_path does not lead to the fp." << std::endl;
+        std::cerr << "Error: fp_leaf mismatch. Expected "
+                  << getLeafValue(maximum(this->fp)) << ", got "
+                  << getLeafValue(this->fp_leaf) << "." << std::endl;
         return false;
     }
 

@@ -28,8 +28,6 @@ class QuART_tail : public QuART {
                 (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
             if (key[i] > leafByte) {
                 // New key is greater: it becomes the new maximum.
-                this->fp_path = {this->root};
-                this->fp_path_length = 1;
                 insert_recursive_change_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
                 return;
@@ -66,8 +64,6 @@ class QuART_tail : public QuART {
             } else {
                 // fp is at an intermediate level; recurse from root to avoid
                 // fp_depth / prefix double-counting issues.
-                this->fp_path = {this->root};
-                this->fp_path_length = 1;
                 insert_recursive_change_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
             }
@@ -98,8 +94,6 @@ class QuART_tail : public QuART {
             } else {
                 // fp is at an intermediate level; recurse from root to avoid
                 // fp_depth / prefix double-counting issues.
-                this->fp_path = {this->root};
-                this->fp_path_length = 1;
                 insert_recursive_preserve_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
             }

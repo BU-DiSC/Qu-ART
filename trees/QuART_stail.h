@@ -61,22 +61,19 @@ class QuART_stail : public QuART {
             // into the fp
             else {
                 insert_recursive_preserve_fp(
-                    this->fp, this->fp_ref, key, fp_depth, value, maxPrefixLength);
+                    this->fp, this->fp_ref, key, fp_depth, value, maxPrefixLength,
+                    this->fp_prev);
                 return;
             }
         } else if (type == KeyType::BRIDGE) {
             if (this->reset_counter != RESET_COUNTER_INIT)
                 this->reset_counter = RESET_COUNTER_INIT;
-            this->fp_path = {this->root};
-            this->fp_path_length = 1;
             insert_recursive_change_fp(
                 this->root, &this->root, key, 0, value, maxPrefixLength);
             return;
         } else { // OTHER (both greater and less)
             if (this->reset_counter == 0) {
                 this->reset_counter = RESET_COUNTER_INIT;
-                this->fp_path = {this->root};
-                this->fp_path_length = 1;
                 insert_recursive_change_fp(
                     this->root, &this->root, key, 0, value, maxPrefixLength);
             } else {

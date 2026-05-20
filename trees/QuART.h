@@ -19,7 +19,8 @@ class QuART : public ART {
    protected:
     void insert_recursive_preserve_fp(ArtNode* node, ArtNode** nodeRef,
                                       uint8_t key[], unsigned depth,
-                                      uintptr_t value, unsigned maxKeyLength) {
+                                      uintptr_t value, unsigned maxKeyLength,
+                                      ArtNode* prevNode = nullptr) {
         // If leaf expansion is needed
         if (isLeaf(node)) {
             // Replace leaf with Node4 and store both leaves in it
@@ -44,10 +45,9 @@ class QuART : public ART {
                     this->fp_depth++;
                 }
                 // Adjust fp parameters
-                this->fp_path[this->fp_path_length] = newNode;
-                this->fp_path_length++;
                 this->fp = newNode;
                 this->fp_ref = nodeRef;
+                this->fp_prev = prevNode;
             }
 
             newNode->insertNode4(this, nodeRef,
@@ -70,21 +70,11 @@ class QuART : public ART {
                        min(mismatchPos, maxPrefixLength));
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    // If the nodes that being changed is in fp_path
-                    auto it = std::find(fp_path.begin(),
-                                        fp_path.begin() + fp_path_length, node);
-                    if (it != fp_path.begin() + fp_path_length) {
-                        size_t pos = std::distance(fp_path.begin(), it);
-                        std::copy_backward(
-                            fp_path.begin() + pos,
-                            fp_path.begin() + fp_path_length,
-                            fp_path.begin() + fp_path_length + 1);
-                        fp_path[pos] = newNode;
-                        fp_path_length++;
-                        if (node == this->fp) {
-                            this->fp_depth += newNode->prefixLength;
-                            this->fp_depth++;
-                        }
+                    // If node is fp, a new node is being spliced above it
+                    if (node == this->fp) {
+                        this->fp_prev = newNode;
+                        this->fp_depth += newNode->prefixLength;
+                        this->fp_depth++;
                     }
                     newNode->insertNode4PreserveFpPrefixExpansion(
                         this, nodeRef, node->prefix[mismatchPos], node);
@@ -95,20 +85,11 @@ class QuART : public ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    auto it = std::find(fp_path.begin(),
-                                        fp_path.begin() + fp_path_length, node);
-                    if (it != fp_path.begin() + fp_path_length) {
-                        size_t pos = std::distance(fp_path.begin(), it);
-                        std::copy_backward(
-                            fp_path.begin() + pos,
-                            fp_path.begin() + fp_path_length,
-                            fp_path.begin() + fp_path_length + 1);
-                        fp_path[pos] = newNode;
-                        fp_path_length++;
-                        if (node == this->fp) {
-                            this->fp_depth += newNode->prefixLength;
-                            this->fp_depth++;
-                        }
+                    // If node is fp, a new node is being spliced above it
+                    if (node == this->fp) {
+                        this->fp_prev = newNode;
+                        this->fp_depth += newNode->prefixLength;
+                        this->fp_depth++;
                     }
                     newNode->insertNode4PreserveFpPrefixExpansion(
                         this, nodeRef, minKey[depth + mismatchPos], node);
@@ -126,7 +107,7 @@ class QuART : public ART {
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
             insert_recursive_preserve_fp(*child, child, key, depth + 1, value,
-                                         maxKeyLength);
+                                         maxKeyLength, node);
             return;
         }
 
@@ -154,7 +135,8 @@ class QuART : public ART {
 
     void insert_recursive_change_fp(ArtNode* node, ArtNode** nodeRef,
                                     uint8_t key[], unsigned depth,
-                                    uintptr_t value, unsigned maxKeyLength) {
+                                    uintptr_t value, unsigned maxKeyLength,
+                                    ArtNode* prevNode = nullptr) {
         // Insert the leaf
         if (node == NULL) {
             *nodeRef = makeLeaf(value);
@@ -163,6 +145,7 @@ class QuART : public ART {
             this->fp = *nodeRef;
             this->fp_ref = nodeRef;
             this->fp_depth = 0;
+            this->fp_prev = prevNode;
             return;
         }
 
@@ -183,7 +166,7 @@ class QuART : public ART {
             *nodeRef = newNode;
 
             // Adjust fp parameters
-            this->fp_path[this->fp_path_length - 1] = newNode;
+            this->fp_prev = prevNode;
             this->fp_depth = depth + newPrefixLength;
 
             newNode->insertNode4(this, nodeRef,
@@ -206,8 +189,7 @@ class QuART : public ART {
                        min(mismatchPos, maxPrefixLength));
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    // In all cases, newNode should be added to fp_path
-                    fp_path[fp_path_length - 1] = newNode;
+                    this->fp_prev = prevNode;
                     newNode->insertNode4(this, nodeRef,
                                          node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
@@ -217,8 +199,7 @@ class QuART : public ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    // In all cases, newNode should be added to fp_path
-                    fp_path[fp_path_length - 1] = newNode;
+                    this->fp_prev = prevNode;
                     newNode->insertNode4(this, nodeRef,
                                          minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
@@ -236,16 +217,14 @@ class QuART : public ART {
         // Recurse
         ArtNode** child = findChild(node, key[depth]);
         if (*child) {
-            fp_path[fp_path_length] =
-                *child;        // add the node to the array before recursion
-            fp_path_length++;  // increase the size of the array
             insert_recursive_change_fp(*child, child, key, depth + 1, value,
-                                       maxKeyLength);
+                                       maxKeyLength, node);
             return;
         }
 
         // Insert leaf into inner node
         ArtNode* newNode = makeLeaf(value);
+        this->fp_prev = prevNode;
         this->fp_depth = depth - node->prefixLength;
         switch (node->type) {
             case NodeType4:

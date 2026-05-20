@@ -33,7 +33,7 @@ make -C "$BUILD" -j"$JOBS" run
 echo ""
 
 N=500000000
-REPEAT="${REPEAT:-5}"
+REPEAT="${REPEAT:-1}"
 
 SUFFIX=$(date +"%Y%m%d_%H%M%S")
 RESULTS_DIR="$SCRIPT_DIR/results"
