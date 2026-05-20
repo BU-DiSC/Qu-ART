@@ -28,9 +28,9 @@ class QuART_lil : public QuART {
         int leafValue = getLeafValue(this->fp_leaf);
 
         // Check whether all bytes except the last match fp_leaf.
-        for (size_t i = 0; i < maxPrefixLength - 1; ++i) {
+        for (size_t i = 0; i < maxPrefixLength - 2; ++i) {
             uint8_t leafByte =
-                (leafValue >> (8 * (maxPrefixLength - 1 - i))) & 0xFF;
+                (leafValue >> (8 * (maxPrefixLength - 2 - i))) & 0xFF;
             if (leafByte != key[i]) {
                 // Upper bytes differ: restart from root.
                 insert_recursive_change_fp(
@@ -40,7 +40,7 @@ class QuART_lil : public QuART {
         }
 
         // Upper bytes match: fast path starting from fp.
-        if (this->fp_depth == maxPrefixLength - 1) {
+        if (this->fp_depth == maxPrefixLength - 2) {
             // fp is at the last-byte level; insert directly into the fp node.
             ArtNode* newNode = makeLeaf(value);
             switch (this->fp->type) {

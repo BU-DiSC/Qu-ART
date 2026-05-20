@@ -36,6 +36,7 @@ void loadKey(uint32_t tid, uint8_t key[]) {
     // Store the key of the tuple into the key vector
     // Implementation is database specific
     reinterpret_cast<uint32_t*>(key)[0] = __builtin_bswap32(tid);
+    key[4] = 0;  // null terminator byte
 }
 
 static inline unsigned ctz(uint16_t x) {

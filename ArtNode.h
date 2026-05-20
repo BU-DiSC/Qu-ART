@@ -38,7 +38,7 @@ static const int8_t NodeType256 = 3;
 // The maximum prefix length for compressed paths stored in the
 // header, if the path is longer it is loaded from the database on
 // demand
-static const unsigned maxPrefixLength = 4;
+static const unsigned maxPrefixLength = 5;
 
 // Shared header of all inner nodes
 struct ArtNode {

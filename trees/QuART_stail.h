@@ -33,7 +33,7 @@ class QuART_stail : public QuART {
         if (type == KeyType::FP_INSERT) {
             if (this->reset_counter != RESET_COUNTER_INIT)
                 this->reset_counter = RESET_COUNTER_INIT;
-            if (this->fp_depth == maxPrefixLength - 1) {
+            if (this->fp_depth == maxPrefixLength - 2) {
                 // Insert leaf into fp
                 ArtNode* newNode = makeLeaf(value);
                 switch (this->fp->type) {
