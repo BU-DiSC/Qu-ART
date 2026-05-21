@@ -16,6 +16,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define QUART_KFP_STATS
+
 #include "ART.h"
 #include "ArtNode.h"
 #include "Helper.h"
@@ -107,15 +109,17 @@ int main() {
                 }
             }
         }
-        long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
         cout << "QuART_kfp<3>: " << kfp_ns / 1'000'000 << " ms"
              << "  (" << fixed << setprecision(1)
-             << (double)(3*N) / (kfp_ns / 1e9) / 1e6 << " M inserts/s)\n"
-             << "  FP_INSERT=" << tree.getFpInsertCount()
+             << (double)(3*N) / (kfp_ns / 1e9) / 1e6 << " M inserts/s)\n";
+#ifdef QUART_KFP_STATS
+        long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
+        cout << "  FP_INSERT=" << tree.getFpInsertCount()
              << "  BRIDGE="    << tree.getBridgeCount()
              << "  NO_MATCH="  << tree.getNoMatchCount()
              << "  (fp_insert%=" << fixed << setprecision(1)
              << 100.0 * tree.getFpInsertCount() / total << "%)\n";
+#endif
     }
 
     // ── plain ART ────────────────────────────────────────────────────────────

@@ -25,10 +25,18 @@ namespace ART {
 template <int K>
 class QuART_kfp : public QuART {
    public:
-    QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1),
-                   cnt_fp_insert(0), cnt_bridge(0), cnt_no_match(0) {}
+    QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
+#ifdef QUART_KFP_STATS
+                 , cnt_fp_insert(0), cnt_bridge(0), cnt_no_match(0)
+#endif
+                 {}
 
     void insert(uint8_t key[], uintptr_t value) override {
+        // Prefetch all cached fp nodes before findSlot so the cache misses are
+        // overlapped with the classification work rather than serialised after it.
+        for (int i = 0; i < num_active; i++)
+            __builtin_prefetch(slots[i].fp, 0 /*read*/, 1 /*L2 locality*/);
+
         if (root == nullptr) {
             int slot = allocSlot();
             active_slot = slot;
@@ -43,7 +51,9 @@ class QuART_kfp : public QuART {
         auto [slotIdx, matchType] = findSlot(key);
 
         if (matchType == MatchType::FP_INSERT) {
+#ifdef QUART_KFP_STATS
             cnt_fp_insert++;
+#endif
             active_slot = slotIdx;
             FpSlot& s = slots[slotIdx];
 
@@ -79,7 +89,9 @@ class QuART_kfp : public QuART {
             }
 
         } else if (matchType == MatchType::BRIDGE) {
+#ifdef QUART_KFP_STATS
             cnt_bridge++;
+#endif
             // Key is adjacent to an existing workload boundary: reset that
             // slot and begin tracking the new page from root.
             active_slot = slotIdx;
@@ -89,7 +101,9 @@ class QuART_kfp : public QuART {
             saveToSlot(slotIdx);
 
         } else {  // NO_MATCH – new workload
+#ifdef QUART_KFP_STATS
             cnt_no_match++;
+#endif
             int slot = allocSlot();
             active_slot = slot;
             // Null out the flat fields so hooks don't see stale pointers.
@@ -102,9 +116,11 @@ class QuART_kfp : public QuART {
 
     int getNumActive() const { return num_active; }
     const FpSlot& getSlot(int i) const { return slots[i]; }
+#ifdef QUART_KFP_STATS
     long long getFpInsertCount()  const { return cnt_fp_insert; }
     long long getBridgeCount()    const { return cnt_bridge; }
     long long getNoMatchCount()   const { return cnt_no_match; }
+#endif
 
    private:
     enum class MatchType { FP_INSERT, BRIDGE, NO_MATCH };
@@ -113,7 +129,9 @@ class QuART_kfp : public QuART {
     int num_active;   // number of allocated slots (0..K)
     int next_evict;   // FIFO eviction pointer
     int active_slot;  // which slot is being modified during this insert
+#ifdef QUART_KFP_STATS
     long long cnt_fp_insert, cnt_bridge, cnt_no_match;
+#endif
 
     // ── Slot helpers ─────────────────────────────────────────────────────────
 
