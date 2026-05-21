@@ -37,18 +37,8 @@ class QuART : public ART {
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            // If the changing node was the fp
-            if (this->fp_leaf == node) {
-                // If fp is not null (used only to avoid second insert)
-                if (!isLeaf(this->fp)) {
-                    this->fp_depth += fp->prefixLength;
-                    this->fp_depth++;
-                }
-                // Adjust fp parameters
-                this->fp = newNode;
-                this->fp_ref = nodeRef;
-                this->fp_prev = prevNode;
-            }
+            // Update all fp slots that track this leaf.
+            this->onLeafExpanded(node, newNode, nodeRef, prevNode);
 
             newNode->insertNode4(this, nodeRef,
                                  existingKey[depth + newPrefixLength], node);
@@ -70,12 +60,8 @@ class QuART : public ART {
                        min(mismatchPos, maxPrefixLength));
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
-                    // If node is fp, a new node is being spliced above it
-                    if (node == this->fp) {
-                        this->fp_prev = newNode;
-                        this->fp_depth += newNode->prefixLength;
-                        this->fp_depth++;
-                    }
+                    // Update all fp slots that may track this node as fp.
+                    this->onPrefixMismatch(node, newNode, mismatchPos);
                     newNode->insertNode4PreserveFpPrefixExpansion(
                         this, nodeRef, node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
@@ -85,12 +71,8 @@ class QuART : public ART {
                     node->prefixLength -= (mismatchPos + 1);
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
-                    // If node is fp, a new node is being spliced above it
-                    if (node == this->fp) {
-                        this->fp_prev = newNode;
-                        this->fp_depth += newNode->prefixLength;
-                        this->fp_depth++;
-                    }
+                    // Update all fp slots that may track this node as fp.
+                    this->onPrefixMismatch(node, newNode, mismatchPos);
                     newNode->insertNode4PreserveFpPrefixExpansion(
                         this, nodeRef, minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
@@ -98,6 +80,9 @@ class QuART : public ART {
                 }
                 newNode->insertNode4(this, nodeRef, key[depth + mismatchPos],
                                      makeLeaf(value));
+                // The insertNode4 above may have used memmove to shift 'node'
+                // within newNode.  Fix fp_ref for any slot with fp_prev==newNode.
+                this->onParentShifted(newNode);
                 return;
             }
             depth += node->prefixLength;
@@ -165,9 +150,15 @@ class QuART : public ART {
                    min(newPrefixLength, maxPrefixLength));
             *nodeRef = newNode;
 
-            // Adjust fp parameters
+            // Notify slots that were tracking the old leaf as fp/fp_leaf.
+            this->onLeafExpanded(node, newNode, nodeRef, prevNode);
+
+            // Adjust fp parameters.
+            // fp_depth = depth (tree depth of newNode, before its prefix),
+            // NOT depth+newPrefixLength (the dispatch depth). preserve_fp
+            // must start at the tree depth of fp so its prefix check aligns.
             this->fp_prev = prevNode;
-            this->fp_depth = depth + newPrefixLength;
+            this->fp_depth = depth;
 
             newNode->insertNode4(this, nodeRef,
                                  existingKey[depth + newPrefixLength], node);
@@ -190,8 +181,10 @@ class QuART : public ART {
                 // Break up prefix
                 if (node->prefixLength < maxPrefixLength) {
                     this->fp_prev = prevNode;
-                    newNode->insertNode4(this, nodeRef,
-                                         node->prefix[mismatchPos], node);
+                    // Notify slots tracking 'node' as fp, and update fp_ref.
+                    this->onPrefixMismatch(node, newNode, mismatchPos);
+                    newNode->insertNode4PreserveFpPrefixExpansion(
+                        this, nodeRef, node->prefix[mismatchPos], node);
                     node->prefixLength -= (mismatchPos + 1);
                     memmove(node->prefix, node->prefix + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
@@ -200,8 +193,10 @@ class QuART : public ART {
                     uint8_t minKey[maxKeyLength];
                     loadKey(getLeafValue(minimum(node)), minKey);
                     this->fp_prev = prevNode;
-                    newNode->insertNode4(this, nodeRef,
-                                         minKey[depth + mismatchPos], node);
+                    // Notify slots tracking 'node' as fp, and update fp_ref.
+                    this->onPrefixMismatch(node, newNode, mismatchPos);
+                    newNode->insertNode4PreserveFpPrefixExpansion(
+                        this, nodeRef, minKey[depth + mismatchPos], node);
                     memmove(node->prefix, minKey + depth + mismatchPos + 1,
                             min(node->prefixLength, maxPrefixLength));
                 }

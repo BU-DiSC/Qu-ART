@@ -32,3 +32,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
     add_executable(tpcc_art tpcc/tpcc_art.cpp)
     target_compile_options(tpcc_art PRIVATE -march=native)
 endif()
+
+# k-FP correctness tests
+add_executable(test_kfp test_kfp.cpp)
+target_compile_options(test_kfp PRIVATE -march=native)

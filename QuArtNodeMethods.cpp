@@ -28,6 +28,9 @@ void Node4::insertNode4ChangeFp(ART* tree, ArtNode** nodeRef,
         tree->fp_ref = nodeRef;
 
         this->count++;
+        // Notify any slot whose fp_prev == this; the memmove above may have
+        // shifted the cell their fp_ref pointed at.
+        tree->onParentShifted(this);
     } else {
         // Grow to Node16
         Node16* newNode = new Node16();
@@ -38,6 +41,8 @@ void Node4::insertNode4ChangeFp(ART* tree, ArtNode** nodeRef,
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
 
+        // Update any slot whose fp/fp_prev pointed at the old node.
+        tree->onNodeReplaced(this, newNode, nodeRef);
         delete this;
         return newNode->insertNode16ChangeFp(tree, nodeRef, keyByte,
                                                   child);
@@ -70,6 +75,9 @@ void Node16::insertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
         tree->fp_ref = nodeRef;
 
         this->count++;
+        // Notify any slot whose fp_prev == this; the memmove above may have
+        // shifted the cell their fp_ref pointed at.
+        tree->onParentShifted(this);
     } else {
         // Grow to Node48
         Node48* newNode = new Node48();
@@ -80,6 +88,8 @@ void Node16::insertNode16ChangeFp(ART* tree, ArtNode** nodeRef,
         copyPrefix(this, newNode);
         newNode->count = this->count;
 
+        // Update any slot whose fp/fp_prev pointed at the old node.
+        tree->onNodeReplaced(this, newNode, nodeRef);
         delete this;
         return newNode->insertNode48ChangeFp(tree, nodeRef, keyByte,
                                                   child);
@@ -115,6 +125,8 @@ void Node48::insertNode48ChangeFp(ART* tree, ArtNode** nodeRef,
         copyPrefix(this, newNode);
         *nodeRef = newNode;
 
+        // Update any slot whose fp/fp_prev pointed at the old node.
+        tree->onNodeReplaced(this, newNode, nodeRef);
         delete this;
         return newNode->insertNode256ChangeFp(tree, nodeRef, keyByte,
                                                    child);
@@ -151,11 +163,11 @@ void Node4::insertNode4PreserveFpPrefixExpansion(ART* tree,
     this->child[pos] = child;
     this->count++;
 
-    // If the child is the fast path node, update the fast path reference
-    // The child can be the fast path node ONLY in prefix expansion case
-    if (child == tree->fp) {
-        tree->fp_ref = &this->child[pos];
-    }
+    // Notify all fp slots that may track child; the cell holding fp has moved.
+    tree->onFpRefUpdate(child, &this->child[pos]);
+    // Also notify any slot whose fp_prev == this; the memmove above may have
+    // shifted the cell their fp_ref pointed at.
+    tree->onParentShifted(this);
 }
 
 // fp insert method for Node4 that does not change fp_leaf
@@ -173,6 +185,9 @@ void Node4::insertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
         this->key[pos] = keyByte;
         this->child[pos] = child;
         this->count++;
+        // Notify any slot whose fp_prev == this; the memmove above may have
+        // shifted the cell their fp_ref pointed at.
+        tree->onParentShifted(this);
     } else {
         // Grow to Node16
         Node16* newNode = new Node16();
@@ -183,24 +198,8 @@ void Node4::insertNode4PreserveFp(ART* tree, ArtNode** nodeRef,
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
 
-        // If the changing node is the fast path node
-        if (tree->fp == this) {
-            tree->fp = newNode;
-            tree->fp_ref = nodeRef;
-        }
-        // If the changing node is the parent of the fast path node
-        else if (tree->fp_prev == this) {
-            tree->fp_prev = newNode;
-            // Find the cell that points to the fast path node
-            // and update the fp_ref to point to the cell
-            for (size_t i = 0; i < newNode->count; i++) {
-                if (newNode->child[i] == tree->fp) {
-                    tree->fp_ref = &newNode->child[i];
-                    break;
-                }
-            }
-        }
-
+        // Update all fp slots whose fp or fp_prev pointed at this node.
+        tree->onNodeReplaced(this, newNode, nodeRef);
         delete this;
 
         return newNode->insertNode16PreserveFp(tree, nodeRef, keyByte,
@@ -227,6 +226,9 @@ void Node16::insertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
         this->key[pos] = keyByteFlipped;
         this->child[pos] = child;
         this->count++;
+        // Notify any slot whose fp_prev == this; the memmove above may have
+        // shifted the cell their fp_ref pointed at.
+        tree->onParentShifted(this);
     } else {
         // Grow to Node48
         Node48* newNode = new Node48();
@@ -238,24 +240,8 @@ void Node16::insertNode16PreserveFp(ART* tree, ArtNode** nodeRef,
         copyPrefix(this, newNode);
         newNode->count = this->count;
 
-        // If the changing node is the fast path node
-        if (tree->fp == this) {
-            tree->fp = newNode;
-            tree->fp_ref = nodeRef;
-        }
-        // If the changing node is the parent of the fast path node
-        else if (tree->fp_prev == this) {
-            tree->fp_prev = newNode;
-            // Find the cell that points to the fast path node
-            // and update the fp_ref to point to the cell
-            for (size_t i = 0; i < newNode->count; i++) {
-                if (newNode->child[i] == tree->fp) {
-                    tree->fp_ref = &newNode->child[i];
-                    break;
-                }
-            }
-        }
-
+        // Update all fp slots whose fp or fp_prev pointed at this node.
+        tree->onNodeReplaced(this, newNode, nodeRef);
         delete this;
 
         return newNode->insertNode48PreserveFp(tree, nodeRef, keyByte,
@@ -285,24 +271,8 @@ void Node48::insertNode48PreserveFp(ART* tree, ArtNode** nodeRef,
         copyPrefix(this, newNode);
         *nodeRef = newNode;
 
-        // If the changing node is the fast path node
-        if (tree->fp == this) {
-            tree->fp = newNode;
-            tree->fp_ref = nodeRef;
-        }
-        // If the changing node is the parent of the fast path node
-        else if (tree->fp_prev == this) {
-            tree->fp_prev = newNode;
-            // Find the cell that points to the fast path node
-            // and update the fp_ref to point to the cell
-            for (size_t i = 0; i < newNode->count; i++) {
-                if (newNode->child[i] == tree->fp) {
-                    tree->fp_ref = &newNode->child[i];
-                    break;
-                }
-            }
-        }
-
+        // Update all fp slots whose fp or fp_prev pointed at this node.
+        tree->onNodeReplaced(this, newNode, nodeRef);
         delete this;
 
         // There is no need for a insertNode256PreserveFp method

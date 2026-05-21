@@ -31,6 +31,15 @@
 
 namespace ART {
 
+// Groups the five FP tracking fields for one workload fingerprint.
+struct FpSlot {
+    ArtNode*  fp       = nullptr;
+    ArtNode*  fp_prev  = nullptr;
+    ArtNode*  fp_leaf  = nullptr;
+    size_t    fp_depth = 0;
+    ArtNode** fp_ref   = nullptr;
+};
+
 class ART {
    public:
     ArtNode* root;     // pointer to root node of tree
@@ -287,6 +296,98 @@ class ART {
         int compressed_nodes = 0;
         compressTreeHelper(root, &root, compressed_nodes, 1);
         return compressed_nodes;
+    }
+
+   protected:
+    // Scans node's child array for target and returns a pointer to that child
+    // slot, or nullptr if not found.  Used to recompute fp_ref after a node
+    // expansion replaces fp_prev with a larger node type.
+    ArtNode** findChildPtr(ArtNode* node, ArtNode* target) {
+        switch (node->type) {
+            case NodeType4: {
+                auto* n = static_cast<Node4*>(node);
+                for (int i = 0; i < n->count; i++)
+                    if (n->child[i] == target) return &n->child[i];
+                break;
+            }
+            case NodeType16: {
+                auto* n = static_cast<Node16*>(node);
+                for (int i = 0; i < n->count; i++)
+                    if (n->child[i] == target) return &n->child[i];
+                break;
+            }
+            case NodeType48: {
+                auto* n = static_cast<Node48*>(node);
+                for (int i = 0; i < 48; i++)
+                    if (n->child[i] == target) return &n->child[i];
+                break;
+            }
+            case NodeType256: {
+                auto* n = static_cast<Node256*>(node);
+                for (int i = 0; i < 256; i++)
+                    if (n->child[i] == target) return &n->child[i];
+                break;
+            }
+        }
+        return nullptr;
+    }
+
+   public:
+    // Hook: an inner node was replaced by a larger node type during expansion.
+    // Updates fp and fp_prev tracking for any slot pointing at oldNode.
+    // Default implementation handles the single-fp case.
+    virtual void onNodeReplaced(ArtNode* oldNode, ArtNode* newNode,
+                                ArtNode** newNodeRef) {
+        if (fp == oldNode) {
+            fp     = newNode;
+            fp_ref = newNodeRef;
+        } else if (fp_prev == oldNode) {
+            fp_prev = newNode;
+            ArtNode** ref = findChildPtr(newNode, fp);
+            if (ref) fp_ref = ref;
+        }
+    }
+
+    // Hook: a new parent node was spliced above fp (prefix expansion);
+    // the child cell that holds fp has moved to a new address.
+    virtual void onFpRefUpdate(ArtNode* targetFp, ArtNode** newRef) {
+        if (fp == targetFp) fp_ref = newRef;
+    }
+
+    // Hook: the leaf tracked by fp_leaf was expanded into a Node4.
+    // Adjusts fp_depth and redirects fp/fp_ref/fp_prev to the new Node4.
+    virtual void onLeafExpanded(ArtNode* oldLeaf, Node4* newNode,
+                                ArtNode** nodeRef, ArtNode* prevNode) {
+        if (fp_leaf == oldLeaf) {
+            if (!isLeaf(fp)) {
+                fp_depth += fp->prefixLength;
+                fp_depth++;
+            }
+            fp      = newNode;
+            fp_ref  = nodeRef;
+            fp_prev = prevNode;
+        }
+    }
+
+    // Hook: a prefix mismatch spliced a new Node4 above fpNode.
+    // Updates fp_prev and fp_depth for the slot that was tracking fpNode.
+    virtual void onPrefixMismatch(ArtNode* fpNode, Node4* newParent,
+                                  unsigned mismatchPrefixLen) {
+        if (fp == fpNode) {
+            fp_prev  = newParent;
+            fp_depth += mismatchPrefixLen + 1;
+        }
+    }
+
+    // Hook: a sorted insertion into `node` used memmove to shift existing
+    // children, potentially invalidating any fp_ref that pointed into the
+    // shifted range.  Implementors should re-derive fp_ref for every slot
+    // where fp_prev == node using findChildPtr(node, fp).
+    virtual void onParentShifted(ArtNode* node) {
+        if (fp_prev == node) {
+            ArtNode** ref = findChildPtr(node, fp);
+            if (ref) fp_ref = ref;
+        }
     }
 
    private:
