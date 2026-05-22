@@ -163,21 +163,19 @@ class QuART_kfp : public QuART {
         return slot;
     }
 
-    // Classify key against existing slots by comparing upper-3-bytes.
+    // Classify key against existing slots by comparing all-but-last-byte.
     std::pair<int, MatchType> findSlot(uint8_t key[]) const {
-        uint32_t keyUpper =
-            ((uint32_t)key[0] << 16) | ((uint32_t)key[1] << 8) | key[2];
+        key_int_t keyUpper = getKeyUpperBytes(key);
 
         for (int i = 0; i < num_active; i++) {
             if (slots[i].fp_leaf == nullptr) continue;
-            uint32_t leafUpper =
-                (uint32_t)(getLeafValue(slots[i].fp_leaf) >> 8) & 0xFFFFFF;
+            key_int_t leafUpper = getLeafUpperBytes(getLeafValue(slots[i].fp_leaf));
 
             if (keyUpper == leafUpper)
                 return {i, MatchType::FP_INSERT};
 
-            if (((keyUpper + 1) & 0xFFFFFF) == leafUpper ||
-                ((leafUpper + 1) & 0xFFFFFF) == keyUpper)
+            if (((keyUpper + 1) & upperMask) == leafUpper ||
+                ((leafUpper + 1) & upperMask) == keyUpper)
                 return {i, MatchType::BRIDGE};
         }
         return {-1, MatchType::NO_MATCH};

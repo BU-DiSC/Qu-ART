@@ -1,7 +1,8 @@
 // test_kfp.cpp — benchmark QuART_kfp<3> vs ART on 3 real bods workload streams
 //
-// Reads 3 binary workload files (uint32_t little-endian), randomly interleaves
+// Reads 3 binary workload files (key_int_t little-endian), randomly interleaves
 // them key-by-key, inserts into QuART_kfp<3> and plain ART, and reports timing.
+// Key width is controlled by QUART_KEY_64: 32-bit by default, 64-bit if defined.
 //
 // Build: cmake --build build --target test_kfp
 // Run  : ./build/test_kfp
@@ -27,14 +28,14 @@
 using namespace std;
 using namespace ART;
 
-static void encodeKey(uint32_t k, uint8_t out[5]) { loadKey(k, out); }
+static void encodeKey(key_int_t k, uint8_t out[keyBytes]) { loadKey(k, out); }
 
-// Memory-maps a binary file of uint32_t values.  Returns a pointer and size.
+// Memory-maps a binary file of key_int_t values.  Returns a pointer and size.
 struct MappedFile {
-    const uint32_t* data = nullptr;
-    size_t          count = 0;
-    size_t          bytes = 0;
-    int             fd = -1;
+    const key_int_t* data = nullptr;
+    size_t           count = 0;
+    size_t           bytes = 0;
+    int              fd = -1;
 
     bool open(const char* path) {
         fd = ::open(path, O_RDONLY);
@@ -42,16 +43,16 @@ struct MappedFile {
         struct stat st;
         fstat(fd, &st);
         bytes = (size_t)st.st_size;
-        count = bytes / sizeof(uint32_t);
+        count = bytes / sizeof(key_int_t);
         void* p = mmap(nullptr, bytes, PROT_READ, MAP_PRIVATE, fd, 0);
         if (p == MAP_FAILED) { perror("mmap"); ::close(fd); fd = -1; return false; }
         madvise(p, bytes, MADV_SEQUENTIAL);
-        data = reinterpret_cast<const uint32_t*>(p);
+        data = reinterpret_cast<const key_int_t*>(p);
         return true;
     }
 
     ~MappedFile() {
-        if (data) munmap(const_cast<uint32_t*>(data), bytes);
+        if (data) munmap(const_cast<key_int_t*>(data), bytes);
         if (fd >= 0) ::close(fd);
     }
 };
@@ -74,7 +75,7 @@ int main() {
     for (int i = 1; i < 3; i++) N = min(N, files[i].count);
     cout << "Using " << N << " keys per stream (" << 3*N << " total)\n\n";
 
-    uint8_t key[5];
+    uint8_t key[keyBytes];
     long long kfp_ns, art_ns;
 
     // ── QuART_kfp<3> ─────────────────────────────────────────────────────────
@@ -89,7 +90,7 @@ int main() {
             for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
             if (!na) break;
             int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            uint32_t k = files[w].data[pos[w]++];
+            key_int_t k = files[w].data[pos[w]++];
             encodeKey(k, key);
             tree.insert(key, k);
         }
@@ -99,7 +100,7 @@ int main() {
         // Spot-check a few keys from each stream.
         for (int w = 0; w < 3; w++) {
             for (size_t idx : {(size_t)0, N/2, N-1}) {
-                uint32_t k = files[w].data[idx];
+                key_int_t k = files[w].data[idx];
                 encodeKey(k, key);
                 ArtNode* leaf = tree.lookup(key);
                 if (!leaf || !isLeaf(leaf) || getLeafValue(leaf) != k) {
@@ -134,7 +135,7 @@ int main() {
             for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
             if (!na) break;
             int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            uint32_t k = files[w].data[pos[w]++];
+            key_int_t k = files[w].data[pos[w]++];
             encodeKey(k, key);
             tree.insert(key, k);
         }

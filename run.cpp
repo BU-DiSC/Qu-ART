@@ -83,12 +83,12 @@ int main(int argc, char** argv) {
     uint64_t maxval = N-1;
 
     // read data
-    std::vector<uint32_t> keys;
+    std::vector<ART::key_int_t> keys;
     if (use_synthetic) {
         keys.resize(N);
-        for (int i = 0; i < N; i++) keys[i] = static_cast<uint32_t>(i + 1);
+        for (int i = 0; i < N; i++) keys[i] = static_cast<ART::key_int_t>(i + 1);
     } else {
-        keys = read_file<uint32_t>(input_file);
+        keys = read_file<ART::key_int_t>(input_file);
     }
 
     if (tree_type == "ART") {
@@ -96,10 +96,10 @@ int main(int argc, char** argv) {
         long long insertion_time = 0;
         if (use_bulkload) {
             // Create keys vector with 0 at the beginning, followed by N keys from file
-            std::vector<uint32_t> keys_to_load;
+            std::vector<ART::key_int_t> keys_to_load;
             keys_to_load.reserve(N + 1);
             keys_to_load.push_back(0);
-            for (uint32_t i = 1; i <= N; i++) {
+            for (ART::key_int_t i = 1; i <= static_cast<ART::key_int_t>(N); i++) {
                 keys_to_load.push_back(i);
             }
             auto start = chrono::high_resolution_clock::now();
@@ -112,7 +112,7 @@ int main(int argc, char** argv) {
             long long query_time = 0;
             for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
                 int random = rand() % N + 1;
-                uint8_t key[5];
+                uint8_t key[ART::keyBytes];
                 ART::loadKey(keys_to_load[random], key);
                 auto start = chrono::high_resolution_clock::now();
                 ART::ArtNode* leaf = tree->lookup(key);
@@ -133,7 +133,7 @@ int main(int argc, char** argv) {
         } else {
             // Regular ART insertion
             for (uint64_t i = 0; i < N; i++) {
-                uint8_t key[5];
+                uint8_t key[ART::keyBytes];
                 ART::loadKey(keys[i], key);
                 auto start = chrono::high_resolution_clock::now();
                 tree->insert(key, keys[i]);
@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
             long long query_time = 0;
             for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
                 int random = rand() % (maxval - minval + 1) + minval;
-                uint8_t key[5];
+                uint8_t key[ART::keyBytes];
                 ART::loadKey(keys[random], key);
                 auto start = chrono::high_resolution_clock::now();
                 ART::ArtNode* leaf = tree->lookup(key);
@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
         ART::QuART_tail* tree = new ART::QuART_tail();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
@@ -191,7 +191,7 @@ int main(int argc, char** argv) {
         long long query_time = 0;
         for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
         ART::QuART_lil* tree = new ART::QuART_lil();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
         long long query_time = 0;
         for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
@@ -257,7 +257,7 @@ int main(int argc, char** argv) {
         ART::QuART_stail* tree = new ART::QuART_stail();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
         long long query_time = 0;
         for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
@@ -299,7 +299,7 @@ int main(int argc, char** argv) {
         ART::QuART_kfp<1>* tree = new ART::QuART_kfp<1>();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
@@ -319,7 +319,7 @@ int main(int argc, char** argv) {
         long long query_time = 0;
         for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);
@@ -341,7 +341,7 @@ int main(int argc, char** argv) {
         ART::QuART_lil* tree = new ART::QuART_lil();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[i], key);
             auto start = chrono::high_resolution_clock::now();
             tree->insert(key, keys[i]);
@@ -361,7 +361,7 @@ int main(int argc, char** argv) {
         long long query_time = 0;
         for (uint64_t i = 0; i < (uint64_t)N / 100; i++) {
             int random = rand() % (maxval - minval + 1) + minval;
-            uint8_t key[5];
+            uint8_t key[ART::keyBytes];
             ART::loadKey(keys[random], key);
             auto start = chrono::high_resolution_clock::now();
             ART::ArtNode* leaf = tree->lookup(key);

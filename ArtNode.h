@@ -37,8 +37,9 @@ static const int8_t NodeType256 = 3;
 
 // The maximum prefix length for compressed paths stored in the
 // header, if the path is longer it is loaded from the database on
-// demand
-static const unsigned maxPrefixLength = 5;
+// demand.  Equals keyBytes so the full key fits in a single prefix
+// chain (32-bit → 5, 64-bit → 9).
+static const unsigned maxPrefixLength = keyBytes;
 
 // Shared header of all inner nodes
 struct ArtNode {

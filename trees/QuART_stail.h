@@ -86,13 +86,13 @@ class QuART_stail : public QuART {
     }
 
     KeyType getKeyType(uint8_t key[]) {
-        uint32_t leafUpper = (uint32_t)(getLeafValue(this->fp_leaf) >> 8) & 0xFFFFFF;
-        uint32_t keyUpper  = ((uint32_t)key[0] << 16) | ((uint32_t)key[1] << 8) | key[2];
+        key_int_t leafUpper = getLeafUpperBytes(getLeafValue(this->fp_leaf));
+        key_int_t keyUpper  = getKeyUpperBytes(key);
 
         if (keyUpper == leafUpper)
             return KeyType::FP_INSERT;
-        if (((keyUpper + 1) & 0xFFFFFF) == leafUpper ||
-            ((leafUpper + 1) & 0xFFFFFF) == keyUpper)
+        if (((keyUpper + 1) & upperMask) == leafUpper ||
+            ((leafUpper + 1) & upperMask) == keyUpper)
             return KeyType::BRIDGE;
         return KeyType::OTHER;
     }

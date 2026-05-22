@@ -83,33 +83,11 @@ class ART {
         return false;
     }
 
-    // Bulk load optimized for sorted 32-bit keys
-    // 
-    // Tree structure for bulk loading:
-    // Each 32-bit key is split into 4 bytes: [b0|b1|b2|b3] (big-endian)
-    // 
-    //     root (Node4/16/48/256)
-    //       |
-    //       +--[b0]--> d1 node (depth 1, Node4/16/48/256)
-    //                   |
-    //                   +--[b1]--> d2 node (depth 2, Node4/16/48/256)
-    //                               |
-    //                               +--[b2]--> d3 node (depth 3, Node256)
-    //                                           |
-    //                                           +--[b3]--> leaf (value)
-    //
-    // Variables:
-    //   - d1, d2, d3: Nodes at depths 1, 2, 3 respectively
-    //   - bl_ptr: Pointer to current bulk load anchor node (typically a d2)
-    //   - bl_ptr_ref: Reference (ArtNode**) to bl_ptr for node expansion (typically a d1)
-    //   - bl_pf_bytes: Array tracking current path [b0, b1, b2] to detect bridging points
-    //
-    // Bridging: When keys span multiple groups of 256, we detect "bridges":
-    //   - Bridge at b0: Create new d1 node when b0 changes and b1==0, b2==0
-    //   - Bridge at b1: Create new d2 node when b0 same, b1 changes, b2==0
-    //   - Otherwise: Navigate to existing/new d3 node under current d2
-    //
-    void bulkLoad(const std::vector<uint32_t>& keys, const std::vector<uint32_t>& values) {
+    // Bulk load optimized for sorted 32-bit keys.
+    // NOTE: This implementation is 32-bit-key-specific (fixed 4-level tree
+    // structure).  Calling it with QUART_KEY_64 defined produces incorrect
+    // results; use the regular insert() path for 64-bit keys instead.
+    void bulkLoad(const std::vector<key_int_t>& keys, const std::vector<key_int_t>& values) {
         ArtNode* bl_ptr = nullptr; // pointer to current bulk load node
         ArtNode** bl_ptr_ref = &this->root; // reference to current bulk load node
         std::array<uint8_t, 3> bl_pf_bytes; // key bytes for d1, d2, d3 nodes
