@@ -78,12 +78,31 @@ int main() {
     uint8_t key[keyBytes];
     long long kfp_ns, art_ns;
 
+    // Fraction of keys to pre-load (not timed) before the measured insertion run.
+    static constexpr double PRELOAD_FRAC = 0.5;
+    const size_t preload_total = static_cast<size_t>(3.0 * N * PRELOAD_FRAC);
+    cout << "Pre-loading " << preload_total << " keys (" << (PRELOAD_FRAC*100) << "%) before timed run\n\n";
+
     // ── QuART_kfp<3> ─────────────────────────────────────────────────────────
     {
         QuART_kfp<3> tree;
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);
 
+        // Pre-load phase (not timed)
+        for (size_t i = 0; i < preload_total; ) {
+            int active[3], na = 0;
+            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
+            if (!na) break;
+            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
+            key_int_t k = files[w].data[pos[w]++];
+            encodeKey(k, key);
+            tree.insert(key, k);
+            ++i;
+        }
+
+        // Timed phase
+        const size_t timed_keys = 3 * N - preload_total;
         auto t0 = chrono::high_resolution_clock::now();
         while (true) {
             int active[3], na = 0;
@@ -112,7 +131,8 @@ int main() {
         }
         cout << "QuART_kfp<3>: " << kfp_ns / 1'000'000 << " ms"
              << "  (" << fixed << setprecision(1)
-             << (double)(3*N) / (kfp_ns / 1e9) / 1e6 << " M inserts/s)\n";
+             << (double)timed_keys / (kfp_ns / 1e9) / 1e6 << " M inserts/s, "
+             << timed_keys << " timed keys)\n";
 #ifdef QUART_KFP_STATS
         long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
         cout << "  FP_INSERT=" << tree.getFpInsertCount()
@@ -129,6 +149,20 @@ int main() {
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);  // same seed → identical sequence
 
+        // Pre-load phase (not timed)
+        for (size_t i = 0; i < preload_total; ) {
+            int active[3], na = 0;
+            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
+            if (!na) break;
+            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
+            key_int_t k = files[w].data[pos[w]++];
+            encodeKey(k, key);
+            tree.insert(key, k);
+            ++i;
+        }
+
+        // Timed phase
+        const size_t timed_keys = 3 * N - preload_total;
         auto t0 = chrono::high_resolution_clock::now();
         while (true) {
             int active[3], na = 0;
@@ -144,7 +178,8 @@ int main() {
 
         cout << "ART:          " << art_ns / 1'000'000 << " ms"
              << "  (" << fixed << setprecision(1)
-             << (double)(3*N) / (art_ns / 1e9) / 1e6 << " M inserts/s)\n";
+             << (double)timed_keys / (art_ns / 1e9) / 1e6 << " M inserts/s, "
+             << timed_keys << " timed keys)\n";
     }
 
     cout << "\nSpeedup (QuART_kfp / ART): " << fixed << setprecision(2)
