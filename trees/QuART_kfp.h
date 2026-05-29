@@ -8,9 +8,21 @@
 
 namespace ART {
 
-// QuART_kfp<K>: Maintains up to K independent fast-path slots, one per
-// workload.  Uses the stail key-classification scheme (FP_INSERT / BRIDGE /
-// NO_MATCH) applied independently against every active slot.
+// Eviction policy used by QuART_kfp when all K slots are occupied and a new
+// workload (NO_MATCH) arrives.
+//
+//   FIFO         – always evict the oldest slot (round-robin pointer).
+//
+//   FREQ_FILTER  – on the FIRST sighting of a new upper-byte prefix, insert
+//                  without evicting (cache-pollution guard for outlier keys).
+//                  Only on the second consecutive sighting of the same prefix
+//                  is a slot actually evicted.  Slots that are never seen
+//                  again do not pollute the cache at all.
+enum class EvictionPolicy { FIFO, FREQ_FILTER };
+
+// QuART_kfp<K, Policy>: Maintains up to K independent fast-path slots, one
+// per workload.  Uses the stail key-classification scheme (FP_INSERT / BRIDGE
+// / NO_MATCH) applied independently against every active slot.
 //
 // Correctness guarantee: whenever any inner node tracked by any slot is
 // expanded (grown to a larger node type), or a prefix mismatch/leaf-expansion
@@ -21,13 +33,15 @@ namespace ART {
 //   FP_INSERT – key upper-3-bytes match a slot's fp_leaf  → preserve_fp
 //   BRIDGE    – key upper-3-bytes adjacent (±1) to a slot  → change_fp, reset
 //   NO_MATCH  – no existing slot claims the key            → allocate a slot
-//               (FIFO eviction when all K are occupied)
-template <int K>
+//               (eviction policy selected by the Policy template parameter)
+template <int K, EvictionPolicy Policy = EvictionPolicy::FIFO>
 class QuART_kfp : public QuART {
    public:
     QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
+                 , candidate_upper(0), candidate_valid(false)
 #ifdef QUART_KFP_STATS
                  , cnt_fp_insert(0), cnt_bridge(0), cnt_no_match(0)
+                 , cnt_no_match_untracked(0)
                  , cnt_type4(0), cnt_type16(0), cnt_type48(0), cnt_type256(0)
                  , cnt_fp_not_last_byte(0)
 #endif
@@ -118,38 +132,55 @@ class QuART_kfp : public QuART {
 #ifdef QUART_KFP_STATS
             cnt_no_match++;
 #endif
-            int slot = allocSlot();
-            active_slot = slot;
-            // Null out the flat fields so hooks don't see stale pointers.
-            loadSlot(slot);
-            insert_recursive_change_fp(root, &root, key, 0, value,
-                                       maxPrefixLength);
-            saveToSlot(slot);
+            key_int_t keyUpper = getKeyUpperBytes(key);
+            int slot = allocSlotForNoMatch(keyUpper);
+            if (slot == -1) {
+                // FREQ_FILTER: first sighting — insert without evicting a
+                // tracked slot so outlier keys don't pollute the cache.
+#ifdef QUART_KFP_STATS
+                cnt_no_match_untracked++;
+#endif
+                fp = nullptr; fp_prev = nullptr; fp_leaf = nullptr;
+                fp_depth = 0;  fp_ref  = nullptr;
+                active_slot = -1;
+                insert_recursive_change_fp(root, &root, key, 0, value,
+                                           maxPrefixLength);
+            } else {
+                active_slot = slot;
+                // Null out the flat fields so hooks don't see stale pointers.
+                loadSlot(slot);
+                insert_recursive_change_fp(root, &root, key, 0, value,
+                                           maxPrefixLength);
+                saveToSlot(slot);
+            }
         }
     }
 
     int getNumActive() const { return num_active; }
     const FpSlot& getSlot(int i) const { return slots[i]; }
 #ifdef QUART_KFP_STATS
-    long long getFpInsertCount()       const { return cnt_fp_insert; }
-    long long getBridgeCount()         const { return cnt_bridge; }
-    long long getNoMatchCount()        const { return cnt_no_match; }
-    long long getFpType4Count()        const { return cnt_type4; }
-    long long getFpType16Count()       const { return cnt_type16; }
-    long long getFpType48Count()       const { return cnt_type48; }
-    long long getFpType256Count()      const { return cnt_type256; }
-    long long getFpNotLastByteCount()  const { return cnt_fp_not_last_byte; }
+    long long getFpInsertCount()          const { return cnt_fp_insert; }
+    long long getBridgeCount()            const { return cnt_bridge; }
+    long long getNoMatchCount()           const { return cnt_no_match; }
+    long long getNoMatchUntrackedCount()  const { return cnt_no_match_untracked; }
+    long long getFpType4Count()           const { return cnt_type4; }
+    long long getFpType16Count()          const { return cnt_type16; }
+    long long getFpType48Count()          const { return cnt_type48; }
+    long long getFpType256Count()         const { return cnt_type256; }
+    long long getFpNotLastByteCount()     const { return cnt_fp_not_last_byte; }
 #endif
 
    private:
     enum class MatchType { FP_INSERT, BRIDGE, NO_MATCH };
 
     FpSlot slots[K];
-    int num_active;   // number of allocated slots (0..K)
-    int next_evict;   // FIFO eviction pointer
-    int active_slot;  // which slot is being modified during this insert
+    int num_active;             // number of allocated slots (0..K)
+    int next_evict;             // FIFO eviction pointer
+    int active_slot;            // which slot is being modified during this insert
+    key_int_t candidate_upper;  // FREQ_FILTER: upper bytes of last NO_MATCH key
+    bool candidate_valid;       // FREQ_FILTER: whether candidate_upper is set
 #ifdef QUART_KFP_STATS
-    long long cnt_fp_insert, cnt_bridge, cnt_no_match;
+    long long cnt_fp_insert, cnt_bridge, cnt_no_match, cnt_no_match_untracked;
     long long cnt_type4, cnt_type16, cnt_type48, cnt_type256;
     long long cnt_fp_not_last_byte;
 #endif
@@ -184,9 +215,30 @@ class QuART_kfp : public QuART {
         slots[i].cached_upper = fp_leaf ? getLeafUpperBytes(getLeafValue(fp_leaf)) : 0;
     }
 
-    // Return the next available slot index, evicting (FIFO) if all K are full.
+    // Return the next available slot index, always evicting (FIFO) if needed.
+    // Used for the root==nullptr path where eviction must not be deferred.
     int allocSlot() {
         if (num_active < K) return num_active++;
+        int slot = next_evict;
+        next_evict = (next_evict + 1) % K;
+        return slot;
+    }
+
+    // Return the next slot index for a NO_MATCH insert, applying the eviction
+    // policy.  Returns -1 when Policy==FREQ_FILTER and this is the first
+    // sighting of keyUpper — the caller should insert without tracking.
+    int allocSlotForNoMatch(key_int_t keyUpper) {
+        if (num_active < K) return num_active++;
+        if constexpr (Policy == EvictionPolicy::FREQ_FILTER) {
+            if (!candidate_valid || keyUpper != candidate_upper) {
+                // First sighting: record as candidate, defer eviction.
+                candidate_upper = keyUpper;
+                candidate_valid = true;
+                return -1;
+            }
+            // Second consecutive sighting: proceed to evict.
+            candidate_valid = false;
+        }
         int slot = next_evict;
         next_evict = (next_evict + 1) % K;
         return slot;
