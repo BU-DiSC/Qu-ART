@@ -28,6 +28,8 @@ class QuART_kfp : public QuART {
     QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
 #ifdef QUART_KFP_STATS
                  , cnt_fp_insert(0), cnt_bridge(0), cnt_no_match(0)
+                 , cnt_type4(0), cnt_type16(0), cnt_type48(0), cnt_type256(0)
+                 , cnt_fp_not_last_byte(0)
 #endif
                  {}
 
@@ -50,38 +52,50 @@ class QuART_kfp : public QuART {
 
         auto [slotIdx, matchType] = findSlot(key);
 
-        if (matchType == MatchType::FP_INSERT) {
+        if (__builtin_expect(matchType == MatchType::FP_INSERT, 1)) {
 #ifdef QUART_KFP_STATS
             cnt_fp_insert++;
 #endif
             active_slot = slotIdx;
             FpSlot& s = slots[slotIdx];
 
-            if (s.fp_depth == maxPrefixLength - 2) {
+            if (__builtin_expect(s.fp_depth == maxPrefixLength - 2, 1)) {
                 // Hot path: direct insert at last-byte level.
                 // FpSlot fields are authoritative; every hook override updates
                 // slots[slotIdx] via the slot loop, so loadSlot/saveToSlot
                 // (which copy to/from the flat fp fields) are not needed here.
                 ArtNode* newLeaf = makeLeaf(value);
-                switch (s.fp->type) {
-                    case NodeType4:
-                        static_cast<Node4*>(s.fp)->insertNode4PreserveFp(
-                            this, s.fp_ref, key[s.fp_depth], newLeaf);
-                        break;
-                    case NodeType16:
-                        static_cast<Node16*>(s.fp)->insertNode16PreserveFp(
-                            this, s.fp_ref, key[s.fp_depth], newLeaf);
-                        break;
-                    case NodeType48:
-                        static_cast<Node48*>(s.fp)->insertNode48PreserveFp(
-                            this, s.fp_ref, key[s.fp_depth], newLeaf);
-                        break;
-                    case NodeType256:
-                        static_cast<Node256*>(s.fp)->insertNode256(
-                            this, s.fp_ref, key[s.fp_depth], newLeaf);
-                        break;
+                // Use cached s.fp_type to avoid dereferencing s.fp on
+                // every dispatch (s.fp_type is in the slot struct, L1 hit).
+                if (__builtin_expect(s.fp_type == NodeType256, 1)) {
+#ifdef QUART_KFP_STATS
+                    cnt_type256++;
+#endif
+                    static_cast<Node256*>(s.fp)->insertNode256(
+                        this, s.fp_ref, key[s.fp_depth], newLeaf);
+                } else if (s.fp_type == NodeType48) {
+#ifdef QUART_KFP_STATS
+                    cnt_type48++;
+#endif
+                    static_cast<Node48*>(s.fp)->insertNode48PreserveFp(
+                        this, s.fp_ref, key[s.fp_depth], newLeaf);
+                } else if (s.fp_type == NodeType16) {
+#ifdef QUART_KFP_STATS
+                    cnt_type16++;
+#endif
+                    static_cast<Node16*>(s.fp)->insertNode16PreserveFp(
+                        this, s.fp_ref, key[s.fp_depth], newLeaf);
+                } else {
+#ifdef QUART_KFP_STATS
+                    cnt_type4++;
+#endif
+                    static_cast<Node4*>(s.fp)->insertNode4PreserveFp(
+                        this, s.fp_ref, key[s.fp_depth], newLeaf);
                 }
             } else {
+#ifdef QUART_KFP_STATS
+                cnt_fp_not_last_byte++;
+#endif
                 loadSlot(slotIdx);
                 insert_recursive_preserve_fp(s.fp, s.fp_ref, key, s.fp_depth,
                                              value, maxPrefixLength, s.fp_prev);
@@ -117,9 +131,14 @@ class QuART_kfp : public QuART {
     int getNumActive() const { return num_active; }
     const FpSlot& getSlot(int i) const { return slots[i]; }
 #ifdef QUART_KFP_STATS
-    long long getFpInsertCount()  const { return cnt_fp_insert; }
-    long long getBridgeCount()    const { return cnt_bridge; }
-    long long getNoMatchCount()   const { return cnt_no_match; }
+    long long getFpInsertCount()       const { return cnt_fp_insert; }
+    long long getBridgeCount()         const { return cnt_bridge; }
+    long long getNoMatchCount()        const { return cnt_no_match; }
+    long long getFpType4Count()        const { return cnt_type4; }
+    long long getFpType16Count()       const { return cnt_type16; }
+    long long getFpType48Count()       const { return cnt_type48; }
+    long long getFpType256Count()      const { return cnt_type256; }
+    long long getFpNotLastByteCount()  const { return cnt_fp_not_last_byte; }
 #endif
 
    private:
@@ -131,6 +150,8 @@ class QuART_kfp : public QuART {
     int active_slot;  // which slot is being modified during this insert
 #ifdef QUART_KFP_STATS
     long long cnt_fp_insert, cnt_bridge, cnt_no_match;
+    long long cnt_type4, cnt_type16, cnt_type48, cnt_type256;
+    long long cnt_fp_not_last_byte;
 #endif
 
     // ── Slot helpers ─────────────────────────────────────────────────────────
@@ -153,6 +174,14 @@ class QuART_kfp : public QuART {
         slots[i].fp_leaf  = fp_leaf;
         slots[i].fp_depth = fp_depth;
         slots[i].fp_ref   = fp_ref;
+        // Only cache type for real inner nodes; fp can briefly be a leaf
+        // pointer (after the node==NULL branch in insert_recursive_change_fp)
+        // in which case dereferencing ->type would crash.
+        slots[i].fp_type  = (fp && !isLeaf(fp)) ? (uint8_t)fp->type : 0;
+        // Cache leafUpper for the findSlot fast path.
+        // fp_leaf only changes via insert_recursive_change_fp (BRIDGE/NO_MATCH),
+        // so this is updated at most a handful of times across the entire run.
+        slots[i].cached_upper = fp_leaf ? getLeafUpperBytes(getLeafValue(fp_leaf)) : 0;
     }
 
     // Return the next available slot index, evicting (FIFO) if all K are full.
@@ -167,13 +196,27 @@ class QuART_kfp : public QuART {
     std::pair<int, MatchType> findSlot(uint8_t key[]) const {
         key_int_t keyUpper = getKeyUpperBytes(key);
 
+        // Parallel branchless FP_INSERT classification.
+        // All K equality checks are emitted as branchless sete/cmov
+        // instructions with no data dependencies between them, so the CPU can
+        // issue them in parallel.  The single resulting branch (match != 0) has
+        // a very high hit-rate (≈ FP_INSERT%) and is therefore well-predicted,
+        // eliminating the branch-misprediction storm from a sequential early-exit
+        // loop where each comparison's taken/not-taken result is hard to predict.
+        if (__builtin_expect(num_active == K, 1)) {
+            unsigned match = 0;
+            for (int i = 0; i < K; i++)
+                match |= static_cast<unsigned>(slots[i].cached_upper == keyUpper) << i;
+            if (__builtin_expect(match != 0u, 1))
+                return {__builtin_ctz(match), MatchType::FP_INSERT};
+        }
+
+        // Full scan fallback: handles BRIDGE, early warm-up, and rare NO_MATCH.
         for (int i = 0; i < num_active; i++) {
             if (slots[i].fp_leaf == nullptr) continue;
-            key_int_t leafUpper = getLeafUpperBytes(getLeafValue(slots[i].fp_leaf));
-
+            key_int_t leafUpper = slots[i].cached_upper;
             if (keyUpper == leafUpper)
                 return {i, MatchType::FP_INSERT};
-
             if (((keyUpper + 1) & upperMask) == leafUpper ||
                 ((leafUpper + 1) & upperMask) == keyUpper)
                 return {i, MatchType::BRIDGE};
@@ -197,8 +240,9 @@ class QuART_kfp : public QuART {
         // Update every slot that tracked the replaced node.
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp == oldNode) {
-                slots[j].fp     = newNode;
-                slots[j].fp_ref = newNodeRef;
+                slots[j].fp      = newNode;
+                slots[j].fp_type = newNode->type;  // keep cache in sync
+                slots[j].fp_ref  = newNodeRef;
             } else if (slots[j].fp_prev == oldNode) {
                 slots[j].fp_prev = newNode;
                 ArtNode** ref = findChildPtr(newNode, slots[j].fp);
@@ -229,6 +273,7 @@ class QuART_kfp : public QuART {
                     slots[j].fp_depth++;
                 }
                 slots[j].fp      = newNode;
+                slots[j].fp_type = newNode->type;  // Node4
                 slots[j].fp_ref  = nodeRef;
                 slots[j].fp_prev = prevNode;
             }

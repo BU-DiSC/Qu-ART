@@ -38,6 +38,14 @@ struct FpSlot {
     ArtNode*  fp_leaf  = nullptr;
     size_t    fp_depth = 0;
     ArtNode** fp_ref   = nullptr;
+    // Cached copy of fp->type to avoid dereferencing fp on every dispatch.
+    // Updated wherever fp is assigned (saveToSlot and hook callbacks).
+    uint8_t   fp_type  = 0;
+    // Cached result of getLeafUpperBytes(getLeafValue(fp_leaf)).
+    // Avoids recomputing in the findSlot hot loop.
+    // fp_leaf changes only in insert_recursive_change_fp paths, so this
+    // is updated once per BRIDGE/NO_MATCH insert (in saveToSlot).
+    key_int_t cached_upper = 0;
 };
 
 class ART {

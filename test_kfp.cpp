@@ -17,7 +17,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifndef QUART_NO_STATS
 #define QUART_KFP_STATS
+#endif
 
 #include "ART.h"
 #include "ArtNode.h"
@@ -63,7 +65,19 @@ static const char* WORKLOAD_FILES[3] = {
     "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start800000001.bin",
 };
 
-int main() {
+int main(int argc, char** argv) {
+    // Optional args:
+    //   argv[1]: mode = "kfp" | "art" | "both"  (default "both")
+    //   argv[2]: max keys per stream, 0 = all    (default 0)
+    const char* mode = (argc > 1) ? argv[1] : "both";
+    const bool run_kfp = (strcmp(mode, "kfp") == 0 || strcmp(mode, "both") == 0);
+    const bool run_art = (strcmp(mode, "art") == 0 || strcmp(mode, "both") == 0);
+    if (!run_kfp && !run_art) {
+        cerr << "Usage: test_kfp [kfp|art|both] [max_keys_per_stream]\n";
+        return 1;
+    }
+    const size_t key_limit = (argc > 2) ? (size_t)atoll(argv[2]) : 0;
+
     MappedFile files[3];
     for (int i = 0; i < 3; i++) {
         if (!files[i].open(WORKLOAD_FILES[i])) return 1;
@@ -73,10 +87,11 @@ int main() {
     // Use the minimum count so all streams are the same length.
     size_t N = files[0].count;
     for (int i = 1; i < 3; i++) N = min(N, files[i].count);
+    if (key_limit > 0 && key_limit < N) N = key_limit;
     cout << "Using " << N << " keys per stream (" << 3*N << " total)\n\n";
 
     uint8_t key[keyBytes];
-    long long kfp_ns, art_ns;
+    long long kfp_ns = 0, art_ns = 0;
 
     // Fraction of keys to pre-load (not timed) before the measured insertion run.
     static constexpr double PRELOAD_FRAC = 0.5;
@@ -84,7 +99,7 @@ int main() {
     cout << "Pre-loading " << preload_total << " keys (" << (PRELOAD_FRAC*100) << "%) before timed run\n\n";
 
     // ── QuART_kfp<3> ─────────────────────────────────────────────────────────
-    {
+    if (run_kfp) {
         QuART_kfp<3> tree;
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);
@@ -140,11 +155,20 @@ int main() {
              << "  NO_MATCH="  << tree.getNoMatchCount()
              << "  (fp_insert%=" << fixed << setprecision(1)
              << 100.0 * tree.getFpInsertCount() / total << "%)\n";
+        long long hot = tree.getFpType4Count() + tree.getFpType16Count()
+                      + tree.getFpType48Count() + tree.getFpType256Count();
+        cout << "  hot-path fp types: Node4=" << tree.getFpType4Count()
+             << " Node16=" << tree.getFpType16Count()
+             << " Node48=" << tree.getFpType48Count()
+             << " Node256=" << tree.getFpType256Count()
+             << "  (Node256%=" << fixed << setprecision(1)
+             << (hot ? 100.0 * tree.getFpType256Count() / hot : 0.0) << "%)\n"
+             << "  fp_not_last_byte=" << tree.getFpNotLastByteCount() << "\n";
 #endif
     }
 
     // ── plain ART ────────────────────────────────────────────────────────────
-    {
+    if (run_art) {
         ART::ART tree;
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);  // same seed → identical sequence
@@ -182,7 +206,8 @@ int main() {
              << timed_keys << " timed keys)\n";
     }
 
-    cout << "\nSpeedup (QuART_kfp / ART): " << fixed << setprecision(2)
-         << (double)art_ns / kfp_ns << "x\n";
+    if (run_kfp && run_art)
+        cout << "\nSpeedup (QuART_kfp / ART): " << fixed << setprecision(2)
+             << (double)art_ns / kfp_ns << "x\n";
     return 0;
 }
