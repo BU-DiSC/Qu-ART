@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     cout << "Using " << N << " keys per stream (" << 3*N << " total)\n\n";
 
     uint8_t key[keyBytes];
-    long long kfp_ns = 0, ff_ns = 0, art_ns = 0;
+    long long kfp_ns = 0, seq_ns = 0, ff_ns = 0, art_ns = 0;
 
     // Fraction of keys to pre-load (not timed) before the measured insertion run.
     static constexpr double PRELOAD_FRAC = 0.5;
@@ -165,6 +165,71 @@ int main(int argc, char** argv) {
              << "  (Node256%=" << fixed << setprecision(1)
              << (hot ? 100.0 * tree.getFpType256Count() / hot : 0.0) << "%)\n"
              << "  fp_not_last_byte=" << tree.getFpNotLastByteCount() << "\n";
+#endif
+    }
+
+    // ── QuART_kfp<3> with the Sequential (early-exit) slot search ───────────
+    // Same K and eviction policy as the block above; only findSlot's scan
+    // strategy differs, so the timing gap isolates Sequential vs. Parallel.
+    if (run_kfp) {
+        QuART_kfp<3, EvictionPolicy::FIFO, SearchMode::Sequential> tree;
+        size_t pos[3] = {0, 0, 0};
+        mt19937 rng(42);
+
+        // Pre-load phase (not timed)
+        for (size_t i = 0; i < preload_total; ) {
+            int active[3], na = 0;
+            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
+            if (!na) break;
+            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
+            key_int_t k = files[w].data[pos[w]++];
+            encodeKey(k, key);
+            tree.insert(key, k);
+            ++i;
+        }
+
+        // Timed phase
+        const size_t timed_keys = 3 * N - preload_total;
+        auto t0 = chrono::high_resolution_clock::now();
+        while (true) {
+            int active[3], na = 0;
+            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
+            if (!na) break;
+            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
+            key_int_t k = files[w].data[pos[w]++];
+            encodeKey(k, key);
+            tree.insert(key, k);
+        }
+        auto t1 = chrono::high_resolution_clock::now();
+        seq_ns = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
+
+        // Spot-check a few keys from each stream.
+        for (int w = 0; w < 3; w++) {
+            for (size_t idx : {(size_t)0, N/2, N-1}) {
+                key_int_t k = files[w].data[idx];
+                encodeKey(k, key);
+                ArtNode* leaf = tree.lookup(key);
+                if (!leaf || !isLeaf(leaf) || getLeafValue(leaf) != k) {
+                    cerr << "FAIL: QuART_kfp<SEQ> lookup stream=" << w
+                         << " idx=" << idx << " k=" << k << "\n";
+                    return 1;
+                }
+            }
+        }
+        cout << "QuART_kfp<3,SEQ>: " << seq_ns / 1'000'000 << " ms"
+             << "  (" << fixed << setprecision(1)
+             << (double)timed_keys / (seq_ns / 1e9) / 1e6 << " M inserts/s, "
+             << timed_keys << " timed keys)\n";
+        if (kfp_ns > 0)
+            cout << "  Parallel speedup vs Sequential: " << fixed << setprecision(2)
+                 << (double)seq_ns / kfp_ns << "x\n";
+#ifdef QUART_KFP_STATS
+        long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
+        cout << "  FP_INSERT=" << tree.getFpInsertCount()
+             << "  BRIDGE="    << tree.getBridgeCount()
+             << "  NO_MATCH="  << tree.getNoMatchCount()
+             << "  (fp_insert%=" << fixed << setprecision(1)
+             << 100.0 * tree.getFpInsertCount() / total << "%)\n";
 #endif
     }
 

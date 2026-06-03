@@ -20,9 +20,30 @@ namespace ART {
 //                  again do not pollute the cache at all.
 enum class EvictionPolicy { FIFO, FREQ_FILTER };
 
-// QuART_kfp<K, Policy>: Maintains up to K independent fast-path slots, one
-// per workload.  Uses the stail key-classification scheme (FP_INSERT / BRIDGE
-// / NO_MATCH) applied independently against every active slot.
+// Strategy used by findSlot to classify a key against the K active slots.
+//
+//   Parallel    – data-parallel branchless FP_INSERT pre-pass: all K
+//                 upper-byte equality checks are computed with no inter-check
+//                 data dependency, so the CPU issues them together and the
+//                 whole classification collapses to a single, well-predicted
+//                 branch.  Falls back to the sequential scan for warm-up,
+//                 BRIDGE and NO_MATCH.  (default — current behaviour)
+//
+//   Sequential  – the original early-exit scan: test slots in index order and
+//                 return at the first FP_INSERT *or* BRIDGE match.  Simpler,
+//                 but every per-slot comparison is a hard-to-predict branch.
+//
+// Note: the two modes are not perfectly equivalent at the boundary between two
+// slots whose upper bytes are adjacent (differ by exactly 1).  Sequential
+// returns whatever the lowest-index slot offers (a BRIDGE there can pre-empt an
+// exact FP_INSERT in a higher-index slot), whereas Parallel always prefers a
+// global FP_INSERT once all K slots are occupied.  Both are valid classifiers;
+// they only diverge on this rare adjacent-prefix case.
+enum class SearchMode { Sequential, Parallel };
+
+// QuART_kfp<K, Policy, Search>: Maintains up to K independent fast-path slots,
+// one per workload.  Uses the stail key-classification scheme (FP_INSERT /
+// BRIDGE / NO_MATCH) applied independently against every active slot.
 //
 // Correctness guarantee: whenever any inner node tracked by any slot is
 // expanded (grown to a larger node type), or a prefix mismatch/leaf-expansion
@@ -34,7 +55,11 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 //   BRIDGE    – key upper-3-bytes adjacent (±1) to a slot  → change_fp, reset
 //   NO_MATCH  – no existing slot claims the key            → allocate a slot
 //               (eviction policy selected by the Policy template parameter)
-template <int K, EvictionPolicy Policy = EvictionPolicy::FIFO>
+//
+// The Search template parameter selects how findSlot scans the K slots
+// (Parallel branchless vs. Sequential early-exit); see SearchMode above.
+template <int K, EvictionPolicy Policy = EvictionPolicy::FIFO,
+          SearchMode Search = SearchMode::Parallel>
 class QuART_kfp : public QuART {
    public:
     QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
@@ -248,22 +273,26 @@ class QuART_kfp : public QuART {
     std::pair<int, MatchType> findSlot(uint8_t key[]) const {
         key_int_t keyUpper = getKeyUpperBytes(key);
 
-        // Parallel branchless FP_INSERT classification.
-        // All K equality checks are emitted as branchless sete/cmov
-        // instructions with no data dependencies between them, so the CPU can
-        // issue them in parallel.  The single resulting branch (match != 0) has
-        // a very high hit-rate (≈ FP_INSERT%) and is therefore well-predicted,
-        // eliminating the branch-misprediction storm from a sequential early-exit
-        // loop where each comparison's taken/not-taken result is hard to predict.
-        if (__builtin_expect(num_active == K, 1)) {
-            unsigned match = 0;
-            for (int i = 0; i < K; i++)
-                match |= static_cast<unsigned>(slots[i].cached_upper == keyUpper) << i;
-            if (__builtin_expect(match != 0u, 1))
-                return {__builtin_ctz(match), MatchType::FP_INSERT};
+        if constexpr (Search == SearchMode::Parallel) {
+            // Parallel branchless FP_INSERT classification.
+            // All K equality checks are emitted as branchless sete/cmov
+            // instructions with no data dependencies between them, so the CPU can
+            // issue them in parallel.  The single resulting branch (match != 0) has
+            // a very high hit-rate (≈ FP_INSERT%) and is therefore well-predicted,
+            // eliminating the branch-misprediction storm from a sequential early-exit
+            // loop where each comparison's taken/not-taken result is hard to predict.
+            if (__builtin_expect(num_active == K, 1)) {
+                unsigned match = 0;
+                for (int i = 0; i < K; i++)
+                    match |= static_cast<unsigned>(slots[i].cached_upper == keyUpper) << i;
+                if (__builtin_expect(match != 0u, 1))
+                    return {__builtin_ctz(match), MatchType::FP_INSERT};
+            }
         }
 
-        // Full scan fallback: handles BRIDGE, early warm-up, and rare NO_MATCH.
+        // Sequential early-exit scan.  In Parallel mode this is the fallback
+        // for warm-up, BRIDGE and rare NO_MATCH; in Sequential mode it is the
+        // entire classifier.
         for (int i = 0; i < num_active; i++) {
             if (slots[i].fp_leaf == nullptr) continue;
             key_int_t leafUpper = slots[i].cached_upper;
