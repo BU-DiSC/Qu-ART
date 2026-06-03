@@ -1,8 +1,10 @@
 // test_kfp.cpp — benchmark QuART_kfp<3> (FIFO), QuART_kfp<3> (FREQ_FILTER),
 //                 and plain ART on 3 real bods workload streams.
 //
-// Reads 3 binary workload files (key_int_t little-endian), randomly interleaves
-// them key-by-key, inserts into each tree in turn, and reports timing.
+// Runs four workloads, each a triple of binary workload files (key_int_t
+// little-endian): 3x K=L=0, 3x K=L=1, 3x K=L=25, and a mixed K=L=0/1/25.
+// For each, randomly interleaves the 3 streams key-by-key, inserts into each
+// tree in turn, and reports timing.
 // Key width is controlled by QUART_KEY_64: 32-bit by default, 64-bit if defined.
 //
 // Build: cmake --build build --target test_kfp
@@ -64,10 +66,38 @@ struct MappedFile {
     }
 };
 
-static const char* WORKLOAD_FILES[3] = {
-    "/scratch/cgokmen/bods/workloads/workload_N200000000_1_L1_start1.bin",
-    "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start400000001.bin",
-    "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start800000001.bin",
+// Four workloads, each a triple of streams that are randomly interleaved:
+//   1. three K=L=0  streams (perfectly sorted runs)
+//   2. three K=L=1  streams
+//   3. three K=L=25 streams (more disorder)
+//   4. one each of K=L=0, K=L=1, K=L=25 (mixed sortedness)
+// Each triple uses three distinct start offsets so the key ranges don't overlap.
+struct Workload {
+    const char* name;
+    const char* files[3];
+};
+
+static const Workload WORKLOADS[4] = {
+    {"3x K=L=0", {
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K0_L0_start1.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K0_L0_start400000001.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K0_L0_start800000001.bin",
+    }},
+    {"3x K=L=1", {
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start1.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start400000001.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start800000001.bin",
+    }},
+    {"3x K=L=25", {
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K25_L25_start1.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K25_L25_start400000001.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K25_L25_start800000001.bin",
+    }},
+    {"mixed K=L=0/1/25", {
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K0_L0_start1.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start400000001.bin",
+        "/scratch/cgokmen/bods/workloads/workload_N200000000_K25_L25_start800000001.bin",
+    }},
 };
 
 // Interleaves the three streams key-by-key (mt19937 seeded 42 so every tree sees
@@ -139,27 +169,18 @@ static long long run_interleaved(TreeT& tree, const MappedFile* files, size_t N,
     return ns;
 }
 
-int main(int argc, char** argv) {
-    // Optional args:
-    //   argv[1]: mode = "par" | "seq" | "ff" | "kfp" | "art" | "both"
-    //            par/seq/ff run a SINGLE kfp block in isolation (for profiling);
-    //            kfp runs all three; both runs kfp + art.  (default "both")
-    //   argv[2]: max keys per stream, 0 = all    (default 0)
-    const char* mode = (argc > 1) ? argv[1] : "both";
-    const bool all_kfp = (strcmp(mode, "kfp") == 0 || strcmp(mode, "both") == 0);
-    const bool run_par = all_kfp || strcmp(mode, "par") == 0;
-    const bool run_seq = all_kfp || strcmp(mode, "seq") == 0;
-    const bool run_ff  = all_kfp || strcmp(mode, "ff")  == 0;
-    const bool run_art = (strcmp(mode, "art") == 0 || strcmp(mode, "both") == 0);
-    if (!run_par && !run_seq && !run_ff && !run_art) {
-        cerr << "Usage: test_kfp [par|seq|ff|kfp|art|both] [max_keys_per_stream]\n";
-        return 1;
-    }
-    const size_t key_limit = (argc > 2) ? (size_t)atoll(argv[2]) : 0;
+// Runs the full tree comparison suite on one workload (a triple of streams).
+// Opens the three files, picks a common length, pre-loads PRELOAD_FRAC untimed,
+// then times each enabled tree variant and prints the speedups.
+static int run_workload(const Workload& wl, size_t key_limit,
+                        bool run_ff, bool run_art) {
+    cout << "════════════════════════════════════════════════════════════\n";
+    cout << "Workload: " << wl.name << "\n";
+    cout << "════════════════════════════════════════════════════════════\n";
 
     MappedFile files[3];
     for (int i = 0; i < 3; i++) {
-        if (!files[i].open(WORKLOAD_FILES[i])) return 1;
+        if (!files[i].open(wl.files[i])) return 1;
         cout << "Loaded stream " << i << ": " << files[i].count << " keys\n";
     }
 
@@ -169,54 +190,12 @@ int main(int argc, char** argv) {
     if (key_limit > 0 && key_limit < N) N = key_limit;
     cout << "Using " << N << " keys per stream (" << 3*N << " total)\n\n";
 
-    long long kfp_ns = 0, seq_ns = 0, ff_ns = 0, art_ns = 0;
+    long long ff_ns = 0, art_ns = 0;
 
     // Fraction of keys to pre-load (not timed) before the measured insertion run.
     static constexpr double PRELOAD_FRAC = 0.5;
     const size_t preload_total = static_cast<size_t>(3.0 * N * PRELOAD_FRAC);
     cout << "Pre-loading " << preload_total << " keys (" << (PRELOAD_FRAC*100) << "%) before timed run\n\n";
-
-    // ── QuART_kfp<3> ─────────────────────────────────────────────────────────
-    if (run_par) {
-        QuART_kfp<3> tree;
-        kfp_ns = run_interleaved(tree, files, N, preload_total, "QuART_kfp<3>");
-#ifdef QUART_KFP_STATS
-        long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
-        cout << "  FP_INSERT=" << tree.getFpInsertCount()
-             << "  BRIDGE="    << tree.getBridgeCount()
-             << "  NO_MATCH="  << tree.getNoMatchCount()
-             << "  (fp_insert%=" << fixed << setprecision(1)
-             << 100.0 * tree.getFpInsertCount() / total << "%)\n";
-        long long hot = tree.getFpType4Count() + tree.getFpType16Count()
-                      + tree.getFpType48Count() + tree.getFpType256Count();
-        cout << "  hot-path fp types: Node4=" << tree.getFpType4Count()
-             << " Node16=" << tree.getFpType16Count()
-             << " Node48=" << tree.getFpType48Count()
-             << " Node256=" << tree.getFpType256Count()
-             << "  (Node256%=" << fixed << setprecision(1)
-             << (hot ? 100.0 * tree.getFpType256Count() / hot : 0.0) << "%)\n"
-             << "  fp_not_last_byte=" << tree.getFpNotLastByteCount() << "\n";
-#endif
-    }
-
-    // ── QuART_kfp<3> with the Sequential (early-exit) slot search ───────────
-    // Same K and eviction policy as the block above; only findSlot's scan
-    // strategy differs, so the timing gap isolates Sequential vs. Parallel.
-    if (run_seq) {
-        QuART_kfp<3, EvictionPolicy::FIFO, SearchMode::Sequential> tree;
-        seq_ns = run_interleaved(tree, files, N, preload_total, "QuART_kfp<3,SEQ>");
-        if (kfp_ns > 0)
-            cout << "  Parallel speedup vs Sequential: " << fixed << setprecision(2)
-                 << (double)seq_ns / kfp_ns << "x\n";
-#ifdef QUART_KFP_STATS
-        long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
-        cout << "  FP_INSERT=" << tree.getFpInsertCount()
-             << "  BRIDGE="    << tree.getBridgeCount()
-             << "  NO_MATCH="  << tree.getNoMatchCount()
-             << "  (fp_insert%=" << fixed << setprecision(1)
-             << 100.0 * tree.getFpInsertCount() / total << "%)\n";
-#endif
-    }
 
     // ── QuART_kfp<3, FREQ_FILTER> ──────────────────────────────────────────
     if (run_ff) {
@@ -248,11 +227,32 @@ int main(int argc, char** argv) {
         art_ns = run_interleaved(tree, files, N, preload_total, "ART");
     }
 
-    if (run_art && art_ns > 0) {
-        cout << "\nSpeedup vs ART:";
-        if (kfp_ns > 0) cout << "  FIFO=" << fixed << setprecision(2) << (double)art_ns / kfp_ns << "x";
-        if (ff_ns  > 0) cout << "  FREQ_FILTER=" << fixed << setprecision(2) << (double)art_ns / ff_ns << "x";
-        cout << "\n";
+    if (run_art && art_ns > 0 && ff_ns > 0) {
+        cout << "\nSpeedup vs ART:  FREQ_FILTER=" << fixed << setprecision(2)
+             << (double)art_ns / ff_ns << "x\n";
+    }
+    cout << "\n";
+    return 0;
+}
+
+int main(int argc, char** argv) {
+    // Optional args:
+    //   argv[1]: mode = "ff" | "art" | "both"
+    //            ff runs only QuART_kfp<3,FREQ_FILTER> (for profiling);
+    //            art runs only plain ART; both runs both.  (default "both")
+    //   argv[2]: max keys per stream, 0 = all    (default 0)
+    const char* mode = (argc > 1) ? argv[1] : "both";
+    const bool run_ff  = (strcmp(mode, "ff")  == 0 || strcmp(mode, "both") == 0);
+    const bool run_art = (strcmp(mode, "art") == 0 || strcmp(mode, "both") == 0);
+    if (!run_ff && !run_art) {
+        cerr << "Usage: test_kfp [ff|art|both] [max_keys_per_stream]\n";
+        return 1;
+    }
+    const size_t key_limit = (argc > 2) ? (size_t)atoll(argv[2]) : 0;
+
+    for (const Workload& wl : WORKLOADS) {
+        int rc = run_workload(wl, key_limit, run_ff, run_art);
+        if (rc != 0) return rc;
     }
     return 0;
 }
