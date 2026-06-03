@@ -5,6 +5,7 @@ project(ART VERSION 1.0
         LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Default to Release only if no build type is set (and not a multi-config generator)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -44,28 +45,31 @@ else()
     message(STATUS "QuART: k-fp stat counters disabled (default)")
 endif()
 
-# Targets
-# add_executable(main main.cpp)
-# add_executable(insert_profiling insert_profiling.cpp)
+# ── Targets ─────────────────────────────────────────────────────────────────────
+# All executables are tuned for the build host with -march=native.  This enables
+# the wider instruction set the QuART_kfp Parallel findSlot and the Node16 SSE
+# compares benefit from.  Note: it applies to the WHOLE binary, so every tree type
+# is built for this CPU and the result may SIGILL on an older/different machine.
+#
+# Note: QuArtNodeMethods.cpp / QuArtNodeBulkLoadMethods.cpp are #include'd from the
+# QuART headers, so they must NOT be listed as separate translation units here.
+
+# Main benchmark driver
 add_executable(run run.cpp)
-# Tune for the build host (like tpcc_art/test_kfp).  This enables the wider
-# instruction set the QuART_kfp Parallel findSlot and the Node16 SSE compares
-# benefit from.  Note: -march=native applies to the WHOLE run binary, so every
-# tree type (ART, QuART_*, kfp3_compare) is now built for this CPU and the
-# resulting binary may SIGILL on an older/different machine.
-target_compile_options(run PRIVATE -march=native)
 
-# TPC-C insert experiment (ART paper replication, warehouse=1)
-# Note: QuArtNodeMethods.cpp is #include'd from the QuART headers,
-# so it must NOT be listed as a separate translation unit here.
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
-    add_executable(tpcc_art tpcc/tpcc_art.cpp)
-    target_compile_options(tpcc_art PRIVATE -march=native)
-endif()
-
-# k-FP correctness tests
+# k-FP correctness tests / benchmark
 add_executable(test_kfp test_kfp.cpp)
-target_compile_options(test_kfp PRIVATE -march=native)
 if(QUART_KFP_STATS)
     target_compile_definitions(test_kfp PRIVATE QUART_KFP_STATS)
 endif()
+
+# TPC-C insert experiment (ART paper replication, warehouse=1)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
+    add_executable(tpcc_art tpcc/tpcc_art.cpp)
+endif()
+
+foreach(target run test_kfp tpcc_art)
+    if(TARGET ${target})
+        target_compile_options(${target} PRIVATE -march=native)
+    endif()
+endforeach()
