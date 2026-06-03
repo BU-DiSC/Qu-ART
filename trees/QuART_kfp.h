@@ -286,7 +286,7 @@ class QuART_kfp : public QuART {
                 for (int i = 0; i < K; i++)
                     match |= static_cast<unsigned>(slots[i].cached_upper == keyUpper) << i;
                 if (__builtin_expect(match != 0u, 1))
-                    return {__builtin_ctz(match), MatchType::FP_INSERT};
+                    return {ctz(match), MatchType::FP_INSERT};
             }
         }
 

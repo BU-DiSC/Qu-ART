@@ -60,11 +60,25 @@ inline void loadKey(key_int_t tid, uint8_t key[]) {
 
 // Extract the upper (sizeof(key_int_t)-1) bytes from a key byte array.
 // These are bytes key[0..sizeof(key_int_t)-2], i.e. all but the last byte.
+//
+// The key is stored big-endian (see loadKey), so the whole key value is a single
+// byte-swapped load and the upper bytes are that value >> 8.  We do width-
+// specific straight-line loads here (mirroring loadKey) rather than a generic
+// byte-by-byte shift/or loop: under -march=native each branch is a single MOVBE
+// + shift, vs. ~7 instructions (32-bit) / ~19 (64-bit) for the loop.  Reading
+// the full key_int_t width is in-bounds because the key array always has a
+// trailing null byte (keyBytes = sizeof(key_int_t) + 1); the low byte is
+// discarded by the shift.
 inline key_int_t getKeyUpperBytes(const uint8_t key[]) {
-    key_int_t result = 0;
-    for (unsigned i = 0; i < sizeof(key_int_t) - 1; i++)
-        result = (result << 8) | key[i];
-    return result;
+#ifdef QUART_KEY_64
+    uint64_t v;
+    memcpy(&v, key, sizeof(v));
+    return __builtin_bswap64(v) >> 8;
+#else
+    uint32_t v;
+    memcpy(&v, key, sizeof(v));
+    return __builtin_bswap32(v) >> 8;
+#endif
 }
 
 // Extract the upper bytes from a stored leaf value (equivalent to value >> 8,

@@ -68,13 +68,18 @@ static const char* WORKLOAD_FILES[3] = {
 
 int main(int argc, char** argv) {
     // Optional args:
-    //   argv[1]: mode = "kfp" | "art" | "both"  (default "both")
+    //   argv[1]: mode = "par" | "seq" | "ff" | "kfp" | "art" | "both"
+    //            par/seq/ff run a SINGLE kfp block in isolation (for profiling);
+    //            kfp runs all three; both runs kfp + art.  (default "both")
     //   argv[2]: max keys per stream, 0 = all    (default 0)
     const char* mode = (argc > 1) ? argv[1] : "both";
-    const bool run_kfp = (strcmp(mode, "kfp") == 0 || strcmp(mode, "both") == 0);
+    const bool all_kfp = (strcmp(mode, "kfp") == 0 || strcmp(mode, "both") == 0);
+    const bool run_par = all_kfp || strcmp(mode, "par") == 0;
+    const bool run_seq = all_kfp || strcmp(mode, "seq") == 0;
+    const bool run_ff  = all_kfp || strcmp(mode, "ff")  == 0;
     const bool run_art = (strcmp(mode, "art") == 0 || strcmp(mode, "both") == 0);
-    if (!run_kfp && !run_art) {
-        cerr << "Usage: test_kfp [kfp|art|both] [max_keys_per_stream]\n";
+    if (!run_par && !run_seq && !run_ff && !run_art) {
+        cerr << "Usage: test_kfp [par|seq|ff|kfp|art|both] [max_keys_per_stream]\n";
         return 1;
     }
     const size_t key_limit = (argc > 2) ? (size_t)atoll(argv[2]) : 0;
@@ -100,7 +105,7 @@ int main(int argc, char** argv) {
     cout << "Pre-loading " << preload_total << " keys (" << (PRELOAD_FRAC*100) << "%) before timed run\n\n";
 
     // ── QuART_kfp<3> ─────────────────────────────────────────────────────────
-    if (run_kfp) {
+    if (run_par) {
         QuART_kfp<3> tree;
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);
@@ -171,7 +176,7 @@ int main(int argc, char** argv) {
     // ── QuART_kfp<3> with the Sequential (early-exit) slot search ───────────
     // Same K and eviction policy as the block above; only findSlot's scan
     // strategy differs, so the timing gap isolates Sequential vs. Parallel.
-    if (run_kfp) {
+    if (run_seq) {
         QuART_kfp<3, EvictionPolicy::FIFO, SearchMode::Sequential> tree;
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);
@@ -234,7 +239,7 @@ int main(int argc, char** argv) {
     }
 
     // ── QuART_kfp<3, FREQ_FILTER> ──────────────────────────────────────────
-    if (run_kfp) {
+    if (run_ff) {
         QuART_kfp<3, EvictionPolicy::FREQ_FILTER> tree;
         size_t pos[3] = {0, 0, 0};
         mt19937 rng(42);
@@ -342,10 +347,11 @@ int main(int argc, char** argv) {
              << timed_keys << " timed keys)\n";
     }
 
-    if (run_kfp && run_art) {
-        cout << "\nSpeedup vs ART:"
-             << "  FIFO=" << fixed << setprecision(2) << (double)art_ns / kfp_ns << "x"
-             << "  FREQ_FILTER=" << fixed << setprecision(2) << (double)art_ns / ff_ns << "x\n";
+    if (run_art && art_ns > 0) {
+        cout << "\nSpeedup vs ART:";
+        if (kfp_ns > 0) cout << "  FIFO=" << fixed << setprecision(2) << (double)art_ns / kfp_ns << "x";
+        if (ff_ns  > 0) cout << "  FREQ_FILTER=" << fixed << setprecision(2) << (double)art_ns / ff_ns << "x";
+        cout << "\n";
     }
     return 0;
 }
