@@ -63,6 +63,9 @@ if(QUART_KFP_STATS)
     target_compile_definitions(test_kfp PRIVATE QUART_KFP_STATS)
 endif()
 
+# k-FP slot-count (K) sweep: 1,2,4,8,16,32,64
+add_executable(test_kfp_sweep test_kfp_sweep.cpp)
+
 # TPC-C insert experiment (ART paper replication, warehouse=1)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
     add_executable(tpcc_art tpcc/tpcc_art.cpp)
