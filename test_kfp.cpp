@@ -8,19 +8,23 @@
 // Build: cmake --build build --target test_kfp
 // Run  : ./build/test_kfp
 
+#include <array>
 #include <cassert>
 #include <chrono>
 #include <fcntl.h>
 #include <iomanip>
 #include <iostream>
 #include <random>
+#include <vector>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifndef QUART_NO_STATS
-#define QUART_KFP_STATS
-#endif
+// The k-fp classification counters are controlled by the CMake option
+// QUART_KFP_STATS (OFF by default; configure with -DQUART_KFP_STATS=ON).  They
+// add a per-insert increment to the QuART_kfp hot path, so leaving them off
+// keeps the timing numbers clean.  When off, the stat-printing blocks below
+// (all #ifdef QUART_KFP_STATS) compile out and only timing is reported.
 
 #include "ART.h"
 #include "ArtNode.h"
@@ -66,6 +70,75 @@ static const char* WORKLOAD_FILES[3] = {
     "/scratch/cgokmen/bods/workloads/workload_N200000000_K1_L1_start800000001.bin",
 };
 
+// Interleaves the three streams key-by-key (mt19937 seeded 42 so every tree sees
+// the identical sequence), pre-loads PRELOAD_FRAC of the keys untimed, then times
+// ONLY the inserts.  Stream selection, RNG draws, and encodeKey are all done
+// BEFORE the timed region, so the measured nanoseconds are pure insert() cost
+// with no per-op timer overhead or key-encoding mixed in.  Spot-checks a few keys
+// for correctness, prints the timing line, and returns the insertion nanoseconds.
+template <typename TreeT>
+static long long run_interleaved(TreeT& tree, const MappedFile* files, size_t N,
+                                 size_t preload_total, const char* label) {
+    size_t pos[3] = {0, 0, 0};
+    mt19937 rng(42);
+    uint8_t key[keyBytes];
+
+    // Pre-load phase (not timed).
+    for (size_t i = 0; i < preload_total;) {
+        int active[3], na = 0;
+        for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
+        if (!na) break;
+        int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
+        key_int_t k = files[w].data[pos[w]++];
+        encodeKey(k, key);
+        tree.insert(key, k);
+        ++i;
+    }
+
+    // Materialise + pre-encode the remaining interleaved sequence BEFORE timing,
+    // so the timed region holds ONLY tree.insert().  (The RNG continues from the
+    // pre-load draws, so the sequence is still the seed-42 interleaving.)
+    vector<key_int_t> vals;
+    vector<array<uint8_t, keyBytes>> enc;
+    while (true) {
+        int active[3], na = 0;
+        for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
+        if (!na) break;
+        int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
+        key_int_t k = files[w].data[pos[w]++];
+        vals.push_back(k);
+        enc.emplace_back();
+        encodeKey(k, enc.back().data());
+    }
+    const size_t timed_keys = vals.size();
+
+    // Timed phase — insert() only, under a single whole-loop clock pair.
+    auto t0 = chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < timed_keys; i++) tree.insert(enc[i].data(), vals[i]);
+    auto t1 = chrono::high_resolution_clock::now();
+    long long ns = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
+
+    // Spot-check a few keys from each stream.
+    for (int w = 0; w < 3; w++) {
+        for (size_t idx : {(size_t)0, N / 2, N - 1}) {
+            key_int_t k = files[w].data[idx];
+            encodeKey(k, key);
+            ArtNode* leaf = tree.lookup(key);
+            if (!leaf || !isLeaf(leaf) || getLeafValue(leaf) != k) {
+                cerr << "FAIL: " << label << " lookup stream=" << w
+                     << " idx=" << idx << " k=" << k << "\n";
+                exit(1);
+            }
+        }
+    }
+
+    cout << label << ": " << ns / 1'000'000 << " ms"
+         << "  (" << fixed << setprecision(1)
+         << (double)timed_keys / (ns / 1e9) / 1e6 << " M inserts/s, " << timed_keys
+         << " timed keys)\n";
+    return ns;
+}
+
 int main(int argc, char** argv) {
     // Optional args:
     //   argv[1]: mode = "par" | "seq" | "ff" | "kfp" | "art" | "both"
@@ -96,7 +169,6 @@ int main(int argc, char** argv) {
     if (key_limit > 0 && key_limit < N) N = key_limit;
     cout << "Using " << N << " keys per stream (" << 3*N << " total)\n\n";
 
-    uint8_t key[keyBytes];
     long long kfp_ns = 0, seq_ns = 0, ff_ns = 0, art_ns = 0;
 
     // Fraction of keys to pre-load (not timed) before the measured insertion run.
@@ -107,53 +179,7 @@ int main(int argc, char** argv) {
     // ── QuART_kfp<3> ─────────────────────────────────────────────────────────
     if (run_par) {
         QuART_kfp<3> tree;
-        size_t pos[3] = {0, 0, 0};
-        mt19937 rng(42);
-
-        // Pre-load phase (not timed)
-        for (size_t i = 0; i < preload_total; ) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-            ++i;
-        }
-
-        // Timed phase
-        const size_t timed_keys = 3 * N - preload_total;
-        auto t0 = chrono::high_resolution_clock::now();
-        while (true) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-        }
-        auto t1 = chrono::high_resolution_clock::now();
-        kfp_ns = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
-
-        // Spot-check a few keys from each stream.
-        for (int w = 0; w < 3; w++) {
-            for (size_t idx : {(size_t)0, N/2, N-1}) {
-                key_int_t k = files[w].data[idx];
-                encodeKey(k, key);
-                ArtNode* leaf = tree.lookup(key);
-                if (!leaf || !isLeaf(leaf) || getLeafValue(leaf) != k) {
-                    cerr << "FAIL: QuART_kfp lookup stream=" << w
-                         << " idx=" << idx << " k=" << k << "\n";
-                    return 1;
-                }
-            }
-        }
-        cout << "QuART_kfp<3>: " << kfp_ns / 1'000'000 << " ms"
-             << "  (" << fixed << setprecision(1)
-             << (double)timed_keys / (kfp_ns / 1e9) / 1e6 << " M inserts/s, "
-             << timed_keys << " timed keys)\n";
+        kfp_ns = run_interleaved(tree, files, N, preload_total, "QuART_kfp<3>");
 #ifdef QUART_KFP_STATS
         long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
         cout << "  FP_INSERT=" << tree.getFpInsertCount()
@@ -178,53 +204,7 @@ int main(int argc, char** argv) {
     // strategy differs, so the timing gap isolates Sequential vs. Parallel.
     if (run_seq) {
         QuART_kfp<3, EvictionPolicy::FIFO, SearchMode::Sequential> tree;
-        size_t pos[3] = {0, 0, 0};
-        mt19937 rng(42);
-
-        // Pre-load phase (not timed)
-        for (size_t i = 0; i < preload_total; ) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-            ++i;
-        }
-
-        // Timed phase
-        const size_t timed_keys = 3 * N - preload_total;
-        auto t0 = chrono::high_resolution_clock::now();
-        while (true) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-        }
-        auto t1 = chrono::high_resolution_clock::now();
-        seq_ns = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
-
-        // Spot-check a few keys from each stream.
-        for (int w = 0; w < 3; w++) {
-            for (size_t idx : {(size_t)0, N/2, N-1}) {
-                key_int_t k = files[w].data[idx];
-                encodeKey(k, key);
-                ArtNode* leaf = tree.lookup(key);
-                if (!leaf || !isLeaf(leaf) || getLeafValue(leaf) != k) {
-                    cerr << "FAIL: QuART_kfp<SEQ> lookup stream=" << w
-                         << " idx=" << idx << " k=" << k << "\n";
-                    return 1;
-                }
-            }
-        }
-        cout << "QuART_kfp<3,SEQ>: " << seq_ns / 1'000'000 << " ms"
-             << "  (" << fixed << setprecision(1)
-             << (double)timed_keys / (seq_ns / 1e9) / 1e6 << " M inserts/s, "
-             << timed_keys << " timed keys)\n";
+        seq_ns = run_interleaved(tree, files, N, preload_total, "QuART_kfp<3,SEQ>");
         if (kfp_ns > 0)
             cout << "  Parallel speedup vs Sequential: " << fixed << setprecision(2)
                  << (double)seq_ns / kfp_ns << "x\n";
@@ -241,53 +221,7 @@ int main(int argc, char** argv) {
     // ── QuART_kfp<3, FREQ_FILTER> ──────────────────────────────────────────
     if (run_ff) {
         QuART_kfp<3, EvictionPolicy::FREQ_FILTER> tree;
-        size_t pos[3] = {0, 0, 0};
-        mt19937 rng(42);
-
-        // Pre-load phase (not timed)
-        for (size_t i = 0; i < preload_total; ) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-            ++i;
-        }
-
-        // Timed phase
-        const size_t timed_keys = 3 * N - preload_total;
-        auto t0 = chrono::high_resolution_clock::now();
-        while (true) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-        }
-        auto t1 = chrono::high_resolution_clock::now();
-        ff_ns = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
-
-        // Spot-check a few keys from each stream.
-        for (int w = 0; w < 3; w++) {
-            for (size_t idx : {(size_t)0, N/2, N-1}) {
-                key_int_t k = files[w].data[idx];
-                encodeKey(k, key);
-                ArtNode* leaf = tree.lookup(key);
-                if (!leaf || !isLeaf(leaf) || getLeafValue(leaf) != k) {
-                    cerr << "FAIL: QuART_kfp<FREQ_FILTER> lookup stream=" << w
-                         << " idx=" << idx << " k=" << k << "\n";
-                    return 1;
-                }
-            }
-        }
-        cout << "QuART_kfp<3,FF>: " << ff_ns / 1'000'000 << " ms"
-             << "  (" << fixed << setprecision(1)
-             << (double)timed_keys / (ff_ns / 1e9) / 1e6 << " M inserts/s, "
-             << timed_keys << " timed keys)\n";
+        ff_ns = run_interleaved(tree, files, N, preload_total, "QuART_kfp<3,FF>");
 #ifdef QUART_KFP_STATS
         long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
         cout << "  FP_INSERT=" << tree.getFpInsertCount()
@@ -311,40 +245,7 @@ int main(int argc, char** argv) {
     // ── plain ART ────────────────────────────────────────────────────────────
     if (run_art) {
         ART::ART tree;
-        size_t pos[3] = {0, 0, 0};
-        mt19937 rng(42);  // same seed → identical sequence
-
-        // Pre-load phase (not timed)
-        for (size_t i = 0; i < preload_total; ) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-            ++i;
-        }
-
-        // Timed phase
-        const size_t timed_keys = 3 * N - preload_total;
-        auto t0 = chrono::high_resolution_clock::now();
-        while (true) {
-            int active[3], na = 0;
-            for (int w = 0; w < 3; w++) if (pos[w] < N) active[na++] = w;
-            if (!na) break;
-            int w = active[uniform_int_distribution<int>(0, na - 1)(rng)];
-            key_int_t k = files[w].data[pos[w]++];
-            encodeKey(k, key);
-            tree.insert(key, k);
-        }
-        auto t1 = chrono::high_resolution_clock::now();
-        art_ns = chrono::duration_cast<chrono::nanoseconds>(t1 - t0).count();
-
-        cout << "ART:          " << art_ns / 1'000'000 << " ms"
-             << "  (" << fixed << setprecision(1)
-             << (double)timed_keys / (art_ns / 1e9) / 1e6 << " M inserts/s, "
-             << timed_keys << " timed keys)\n";
+        art_ns = run_interleaved(tree, files, N, preload_total, "ART");
     }
 
     if (run_art && art_ns > 0) {
