@@ -31,10 +31,29 @@ else()
     message(STATUS "QuART: building with 32-bit keys (default)")
 endif()
 
+# ── k-fp classification counters ────────────────────────────────────────────────
+# Set QUART_KFP_STATS=ON to compile the k-fp classification counters
+# (FP_INSERT / BRIDGE / NO_MATCH tallies, fp-type histograms) into test_kfp.
+# These add an increment to the QuART_kfp insert hot path, so they are OFF by
+# default to keep timing runs clean.  The `run` benchmark never compiles them in.
+#   cmake -DQUART_KFP_STATS=ON ..
+option(QUART_KFP_STATS "Compile k-fp classification counters into test_kfp" OFF)
+if(QUART_KFP_STATS)
+    message(STATUS "QuART: k-fp stat counters ENABLED (test_kfp)")
+else()
+    message(STATUS "QuART: k-fp stat counters disabled (default)")
+endif()
+
 # Targets
 # add_executable(main main.cpp)
 # add_executable(insert_profiling insert_profiling.cpp)
 add_executable(run run.cpp)
+# Tune for the build host (like tpcc_art/test_kfp).  This enables the wider
+# instruction set the QuART_kfp Parallel findSlot and the Node16 SSE compares
+# benefit from.  Note: -march=native applies to the WHOLE run binary, so every
+# tree type (ART, QuART_*, kfp3_compare) is now built for this CPU and the
+# resulting binary may SIGILL on an older/different machine.
+target_compile_options(run PRIVATE -march=native)
 
 # TPC-C insert experiment (ART paper replication, warehouse=1)
 # Note: QuArtNodeMethods.cpp is #include'd from the QuART headers,
@@ -47,3 +66,6 @@ endif()
 # k-FP correctness tests
 add_executable(test_kfp test_kfp.cpp)
 target_compile_options(test_kfp PRIVATE -march=native)
+if(QUART_KFP_STATS)
+    target_compile_definitions(test_kfp PRIVATE QUART_KFP_STATS)
+endif()
