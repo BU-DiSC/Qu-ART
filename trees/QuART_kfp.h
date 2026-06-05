@@ -307,11 +307,21 @@ class QuART_kfp : public QuART {
             // eliminating the branch-misprediction storm from a sequential early-exit
             // loop where each comparison's taken/not-taken result is hard to predict.
             if (__builtin_expect(num_active == K, 1)) {
-                unsigned match = 0;
+                // match must be 64-bit: K can be up to 64, so both the shift
+                // `<< i` and the trailing-zero count need the full width.  (The
+                // uint16_t ctz() helper truncated slots >= 16, which corrupted
+                // the slot index for K=32/64.)  The `fp_leaf != nullptr` term
+                // mirrors the Sequential scan's guard below so a reset slot —
+                // whose cached_upper is 0 — can't spuriously match a key with
+                // upper bytes 0; it is bitwise-&'d (not &&) to stay branchless.
+                uint64_t match = 0;
                 for (int i = 0; i < K; i++)
-                    match |= static_cast<unsigned>(slots[i].cached_upper == keyUpper) << i;
-                if (__builtin_expect(match != 0u, 1))
-                    return {ctz(match), MatchType::FP_INSERT};
+                    match |= static_cast<uint64_t>(
+                                 (slots[i].fp_leaf != nullptr) &
+                                 (slots[i].cached_upper == keyUpper))
+                             << i;
+                if (__builtin_expect(match != 0ull, 1))
+                    return {__builtin_ctzll(match), MatchType::FP_INSERT};
             }
         }
 
