@@ -218,6 +218,33 @@ static int run_workload(const Workload& wl, size_t key_limit,
              << "  (Node256%=" << fixed << setprecision(1)
              << (hot ? 100.0 * tree.getFpType256Count() / hot : 0.0) << "%)\n"
              << "  fp_not_last_byte=" << tree.getFpNotLastByteCount() << "\n";
+        // fp-maintenance events: a structural mutation forced fp pointers to be
+        // fixed up.  "events" = times the hook fired; "slot-updates" = slots
+        // actually patched (one event can touch several slots).
+        long long hook_events = tree.getHookNodeReplacedCount()
+                              + tree.getHookFpRefUpdateCount()
+                              + tree.getHookLeafExpandedCount()
+                              + tree.getHookPrefixMismatchCount()
+                              + tree.getHookParentShiftedCount();
+        long long slot_updates = tree.getSlotUpdNodeReplacedCount()
+                               + tree.getSlotUpdFpRefUpdateCount()
+                               + tree.getSlotUpdLeafExpandedCount()
+                               + tree.getSlotUpdPrefixMismatchCount()
+                               + tree.getSlotUpdParentShiftedCount();
+        cout << "  fp-maintenance events (slot-updates):\n"
+             << "    node_replaced (grow 4/16/48/256) = "
+             << tree.getHookNodeReplacedCount() << " (" << tree.getSlotUpdNodeReplacedCount() << ")\n"
+             << "    leaf_expanded                    = "
+             << tree.getHookLeafExpandedCount() << " (" << tree.getSlotUpdLeafExpandedCount() << ")\n"
+             << "    prefix_mismatch (prefix split)   = "
+             << tree.getHookPrefixMismatchCount() << " (" << tree.getSlotUpdPrefixMismatchCount() << ")\n"
+             << "    fp_ref_update (prefix expansion) = "
+             << tree.getHookFpRefUpdateCount() << " (" << tree.getSlotUpdFpRefUpdateCount() << ")\n"
+             << "    parent_shifted (memmove)         = "
+             << tree.getHookParentShiftedCount() << " (" << tree.getSlotUpdParentShiftedCount() << ")\n"
+             << "    TOTAL = " << hook_events << " events, " << slot_updates << " slot-updates"
+             << "  (" << fixed << setprecision(3)
+             << (total ? (double)hook_events / total : 0.0) << " events/insert)\n";
 #endif
     }
 

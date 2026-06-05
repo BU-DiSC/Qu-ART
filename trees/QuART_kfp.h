@@ -69,6 +69,12 @@ class QuART_kfp : public QuART {
                  , cnt_no_match_untracked(0)
                  , cnt_type4(0), cnt_type16(0), cnt_type48(0), cnt_type256(0)
                  , cnt_fp_not_last_byte(0)
+                 , cnt_hook_node_replaced(0), cnt_hook_fp_ref_update(0)
+                 , cnt_hook_leaf_expanded(0), cnt_hook_prefix_mismatch(0)
+                 , cnt_hook_parent_shifted(0)
+                 , cnt_slotupd_node_replaced(0), cnt_slotupd_fp_ref_update(0)
+                 , cnt_slotupd_leaf_expanded(0), cnt_slotupd_prefix_mismatch(0)
+                 , cnt_slotupd_parent_shifted(0)
 #endif
                  {}
 
@@ -193,6 +199,19 @@ class QuART_kfp : public QuART {
     long long getFpType48Count()          const { return cnt_type48; }
     long long getFpType256Count()         const { return cnt_type256; }
     long long getFpNotLastByteCount()     const { return cnt_fp_not_last_byte; }
+    // fp-maintenance hook firings (a structural mutation forced an fp fixup).
+    // cnt_hook_* = times the event fired; cnt_slotupd_* = slots actually patched
+    // (one event can update several slots that all tracked the affected node).
+    long long getHookNodeReplacedCount()  const { return cnt_hook_node_replaced; }
+    long long getHookFpRefUpdateCount()   const { return cnt_hook_fp_ref_update; }
+    long long getHookLeafExpandedCount()  const { return cnt_hook_leaf_expanded; }
+    long long getHookPrefixMismatchCount()const { return cnt_hook_prefix_mismatch; }
+    long long getHookParentShiftedCount() const { return cnt_hook_parent_shifted; }
+    long long getSlotUpdNodeReplacedCount()   const { return cnt_slotupd_node_replaced; }
+    long long getSlotUpdFpRefUpdateCount()    const { return cnt_slotupd_fp_ref_update; }
+    long long getSlotUpdLeafExpandedCount()   const { return cnt_slotupd_leaf_expanded; }
+    long long getSlotUpdPrefixMismatchCount() const { return cnt_slotupd_prefix_mismatch; }
+    long long getSlotUpdParentShiftedCount()  const { return cnt_slotupd_parent_shifted; }
 #endif
 
    private:
@@ -208,6 +227,12 @@ class QuART_kfp : public QuART {
     long long cnt_fp_insert, cnt_bridge, cnt_no_match, cnt_no_match_untracked;
     long long cnt_type4, cnt_type16, cnt_type48, cnt_type256;
     long long cnt_fp_not_last_byte;
+    long long cnt_hook_node_replaced, cnt_hook_fp_ref_update,
+              cnt_hook_leaf_expanded, cnt_hook_prefix_mismatch,
+              cnt_hook_parent_shifted;
+    long long cnt_slotupd_node_replaced, cnt_slotupd_fp_ref_update,
+              cnt_slotupd_leaf_expanded, cnt_slotupd_prefix_mismatch,
+              cnt_slotupd_parent_shifted;
 #endif
 
     // ── Slot helpers ─────────────────────────────────────────────────────────
@@ -318,16 +343,25 @@ class QuART_kfp : public QuART {
                         ArtNode** newNodeRef) override {
         // Keep flat fields in sync for the active slot.
         ART::onNodeReplaced(oldNode, newNode, newNodeRef);
+#ifdef QUART_KFP_STATS
+        cnt_hook_node_replaced++;
+#endif
         // Update every slot that tracked the replaced node.
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp == oldNode) {
                 slots[j].fp      = newNode;
                 slots[j].fp_type = newNode->type;  // keep cache in sync
                 slots[j].fp_ref  = newNodeRef;
+#ifdef QUART_KFP_STATS
+                cnt_slotupd_node_replaced++;
+#endif
             } else if (slots[j].fp_prev == oldNode) {
                 slots[j].fp_prev = newNode;
                 ArtNode** ref = findChildPtr(newNode, slots[j].fp);
                 if (ref) slots[j].fp_ref = ref;
+#ifdef QUART_KFP_STATS
+                cnt_slotupd_node_replaced++;
+#endif
             }
         }
     }
@@ -336,8 +370,16 @@ class QuART_kfp : public QuART {
     // spliced above fp and the child cell that holds fp has moved.
     void onFpRefUpdate(ArtNode* targetFp, ArtNode** newRef) override {
         ART::onFpRefUpdate(targetFp, newRef);
+#ifdef QUART_KFP_STATS
+        cnt_hook_fp_ref_update++;
+#endif
         for (int j = 0; j < num_active; j++) {
-            if (slots[j].fp == targetFp) slots[j].fp_ref = newRef;
+            if (slots[j].fp == targetFp) {
+                slots[j].fp_ref = newRef;
+#ifdef QUART_KFP_STATS
+                cnt_slotupd_fp_ref_update++;
+#endif
+            }
         }
     }
 
@@ -347,6 +389,9 @@ class QuART_kfp : public QuART {
     void onLeafExpanded(ArtNode* oldLeaf, Node4* newNode, ArtNode** nodeRef,
                         ArtNode* prevNode) override {
         ART::onLeafExpanded(oldLeaf, newNode, nodeRef, prevNode);
+#ifdef QUART_KFP_STATS
+        cnt_hook_leaf_expanded++;
+#endif
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp_leaf == oldLeaf) {
                 if (!isLeaf(slots[j].fp)) {
@@ -357,6 +402,9 @@ class QuART_kfp : public QuART {
                 slots[j].fp_type = newNode->type;  // Node4
                 slots[j].fp_ref  = nodeRef;
                 slots[j].fp_prev = prevNode;
+#ifdef QUART_KFP_STATS
+                cnt_slotupd_leaf_expanded++;
+#endif
             }
         }
     }
@@ -366,10 +414,16 @@ class QuART_kfp : public QuART {
     void onPrefixMismatch(ArtNode* fpNode, Node4* newParent,
                           unsigned mismatchPrefixLen) override {
         ART::onPrefixMismatch(fpNode, newParent, mismatchPrefixLen);
+#ifdef QUART_KFP_STATS
+        cnt_hook_prefix_mismatch++;
+#endif
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp == fpNode) {
                 slots[j].fp_prev  = newParent;
                 slots[j].fp_depth += mismatchPrefixLen + 1;
+#ifdef QUART_KFP_STATS
+                cnt_slotupd_prefix_mismatch++;
+#endif
             }
         }
     }
@@ -379,10 +433,16 @@ class QuART_kfp : public QuART {
     // fp_ref by scanning the node for the slot's fp.
     void onParentShifted(ArtNode* node) override {
         ART::onParentShifted(node);
+#ifdef QUART_KFP_STATS
+        cnt_hook_parent_shifted++;
+#endif
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp_prev == node) {
                 ArtNode** ref = findChildPtr(node, slots[j].fp);
                 if (ref) slots[j].fp_ref = ref;
+#ifdef QUART_KFP_STATS
+                cnt_slotupd_parent_shifted++;
+#endif
             }
         }
     }
