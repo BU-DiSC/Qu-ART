@@ -63,15 +63,22 @@ if(QUART_KFP_STATS)
     target_compile_definitions(test_kfp PRIVATE QUART_KFP_STATS)
 endif()
 
-# k-FP slot-count (K) sweep: 1,2,4,8,16,32,64
-add_executable(test_kfp_sweep test_kfp_sweep.cpp)
+# k-FP slot-count (K) sweep: 1,2,4,8,16,32,64 (superseded by test_kfp_grid,
+# which sweeps K for each stream count W on the real bods workloads; kept
+# optional so an old checkout that still has the source builds it).
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/test_kfp_sweep.cpp")
+    add_executable(test_kfp_sweep test_kfp_sweep.cpp)
+endif()
+
+# k-FP 2-D grid: slot-count (K) × number of interleaved real bods streams (W)
+add_executable(test_kfp_grid test_kfp_grid.cpp)
 
 # TPC-C insert experiment (ART paper replication, warehouse=1)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tpcc/tpcc_art.cpp")
     add_executable(tpcc_art tpcc/tpcc_art.cpp)
 endif()
 
-foreach(target run test_kfp tpcc_art)
+foreach(target run test_kfp test_kfp_grid tpcc_art)
     if(TARGET ${target})
         target_compile_options(${target} PRIVATE -march=native)
     endif()

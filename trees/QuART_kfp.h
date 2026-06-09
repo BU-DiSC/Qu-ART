@@ -1,5 +1,7 @@
 #pragma once
 
+#include <immintrin.h>
+
 #include <utility>
 
 #include "../ART.h"
@@ -26,20 +28,36 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 //                 upper-byte equality checks are computed with no inter-check
 //                 data dependency, so the CPU issues them together and the
 //                 whole classification collapses to a single, well-predicted
-//                 branch.  Falls back to the sequential scan for warm-up,
+//                 branch.  Falls back to the scalar two-pass scan for warm-up,
 //                 BRIDGE and NO_MATCH.  (default — current behaviour)
 //
-//   Sequential  – the original early-exit scan: test slots in index order and
-//                 return at the first FP_INSERT *or* BRIDGE match.  Simpler,
-//                 but every per-slot comparison is a hard-to-predict branch.
+//   Sequential  – two scalar passes over the active slots in index order:
+//                 first return the lowest-index FP_INSERT, then (only if no slot
+//                 offered one) the lowest-index BRIDGE.  Simpler, but every
+//                 per-slot comparison is a hard-to-predict branch.
 //
-// Note: the two modes are not perfectly equivalent at the boundary between two
-// slots whose upper bytes are adjacent (differ by exactly 1).  Sequential
-// returns whatever the lowest-index slot offers (a BRIDGE there can pre-empt an
-// exact FP_INSERT in a higher-index slot), whereas Parallel always prefers a
-// global FP_INSERT once all K slots are occupied.  Both are valid classifiers;
-// they only diverge on this rare adjacent-prefix case.
-enum class SearchMode { Sequential, Parallel };
+//   SIMD        – like Parallel, but the K upper-byte equality checks are done
+//                 over a packed, struct-of-arrays `cached_uppers[K]` companion
+//                 array (one machine word per slot, ~K/8 cache lines, L1-
+//                 resident) using AVX2 (_mm256_cmpeq_epi32, 8 lanes per
+//                 instruction) instead of an O(K) scan over the full FpSlot[]
+//                 structs.  Because the classification no longer streams the
+//                 big slot structs, the per-insert "prefetch every slot's fp"
+//                 loop in insert() is also dropped for this mode — only the one
+//                 matched slot's fp is touched.  This keeps the per-insert tax
+//                 ~flat as K grows, so k-fp stays >1x vs ART even at high stream
+//                 counts.  Same classifier semantics as Parallel (lowest-index
+//                 FP_INSERT wins once all K slots are occupied).
+//
+// All three SearchModes are exact equivalents.  Each returns the lowest-index
+// FP_INSERT among all active slots, and only when no slot offers an FP_INSERT
+// does it return the lowest-index BRIDGE.  Parallel/SIMD compute the FP_INSERT
+// pass branchlessly / with AVX2 once all K slots are full; Sequential walks the
+// slots in two scalar passes (all FP_INSERT checks, then all BRIDGE checks).
+// They differ only in instruction mix, never in the slot or match type they
+// pick — in particular a BRIDGE in a low-index slot can never pre-empt an exact
+// FP_INSERT in a higher-index slot in any mode.
+enum class SearchMode { Sequential, Parallel, SIMD };
 
 // QuART_kfp<K, Policy, Search>: Maintains up to K independent fast-path slots,
 // one per workload.  Uses the stail key-classification scheme (FP_INSERT /
@@ -76,13 +94,24 @@ class QuART_kfp : public QuART {
                  , cnt_slotupd_leaf_expanded(0), cnt_slotupd_prefix_mismatch(0)
                  , cnt_slotupd_parent_shifted(0)
 #endif
-                 {}
+    {
+        // SIMD classifier companion array: an empty/reset slot must never match
+        // a real key.  Real upper bytes are always <= upperMask (top byte 0), so
+        // the all-ones sentinel can never equal any keyUpper.
+        for (int i = 0; i < K; i++) cached_uppers[i] = INVALID_UPPER;
+    }
 
     void insert(uint8_t key[], uintptr_t value) override {
         // Prefetch all cached fp nodes before findSlot so the cache misses are
         // overlapped with the classification work rather than serialised after it.
-        for (int i = 0; i < num_active; i++)
-            __builtin_prefetch(slots[i].fp, 0 /*read*/, 1 /*L2 locality*/);
+        // SIMD mode skips this: its classifier only touches the packed
+        // cached_uppers[] array (not the FpSlot structs), so an O(K) prefetch
+        // storm would be pure overhead — it prefetches only the matched slot's
+        // fp once findSlot has picked a winner (see the FP_INSERT branch below).
+        if constexpr (Search != SearchMode::SIMD) {
+            for (int i = 0; i < num_active; i++)
+                __builtin_prefetch(slots[i].fp, 0 /*read*/, 1 /*L2 locality*/);
+        }
 
         if (root == nullptr) {
             int slot = allocSlot();
@@ -103,6 +132,12 @@ class QuART_kfp : public QuART {
 #endif
             active_slot = slotIdx;
             FpSlot& s = slots[slotIdx];
+
+            // SIMD mode skipped the prefetch-all loop above; touch only the one
+            // winning slot's fp now, overlapping its miss with the dispatch
+            // bookkeeping (makeLeaf, fp_type branch) that follows.
+            if constexpr (Search == SearchMode::SIMD)
+                __builtin_prefetch(s.fp, 0 /*read*/, 1 /*L2 locality*/);
 
             if (__builtin_expect(s.fp_depth == maxPrefixLength - 2, 1)) {
                 // Hot path: direct insert at last-byte level.
@@ -217,7 +252,19 @@ class QuART_kfp : public QuART {
    private:
     enum class MatchType { FP_INSERT, BRIDGE, NO_MATCH };
 
+    // Sentinel for an empty/reset slot in cached_uppers[].  Real upper bytes are
+    // produced by getKeyUpperBytes/getLeafUpperBytes, which mask off the top
+    // byte (value <= upperMask), so the all-ones word can never equal a real
+    // keyUpper and an inactive slot never produces a false FP_INSERT.
+    static constexpr key_int_t INVALID_UPPER = ~static_cast<key_int_t>(0);
+
     FpSlot slots[K];
+    // Struct-of-arrays mirror of slots[i].cached_upper for SearchMode::SIMD,
+    // holding INVALID_UPPER wherever the slot is empty (fp_leaf == nullptr).
+    // Kept in sync in saveToSlot.  Packed and 32-byte aligned so the SIMD
+    // classifier streams ~K/8 AVX2 loads out of L1 instead of striding the full
+    // FpSlot[] structs.
+    alignas(32) key_int_t cached_uppers[K];
     int num_active;             // number of allocated slots (0..K)
     int next_evict;             // FIFO eviction pointer
     int active_slot;            // which slot is being modified during this insert
@@ -263,6 +310,10 @@ class QuART_kfp : public QuART {
         // fp_leaf only changes via insert_recursive_change_fp (BRIDGE/NO_MATCH),
         // so this is updated at most a handful of times across the entire run.
         slots[i].cached_upper = fp_leaf ? getLeafUpperBytes(getLeafValue(fp_leaf)) : 0;
+        // Mirror into the packed SIMD array; an empty slot gets the sentinel so
+        // it can't match (cached_upper would otherwise be 0, which is a valid
+        // key prefix).  This is the only writer of cached_uppers[].
+        cached_uppers[i] = fp_leaf ? slots[i].cached_upper : INVALID_UPPER;
     }
 
     // Return the next available slot index, always evicting (FIFO) if needed.
@@ -323,16 +374,62 @@ class QuART_kfp : public QuART {
                 if (__builtin_expect(match != 0ull, 1))
                     return {__builtin_ctzll(match), MatchType::FP_INSERT};
             }
+        } else if constexpr (Search == SearchMode::SIMD) {
+            // SIMD FP_INSERT pre-pass: compare keyUpper against the packed
+            // cached_uppers[] array (sentinel for empty slots) with AVX2.  Each
+            // _mm256_cmpeq_epi32 tests 8 slots; movemask_ps packs the 8 lane
+            // results into bits, accumulated into a 64-bit `match` (bit i == slot
+            // i, so ctzll picks the lowest-index match — same tie-break as
+            // Parallel).  Only runs once all K slots are full, mirroring Parallel.
+            if (__builtin_expect(num_active == K, 1)) {
+                uint64_t match = 0;
+                if constexpr (sizeof(key_int_t) == 4) {
+                    const __m256i target =
+                        _mm256_set1_epi32(static_cast<int>(keyUpper));
+                    int i = 0;
+                    for (; i + 8 <= K; i += 8) {
+                        __m256i v = _mm256_load_si256(
+                            reinterpret_cast<const __m256i*>(&cached_uppers[i]));
+                        __m256i eq = _mm256_cmpeq_epi32(v, target);
+                        unsigned m = static_cast<unsigned>(
+                            _mm256_movemask_ps(_mm256_castsi256_ps(eq)));
+                        match |= static_cast<uint64_t>(m) << i;
+                    }
+                    // Tail for K < 8 (K ∈ {1,2,4}); K>=8 powers of two have none.
+                    for (; i < K; i++)
+                        if (cached_uppers[i] == keyUpper)
+                            match |= 1ull << i;
+                } else {
+                    // 64-bit keys: scalar fallback (auto-vectorizable).
+                    for (int i = 0; i < K; i++)
+                        if (cached_uppers[i] == keyUpper)
+                            match |= 1ull << i;
+                }
+                if (__builtin_expect(match != 0ull, 1))
+                    return {__builtin_ctzll(match), MatchType::FP_INSERT};
+            }
         }
 
-        // Sequential early-exit scan.  In Parallel mode this is the fallback
-        // for warm-up, BRIDGE and rare NO_MATCH; in Sequential mode it is the
-        // entire classifier.
+        // Scalar two-pass scan, shared by all three SearchModes.  First prefer a
+        // GLOBAL FP_INSERT: scan every active slot and return the lowest-index
+        // exact upper-byte match.  Only if no slot offers an FP_INSERT do we make a
+        // second pass for the lowest-index BRIDGE.  Splitting the passes is what
+        // makes Sequential agree with the Parallel/SIMD FP_INSERT pre-pass — a
+        // BRIDGE in a low-index slot can no longer pre-empt an exact FP_INSERT in a
+        // higher-index slot.
+        //
+        // In Parallel/SIMD mode, when all K slots are occupied the branchless/AVX2
+        // FP_INSERT pre-pass above already returned any exact match, so the first
+        // pass here finds nothing and this loop is just the BRIDGE / warm-up path.
+        // In Sequential mode it is the entire classifier.
+        for (int i = 0; i < num_active; i++) {
+            if (slots[i].fp_leaf == nullptr) continue;
+            if (keyUpper == slots[i].cached_upper)
+                return {i, MatchType::FP_INSERT};
+        }
         for (int i = 0; i < num_active; i++) {
             if (slots[i].fp_leaf == nullptr) continue;
             key_int_t leafUpper = slots[i].cached_upper;
-            if (keyUpper == leafUpper)
-                return {i, MatchType::FP_INSERT};
             if (((keyUpper + 1) & upperMask) == leafUpper ||
                 ((leafUpper + 1) & upperMask) == keyUpper)
                 return {i, MatchType::BRIDGE};
