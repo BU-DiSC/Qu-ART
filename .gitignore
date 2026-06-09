@@ -7,3 +7,5 @@ build/
 workloads/
 experiments/bods/
 experiments/5.1-bods-experiments/quick-insertion-tree/
+
+graphs/
