@@ -24,7 +24,7 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 
 // Strategy used by findSlot to classify a key against the K active slots.
 //
-//   Parallel    – data-parallel branchless FP_INSERT pre-pass: all K
+//   Branchless  – data-parallel FP_INSERT pre-pass: all K
 //                 upper-byte equality checks are computed with no inter-check
 //                 data dependency, so the CPU issues them together and the
 //                 whole classification collapses to a single, well-predicted
@@ -36,7 +36,7 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 //                 offered one) the lowest-index BRIDGE.  Simpler, but every
 //                 per-slot comparison is a hard-to-predict branch.
 //
-//   SIMD        – like Parallel, but the K upper-byte equality checks are done
+//   SIMD        – like Branchless, but the K upper-byte equality checks are done
 //                 over a packed, struct-of-arrays `cached_uppers[K]` companion
 //                 array (one machine word per slot, ~K/8 cache lines, L1-
 //                 resident) using AVX2 (_mm256_cmpeq_epi32, 8 lanes per
@@ -46,18 +46,18 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 //                 loop in insert() is also dropped for this mode — only the one
 //                 matched slot's fp is touched.  This keeps the per-insert tax
 //                 ~flat as K grows, so k-fp stays >1x vs ART even at high stream
-//                 counts.  Same classifier semantics as Parallel (lowest-index
+//                 counts.  Same classifier semantics as Branchless (lowest-index
 //                 FP_INSERT wins once all K slots are occupied).
 //
 // All three SearchModes are exact equivalents.  Each returns the lowest-index
 // FP_INSERT among all active slots, and only when no slot offers an FP_INSERT
-// does it return the lowest-index BRIDGE.  Parallel/SIMD compute the FP_INSERT
+// does it return the lowest-index BRIDGE.  Branchless/SIMD compute the FP_INSERT
 // pass branchlessly / with AVX2 once all K slots are full; Sequential walks the
 // slots in two scalar passes (all FP_INSERT checks, then all BRIDGE checks).
 // They differ only in instruction mix, never in the slot or match type they
 // pick — in particular a BRIDGE in a low-index slot can never pre-empt an exact
 // FP_INSERT in a higher-index slot in any mode.
-enum class SearchMode { Sequential, Parallel, SIMD };
+enum class SearchMode { Sequential, Branchless, SIMD };
 
 // QuART_kfp<K, Policy, Search>: Maintains up to K independent fast-path slots,
 // one per workload.  Uses the stail key-classification scheme (FP_INSERT /
@@ -75,9 +75,9 @@ enum class SearchMode { Sequential, Parallel, SIMD };
 //               (eviction policy selected by the Policy template parameter)
 //
 // The Search template parameter selects how findSlot scans the K slots
-// (Parallel branchless vs. Sequential early-exit); see SearchMode above.
+// (Branchless vs. Sequential early-exit); see SearchMode above.
 template <int K, EvictionPolicy Policy = EvictionPolicy::FIFO,
-          SearchMode Search = SearchMode::Parallel>
+          SearchMode Search = SearchMode::Branchless>
 class QuART_kfp : public QuART {
    public:
     QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
@@ -349,8 +349,8 @@ class QuART_kfp : public QuART {
     std::pair<int, MatchType> findSlot(uint8_t key[]) const {
         key_int_t keyUpper = getKeyUpperBytes(key);
 
-        if constexpr (Search == SearchMode::Parallel) {
-            // Parallel branchless FP_INSERT classification.
+        if constexpr (Search == SearchMode::Branchless) {
+            // Branchless FP_INSERT classification.
             // All K equality checks are emitted as branchless sete/cmov
             // instructions with no data dependencies between them, so the CPU can
             // issue them in parallel.  The single resulting branch (match != 0) has
@@ -380,7 +380,7 @@ class QuART_kfp : public QuART {
             // _mm256_cmpeq_epi32 tests 8 slots; movemask_ps packs the 8 lane
             // results into bits, accumulated into a 64-bit `match` (bit i == slot
             // i, so ctzll picks the lowest-index match — same tie-break as
-            // Parallel).  Only runs once all K slots are full, mirroring Parallel.
+            // Branchless).  Only runs once all K slots are full, mirroring Branchless.
             if (__builtin_expect(num_active == K, 1)) {
                 uint64_t match = 0;
                 if constexpr (sizeof(key_int_t) == 4) {
@@ -414,11 +414,11 @@ class QuART_kfp : public QuART {
         // GLOBAL FP_INSERT: scan every active slot and return the lowest-index
         // exact upper-byte match.  Only if no slot offers an FP_INSERT do we make a
         // second pass for the lowest-index BRIDGE.  Splitting the passes is what
-        // makes Sequential agree with the Parallel/SIMD FP_INSERT pre-pass — a
+        // makes Sequential agree with the Branchless/SIMD FP_INSERT pre-pass — a
         // BRIDGE in a low-index slot can no longer pre-empt an exact FP_INSERT in a
         // higher-index slot.
         //
-        // In Parallel/SIMD mode, when all K slots are occupied the branchless/AVX2
+        // In Branchless/SIMD mode, when all K slots are occupied the branchless/AVX2
         // FP_INSERT pre-pass above already returned any exact match, so the first
         // pass here finds nothing and this loop is just the BRIDGE / warm-up path.
         // In Sequential mode it is the entire classifier.

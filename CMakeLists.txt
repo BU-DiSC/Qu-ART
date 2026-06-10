@@ -47,7 +47,7 @@ endif()
 
 # ── Targets ─────────────────────────────────────────────────────────────────────
 # All executables are tuned for the build host with -march=native.  This enables
-# the wider instruction set the QuART_kfp Parallel findSlot and the Node16 SSE
+# the wider instruction set the QuART_kfp Branchless findSlot and the Node16 SSE
 # compares benefit from.  Note: it applies to the WHOLE binary, so every tree type
 # is built for this CPU and the result may SIGILL on an older/different machine.
 #

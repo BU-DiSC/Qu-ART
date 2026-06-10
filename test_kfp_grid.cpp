@@ -7,7 +7,7 @@
 // (seed 42 → identical sequence for every tree), pre-loads PRELOAD_FRAC
 // untimed, then times the remaining inserts into plain ART and into
 // QuART_kfp<K> for K in {1,2,4,8,16,32,64}, in both findSlot SearchModes
-// (Parallel and SIMD).  Emits one CSV row per (mode,K) to stdout:
+// (Branchless and SIMD).  Emits one CSV row per (mode,K) to stdout:
 //
 //   series,streams,keys_per_stream,mode,K,art_ns,kfp_ns,speedup
 //
@@ -140,7 +140,7 @@ static long long run_one(TreeT& tree, const vector<key_int_t>& vals,
 
 // Emit one CSV row (machine-readable) on stdout.  A crashed run is recorded
 // with kfp_ns = -1 and speedup = -1 so the cell is preserved (not lost) in the
-// grid.  `mode` is the findSlot SearchMode ("parallel"/"simd"), or "art" for
+// grid.  `mode` is the findSlot SearchMode ("branchless"/"simd"), or "art" for
 // the baseline row.
 static void emit_csv(const string& series, size_t streams, size_t kps,
                      const char* mode, int K, long long art_ns,
@@ -216,7 +216,7 @@ static void sweep_k_mode(const string& series, size_t streams, size_t kps,
     emit_csv(series, streams, kps, mode, K, art_ns, ns);
 }
 
-// Sweep one K value across both findSlot SearchModes (Parallel vs SIMD) so the
+// Sweep one K value across both findSlot SearchModes (Branchless vs SIMD) so the
 // grid carries a direct A/B of the SoA+AVX2 classifier against the scalar
 // branchless one.
 template <int K>
@@ -224,8 +224,8 @@ static void sweep_k(const string& series, size_t streams, size_t kps,
                     const vector<key_int_t>& vals,
                     const vector<array<uint8_t, keyBytes>>& enc, size_t preload,
                     long long art_ns) {
-    sweep_k_mode<K, SearchMode::Parallel>(series, streams, kps, vals, enc,
-                                          preload, art_ns, "parallel");
+    sweep_k_mode<K, SearchMode::Branchless>(series, streams, kps, vals, enc,
+                                            preload, art_ns, "branchless");
     sweep_k_mode<K, SearchMode::SIMD>(series, streams, kps, vals, enc, preload,
                                       art_ns, "simd");
 }
