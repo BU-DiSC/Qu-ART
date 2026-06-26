@@ -104,11 +104,17 @@ class QuART_kfp : public QuART {
     void insert(uint8_t key[], uintptr_t value) override {
         // Prefetch all cached fp nodes before findSlot so the cache misses are
         // overlapped with the classification work rather than serialised after it.
-        // SIMD mode skips this: its classifier only touches the packed
+        // SIMD mode skips this AT LARGE K: its classifier only touches the packed
         // cached_uppers[] array (not the FpSlot structs), so an O(K) prefetch
         // storm would be pure overhead — it prefetches only the matched slot's
         // fp once findSlot has picked a winner (see the FP_INSERT branch below).
-        if constexpr (Search != SearchMode::SIMD) {
+        // At small K (<8) the AVX2 loop never runs (one register holds 8 lanes),
+        // so SIMD's classifier degenerates to a scalar tail with no O(K) tax to
+        // avoid; prefetching the handful of slots is cheap and recovers the
+        // miss-overlap, so we keep the prefetch-all loop there too.
+        constexpr bool prefetchAllSlots =
+            (Search != SearchMode::SIMD) || (K < 8);
+        if constexpr (prefetchAllSlots) {
             for (int i = 0; i < num_active; i++)
                 __builtin_prefetch(slots[i].fp, 0 /*read*/, 1 /*L2 locality*/);
         }
@@ -133,10 +139,13 @@ class QuART_kfp : public QuART {
             active_slot = slotIdx;
             FpSlot& s = slots[slotIdx];
 
-            // SIMD mode skipped the prefetch-all loop above; touch only the one
-            // winning slot's fp now, overlapping its miss with the dispatch
-            // bookkeeping (makeLeaf, fp_type branch) that follows.
-            if constexpr (Search == SearchMode::SIMD)
+            // SIMD mode at large K skipped the prefetch-all loop above; touch
+            // only the one winning slot's fp now, overlapping its miss with the
+            // dispatch bookkeeping (makeLeaf, fp_type branch) that follows.  At
+            // small K the prefetch-all loop already covered this slot (see the
+            // prefetchAllSlots gate in the insert prologue), so skip the
+            // redundant second prefetch.
+            if constexpr (Search == SearchMode::SIMD && K >= 8)
                 __builtin_prefetch(s.fp, 0 /*read*/, 1 /*L2 locality*/);
 
             if (__builtin_expect(s.fp_depth == maxPrefixLength - 2, 1)) {
@@ -396,9 +405,17 @@ class QuART_kfp : public QuART {
                         match |= static_cast<uint64_t>(m) << i;
                     }
                     // Tail for K < 8 (K ∈ {1,2,4}); K>=8 powers of two have none.
+                    // Branchless mask build, mirroring SearchMode::Branchless: the
+                    // per-slot equality yields 0/1, shifted into place and OR-
+                    // accumulated with no data-dependent branch, so the whole tail
+                    // collapses to the single `match != 0` check below instead of
+                    // K hard-to-predict per-slot branches.  Unlike the Branchless
+                    // AoS path no `fp_leaf != nullptr` guard is needed: an empty
+                    // slot holds the INVALID_UPPER sentinel in cached_uppers[],
+                    // which can never equal a real (top-byte-masked) keyUpper.
                     for (; i < K; i++)
-                        if (cached_uppers[i] == keyUpper)
-                            match |= 1ull << i;
+                        match |= static_cast<uint64_t>(cached_uppers[i] == keyUpper)
+                                 << i;
                 } else {
                     // 64-bit keys: scalar fallback (auto-vectorizable).
                     for (int i = 0; i < K; i++)
