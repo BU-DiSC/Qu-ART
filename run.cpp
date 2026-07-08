@@ -10,7 +10,7 @@
 #include "trees/QuART_lil.h"
 #include "trees/QuART_tail.h"
 #include "trees/QuART_stail.h"
-#include "trees/QuART_kfp.h"
+#include "trees/QuART_multi_fp.h"
 #include "QuArtNodeBulkLoadMethods.cpp"
 
 using namespace std;
@@ -295,8 +295,8 @@ int main(int argc, char** argv) {
 
         // Output the times in csv format, including tree type
         cout << insertion_time << "," << query_time << endl;
-    } else if (tree_type == "QuART_kfp") {
-        ART::QuART_kfp<1>* tree = new ART::QuART_kfp<1>();
+    } else if (tree_type == "QuART_multi_fp") {
+        ART::QuART_multi_fp<1>* tree = new ART::QuART_multi_fp<1>();
         long long insertion_time = 0;
         for (uint64_t i = 0; i < N; i++) {
             uint8_t key[ART::keyBytes];

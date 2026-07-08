@@ -365,6 +365,31 @@ class ART {
         }
     }
 
+    // Hook: reclaim a node that was grown out of and unlinked from the tree.
+    // Called by the base Node*::insert* methods in place of `delete this`.
+    // Default = plain delete (dispatched by type so the correct-size operator
+    // delete / trivial dtor runs); identical in effect to the original code.
+    // The concurrent variant overrides this to defer the free.
+    virtual void reclaimNode(ArtNode* n) {
+        switch (n->type) {
+            case NodeType4:
+                delete static_cast<Node4*>(n);
+                break;
+            case NodeType16:
+                delete static_cast<Node16*>(n);
+                break;
+            case NodeType48:
+                delete static_cast<Node48*>(n);
+                break;
+            case NodeType256:
+                delete static_cast<Node256*>(n);
+                break;
+            default:
+                delete n;
+                break;
+        }
+    }
+
     // Hook: a sorted insertion into `node` used memmove to shift existing
     // children, potentially invalidating any fp_ref that pointed into the
     // shifted range.  Implementors should re-derive fp_ref for every slot
@@ -735,5 +760,9 @@ class ART {
     }
 
 };
+
+// Definition of the reclamation hook declared in ArtNode.h.  ART is complete
+// here, so we can dispatch to the (possibly overridden) virtual reclaimNode.
+inline void reclaimArtNode(ART* tree, ArtNode* n) { tree->reclaimNode(n); }
 
 }  // namespace ART

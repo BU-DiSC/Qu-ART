@@ -1,19 +1,19 @@
-// test_kfp_grid.cpp — 2-D sweep: (k-fp slot count K) × (number of interleaved
-// real bods workload streams), reporting QuART_kfp speedup over plain ART.
+// test_multi_fp_grid.cpp — 2-D sweep: (multi-fp slot count K) × (number of interleaved
+// real bods workload streams), reporting QuART_multi_fp speedup over plain ART.
 //
 // For a chosen workload series (e.g. K0_L0 or K1_L1) and a stream count W,
 // opens the first W generated N=20M workload files (offsets (i-1)*40M+1), reads
 // up to keys_per_stream keys from each, randomly interleaves them key-by-key
 // (seed 42 → identical sequence for every tree), pre-loads PRELOAD_FRAC
 // untimed, then times the remaining inserts into plain ART and into
-// QuART_kfp<K> for K in {1,2,4,8,16,32,64}, in both findSlot SearchModes
+// QuART_multi_fp<K> for K in {1,2,4,8,16,32,64}, in both findSlot SearchModes
 // (Branchless and SIMD).  Emits one CSV row per (mode,K) to stdout:
 //
-//   series,streams,keys_per_stream,mode,K,art_ns,kfp_ns,speedup
+//   series,streams,keys_per_stream,mode,K,art_ns,multi_fp_ns,speedup
 //
 // (mode=art / K=0 is the plain-ART baseline row, so the CSV is self-contained.)
 // Human-readable progress goes to stderr.  Loop W over {1,2,4,8,16,32,64} in
-// the driver script (graphs/kfp_grid/run_grid.sh) to fill the full 7×7 grid.
+// the driver script (graphs/multi_fp_grid/run_grid.sh) to fill the full 7×7 grid.
 //
 // The point: with W concurrent sorted streams, a tree with K fp slots can only
 // track K of them at once.  When K < W the slots thrash (evict / re-acquire),
@@ -23,9 +23,9 @@
 // Key width is controlled by QUART_KEY_64.  The bods files are 4-byte uint32,
 // so this driver requires the default 32-bit build (asserted at startup).
 //
-// Build: cmake --build build --target test_kfp_grid
-// Run  : ./build/test_kfp_grid <series> <num_streams> [keys_per_stream] [dir]
-//        e.g. ./build/test_kfp_grid K0_L0 8 2000000   (keys_per_stream 0 =
+// Build: cmake --build build --target test_multi_fp_grid
+// Run  : ./build/test_multi_fp_grid <series> <num_streams> [keys_per_stream] [dir]
+//        e.g. ./build/test_multi_fp_grid K0_L0 8 2000000   (keys_per_stream 0 =
 //        full)
 
 #include <fcntl.h>
@@ -50,7 +50,7 @@
 #include "ArtNode.h"
 #include "Helper.h"
 #include "QuArtNodeBulkLoadMethods.cpp"
-#include "trees/QuART_kfp.h"
+#include "trees/QuART_multi_fp.h"
 
 using namespace std;
 using namespace ART;
@@ -139,21 +139,21 @@ static long long run_one(TreeT& tree, const vector<key_int_t>& vals,
 }
 
 // Emit one CSV row (machine-readable) on stdout.  A crashed run is recorded
-// with kfp_ns = -1 and speedup = -1 so the cell is preserved (not lost) in the
+// with multi_fp_ns = -1 and speedup = -1 so the cell is preserved (not lost) in the
 // grid.  `mode` is the findSlot SearchMode ("branchless"/"simd"), or "art" for
 // the baseline row.
 static void emit_csv(const string& series, size_t streams, size_t kps,
                      const char* mode, int K, long long art_ns,
-                     long long kfp_ns) {
+                     long long multi_fp_ns) {
     double speedup =
-        (kfp_ns > 0 && art_ns > 0) ? (double)art_ns / kfp_ns : -1.0;
+        (multi_fp_ns > 0 && art_ns > 0) ? (double)art_ns / multi_fp_ns : -1.0;
     printf("%s,%zu,%zu,%s,%d,%lld,%lld,%.4f\n", series.c_str(), streams, kps,
-           mode, K, art_ns, kfp_ns, speedup);
+           mode, K, art_ns, multi_fp_ns, speedup);
     fflush(stdout);
 }
 
 // Run one tree benchmark in a forked child so a segfault (e.g. the known
-// QuART_kfp slot-maintenance crash once num_active==K at high K) is captured as
+// QuART_multi_fp slot-maintenance crash once num_active==K at high K) is captured as
 // a failed cell rather than aborting the whole grid.  The child shares the
 // read-only interleaved vals/enc via copy-on-write, builds the tree, runs the
 // timed insert, writes the nanoseconds back over a pipe, and _exit()s (skipping
@@ -199,7 +199,7 @@ static long long run_one_isolated(const vector<key_int_t>& vals,
     return ns;
 }
 
-// Run QuART_kfp<K> in one SearchMode, print stderr line + speedup, emit a CSV
+// Run QuART_multi_fp<K> in one SearchMode, print stderr line + speedup, emit a CSV
 // row tagged with the mode.
 template <int K, SearchMode Search>
 static void sweep_k_mode(const string& series, size_t streams, size_t kps,
@@ -207,8 +207,8 @@ static void sweep_k_mode(const string& series, size_t streams, size_t kps,
                          const vector<array<uint8_t, keyBytes>>& enc,
                          size_t preload, long long art_ns, const char* mode) {
     char label[40];
-    snprintf(label, sizeof(label), "QuART_kfp<%d,%s>", K, mode);
-    long long ns = run_one_isolated<QuART_kfp<K, EvictionPolicy::FIFO, Search>>(
+    snprintf(label, sizeof(label), "QuART_multi_fp<%d,%s>", K, mode);
+    long long ns = run_one_isolated<QuART_multi_fp<K, EvictionPolicy::FIFO, Search>>(
         vals, enc, preload, label);
     if (ns > 0)
         cerr << "  speedup=" << fixed << setprecision(2) << (double)art_ns / ns
@@ -232,7 +232,7 @@ static void sweep_k(const string& series, size_t streams, size_t kps,
 
 int main(int argc, char** argv) {
     if (sizeof(key_int_t) != 4) {
-        cerr << "ERROR: test_kfp_grid requires 32-bit keys (the bods files are "
+        cerr << "ERROR: test_multi_fp_grid requires 32-bit keys (the bods files are "
                 "4-byte uint32).  Rebuild WITHOUT -DQUART_KEY_64.\n";
         return 1;
     }
@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
 
     const size_t total = num_streams * per_stream;
     cerr << "════════════════════════════════════════════════════════════\n";
-    cerr << "k-fp grid cell:  series=" << series << "  streams=" << num_streams
+    cerr << "multi-fp grid cell:  series=" << series << "  streams=" << num_streams
          << "  keys/stream=" << per_stream << "  total=" << total << " keys\n";
     cerr << "key width=" << (sizeof(key_int_t) * 8)
          << "-bit  preload=" << (PRELOAD_FRAC * 100) << "%\n";

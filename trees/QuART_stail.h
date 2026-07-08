@@ -16,15 +16,31 @@ class QuART_stail : public QuART {
    public:
     QuART_stail() : QuART(), reset_counter(RESET_COUNTER_INIT) {}
 
+#ifdef QUART_STAIL_TRACE
+    // Decision-type tallies (only compiled under -DQUART_STAIL_TRACE), used to
+    // confirm QuART_conc_olc_stail makes the identical per-key decisions at 1
+    // thread.  Categories: warmup (root==null), append (FP_INSERT @ leaf
+    // depth), fp_preserve (FP_INSERT @ sub-leaf), bridge, other_change,
+    // other_preserve.
+    struct DecTrace {
+        uint64_t warmup = 0, append = 0, fp_preserve = 0, bridge = 0,
+                 other_change = 0, other_preserve = 0;
+    };
+    DecTrace trace;
+#endif
+
     void insert(uint8_t key[], uintptr_t value) {
         /* stail insert */
 
         ArtNode* root = this->root;
-        
+
         // If the root is null, insert from scratch and change fp
         if (root == nullptr) {
-            insert_recursive_change_fp(
-                this->root, &this->root, key, 0, value, maxPrefixLength);
+#ifdef QUART_STAIL_TRACE
+            trace.warmup++;
+#endif
+            insert_recursive_change_fp(this->root, &this->root, key, 0, value,
+                                       maxPrefixLength);
             return;
         }
 
@@ -34,6 +50,9 @@ class QuART_stail : public QuART {
             if (this->reset_counter != RESET_COUNTER_INIT)
                 this->reset_counter = RESET_COUNTER_INIT;
             if (this->fp_depth == maxPrefixLength - 2) {
+#ifdef QUART_STAIL_TRACE
+                trace.append++;
+#endif
                 // Insert leaf into fp
                 ArtNode* newNode = makeLeaf(value);
                 switch (this->fp->type) {
@@ -56,30 +75,42 @@ class QuART_stail : public QuART {
                 }
                 return;
             }
-            // Else, we call the recursive function and let it handle leaf expansion
-            // or prefix mismatch if there is one. If not, it will directly insert
-            // into the fp
+            // Else, we call the recursive function and let it handle leaf
+            // expansion or prefix mismatch if there is one. If not, it will
+            // directly insert into the fp
             else {
-                insert_recursive_preserve_fp(
-                    this->fp, this->fp_ref, key, fp_depth, value, maxPrefixLength,
-                    this->fp_prev);
+#ifdef QUART_STAIL_TRACE
+                trace.fp_preserve++;
+#endif
+                insert_recursive_preserve_fp(this->fp, this->fp_ref, key,
+                                             fp_depth, value, maxPrefixLength,
+                                             this->fp_prev);
                 return;
             }
         } else if (type == KeyType::BRIDGE) {
+#ifdef QUART_STAIL_TRACE
+            trace.bridge++;
+#endif
             if (this->reset_counter != RESET_COUNTER_INIT)
                 this->reset_counter = RESET_COUNTER_INIT;
-            insert_recursive_change_fp(
-                this->root, &this->root, key, 0, value, maxPrefixLength);
+            insert_recursive_change_fp(this->root, &this->root, key, 0, value,
+                                       maxPrefixLength);
             return;
-        } else { // OTHER (both greater and less)
+        } else {  // OTHER (both greater and less)
             if (this->reset_counter == 0) {
+#ifdef QUART_STAIL_TRACE
+                trace.other_change++;
+#endif
                 this->reset_counter = RESET_COUNTER_INIT;
-                insert_recursive_change_fp(
-                    this->root, &this->root, key, 0, value, maxPrefixLength);
+                insert_recursive_change_fp(this->root, &this->root, key, 0,
+                                           value, maxPrefixLength);
             } else {
+#ifdef QUART_STAIL_TRACE
+                trace.other_preserve++;
+#endif
                 this->reset_counter--;
-                insert_recursive_preserve_fp(
-                    this->root, &this->root, key, 0, value, maxPrefixLength);
+                insert_recursive_preserve_fp(this->root, &this->root, key, 0,
+                                             value, maxPrefixLength);
             }
             return;
         }
@@ -87,10 +118,9 @@ class QuART_stail : public QuART {
 
     KeyType getKeyType(uint8_t key[]) {
         key_int_t leafUpper = getLeafUpperBytes(getLeafValue(this->fp_leaf));
-        key_int_t keyUpper  = getKeyUpperBytes(key);
+        key_int_t keyUpper = getKeyUpperBytes(key);
 
-        if (keyUpper == leafUpper)
-            return KeyType::FP_INSERT;
+        if (keyUpper == leafUpper) return KeyType::FP_INSERT;
         if (((keyUpper + 1) & upperMask) == leafUpper ||
             ((leafUpper + 1) & upperMask) == keyUpper)
             return KeyType::BRIDGE;

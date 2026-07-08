@@ -1,4 +1,4 @@
-// test_kfp.cpp — benchmark QuART_kfp<3> (FIFO), QuART_kfp<3> (FREQ_FILTER),
+// test_multi_fp.cpp — benchmark QuART_multi_fp<3> (FIFO), QuART_multi_fp<3> (FREQ_FILTER),
 //                 and plain ART on 3 real bods workload streams.
 //
 // Runs four workloads, each a triple of binary workload files (key_int_t
@@ -7,8 +7,8 @@
 // tree in turn, and reports timing.
 // Key width is controlled by QUART_KEY_64: 32-bit by default, 64-bit if defined.
 //
-// Build: cmake --build build --target test_kfp
-// Run  : ./build/test_kfp
+// Build: cmake --build build --target test_multi_fp
+// Run  : ./build/test_multi_fp
 
 #include <array>
 #include <cassert>
@@ -22,16 +22,16 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-// The k-fp classification counters are controlled by the CMake option
-// QUART_KFP_STATS (OFF by default; configure with -DQUART_KFP_STATS=ON).  They
-// add a per-insert increment to the QuART_kfp hot path, so leaving them off
+// The multi-fp classification counters are controlled by the CMake option
+// QUART_MULTI_FP_STATS (OFF by default; configure with -DQUART_MULTI_FP_STATS=ON).  They
+// add a per-insert increment to the QuART_multi_fp hot path, so leaving them off
 // keeps the timing numbers clean.  When off, the stat-printing blocks below
-// (all #ifdef QUART_KFP_STATS) compile out and only timing is reported.
+// (all #ifdef QUART_MULTI_FP_STATS) compile out and only timing is reported.
 
 #include "ART.h"
 #include "ArtNode.h"
 #include "Helper.h"
-#include "trees/QuART_kfp.h"
+#include "trees/QuART_multi_fp.h"
 #include "QuArtNodeBulkLoadMethods.cpp"
 
 using namespace std;
@@ -197,11 +197,11 @@ static int run_workload(const Workload& wl, size_t key_limit,
     const size_t preload_total = static_cast<size_t>(3.0 * N * PRELOAD_FRAC);
     cout << "Pre-loading " << preload_total << " keys (" << (PRELOAD_FRAC*100) << "%) before timed run\n\n";
 
-    // ── QuART_kfp<3, FREQ_FILTER> ──────────────────────────────────────────
+    // ── QuART_multi_fp<3, FREQ_FILTER> ──────────────────────────────────────────
     if (run_ff) {
-        QuART_kfp<3, EvictionPolicy::FREQ_FILTER> tree;
-        ff_ns = run_interleaved(tree, files, N, preload_total, "QuART_kfp<3,FF>");
-#ifdef QUART_KFP_STATS
+        QuART_multi_fp<3, EvictionPolicy::FREQ_FILTER> tree;
+        ff_ns = run_interleaved(tree, files, N, preload_total, "QuART_multi_fp<3,FF>");
+#ifdef QUART_MULTI_FP_STATS
         long long total = tree.getFpInsertCount() + tree.getBridgeCount() + tree.getNoMatchCount();
         cout << "  FP_INSERT=" << tree.getFpInsertCount()
              << "  BRIDGE="    << tree.getBridgeCount()
@@ -265,14 +265,14 @@ static int run_workload(const Workload& wl, size_t key_limit,
 int main(int argc, char** argv) {
     // Optional args:
     //   argv[1]: mode = "ff" | "art" | "both"
-    //            ff runs only QuART_kfp<3,FREQ_FILTER> (for profiling);
+    //            ff runs only QuART_multi_fp<3,FREQ_FILTER> (for profiling);
     //            art runs only plain ART; both runs both.  (default "both")
     //   argv[2]: max keys per stream, 0 = all    (default 0)
     const char* mode = (argc > 1) ? argv[1] : "both";
     const bool run_ff  = (strcmp(mode, "ff")  == 0 || strcmp(mode, "both") == 0);
     const bool run_art = (strcmp(mode, "art") == 0 || strcmp(mode, "both") == 0);
     if (!run_ff && !run_art) {
-        cerr << "Usage: test_kfp [ff|art|both] [max_keys_per_stream]\n";
+        cerr << "Usage: test_multi_fp [ff|art|both] [max_keys_per_stream]\n";
         return 1;
     }
     const size_t key_limit = (argc > 2) ? (size_t)atoll(argv[2]) : 0;

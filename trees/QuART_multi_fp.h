@@ -10,7 +10,7 @@
 
 namespace ART {
 
-// Eviction policy used by QuART_kfp when all K slots are occupied and a new
+// Eviction policy used by QuART_multi_fp when all K slots are occupied and a new
 // workload (NO_MATCH) arrives.
 //
 //   FIFO         – always evict the oldest slot (round-robin pointer).
@@ -45,7 +45,7 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 //                 big slot structs, the per-insert "prefetch every slot's fp"
 //                 loop in insert() is also dropped for this mode — only the one
 //                 matched slot's fp is touched.  This keeps the per-insert tax
-//                 ~flat as K grows, so k-fp stays >1x vs ART even at high stream
+//                 ~flat as K grows, so multi-fp stays >1x vs ART even at high stream
 //                 counts.  Same classifier semantics as Branchless (lowest-index
 //                 FP_INSERT wins once all K slots are occupied).
 //
@@ -59,7 +59,7 @@ enum class EvictionPolicy { FIFO, FREQ_FILTER };
 // FP_INSERT in a higher-index slot in any mode.
 enum class SearchMode { Sequential, Branchless, SIMD };
 
-// QuART_kfp<K, Policy, Search>: Maintains up to K independent fast-path slots,
+// QuART_multi_fp<K, Policy, Search>: Maintains up to K independent fast-path slots,
 // one per workload.  Uses the stail key-classification scheme (FP_INSERT /
 // BRIDGE / NO_MATCH) applied independently against every active slot.
 //
@@ -78,11 +78,11 @@ enum class SearchMode { Sequential, Branchless, SIMD };
 // (Branchless vs. Sequential early-exit); see SearchMode above.
 template <int K, EvictionPolicy Policy = EvictionPolicy::FIFO,
           SearchMode Search = SearchMode::Branchless>
-class QuART_kfp : public QuART {
+class QuART_multi_fp : public QuART {
    public:
-    QuART_kfp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
+    QuART_multi_fp() : QuART(), num_active(0), next_evict(0), active_slot(-1)
                  , candidate_upper(0), candidate_valid(false)
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                  , cnt_fp_insert(0), cnt_bridge(0), cnt_no_match(0)
                  , cnt_no_match_untracked(0)
                  , cnt_type4(0), cnt_type16(0), cnt_type48(0), cnt_type256(0)
@@ -133,7 +133,7 @@ class QuART_kfp : public QuART {
         auto [slotIdx, matchType] = findSlot(key);
 
         if (__builtin_expect(matchType == MatchType::FP_INSERT, 1)) {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
             cnt_fp_insert++;
 #endif
             active_slot = slotIdx;
@@ -157,32 +157,32 @@ class QuART_kfp : public QuART {
                 // Use cached s.fp_type to avoid dereferencing s.fp on
                 // every dispatch (s.fp_type is in the slot struct, L1 hit).
                 if (__builtin_expect(s.fp_type == NodeType256, 1)) {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                     cnt_type256++;
 #endif
                     static_cast<Node256*>(s.fp)->insertNode256(
                         this, s.fp_ref, key[s.fp_depth], newLeaf);
                 } else if (s.fp_type == NodeType48) {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                     cnt_type48++;
 #endif
                     static_cast<Node48*>(s.fp)->insertNode48PreserveFp(
                         this, s.fp_ref, key[s.fp_depth], newLeaf);
                 } else if (s.fp_type == NodeType16) {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                     cnt_type16++;
 #endif
                     static_cast<Node16*>(s.fp)->insertNode16PreserveFp(
                         this, s.fp_ref, key[s.fp_depth], newLeaf);
                 } else {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                     cnt_type4++;
 #endif
                     static_cast<Node4*>(s.fp)->insertNode4PreserveFp(
                         this, s.fp_ref, key[s.fp_depth], newLeaf);
                 }
             } else {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_fp_not_last_byte++;
 #endif
                 loadSlot(slotIdx);
@@ -192,7 +192,7 @@ class QuART_kfp : public QuART {
             }
 
         } else if (matchType == MatchType::BRIDGE) {
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
             cnt_bridge++;
 #endif
             // Key is adjacent to an existing workload boundary: reset that
@@ -204,7 +204,7 @@ class QuART_kfp : public QuART {
             saveToSlot(slotIdx);
 
         } else {  // NO_MATCH – new workload
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
             cnt_no_match++;
 #endif
             key_int_t keyUpper = getKeyUpperBytes(key);
@@ -212,7 +212,7 @@ class QuART_kfp : public QuART {
             if (slot == -1) {
                 // FREQ_FILTER: first sighting — insert without evicting a
                 // tracked slot so outlier keys don't pollute the cache.
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_no_match_untracked++;
 #endif
                 fp = nullptr; fp_prev = nullptr; fp_leaf = nullptr;
@@ -233,7 +233,7 @@ class QuART_kfp : public QuART {
 
     int getNumActive() const { return num_active; }
     const FpSlot& getSlot(int i) const { return slots[i]; }
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
     long long getFpInsertCount()          const { return cnt_fp_insert; }
     long long getBridgeCount()            const { return cnt_bridge; }
     long long getNoMatchCount()           const { return cnt_no_match; }
@@ -279,7 +279,7 @@ class QuART_kfp : public QuART {
     int active_slot;            // which slot is being modified during this insert
     key_int_t candidate_upper;  // FREQ_FILTER: upper bytes of last NO_MATCH key
     bool candidate_valid;       // FREQ_FILTER: whether candidate_upper is set
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
     long long cnt_fp_insert, cnt_bridge, cnt_no_match, cnt_no_match_untracked;
     long long cnt_type4, cnt_type16, cnt_type48, cnt_type256;
     long long cnt_fp_not_last_byte;
@@ -467,7 +467,7 @@ class QuART_kfp : public QuART {
                         ArtNode** newNodeRef) override {
         // Keep flat fields in sync for the active slot.
         ART::onNodeReplaced(oldNode, newNode, newNodeRef);
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
         cnt_hook_node_replaced++;
 #endif
         // Update every slot that tracked the replaced node.
@@ -476,14 +476,14 @@ class QuART_kfp : public QuART {
                 slots[j].fp      = newNode;
                 slots[j].fp_type = newNode->type;  // keep cache in sync
                 slots[j].fp_ref  = newNodeRef;
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_slotupd_node_replaced++;
 #endif
             } else if (slots[j].fp_prev == oldNode) {
                 slots[j].fp_prev = newNode;
                 ArtNode** ref = findChildPtr(newNode, slots[j].fp);
                 if (ref) slots[j].fp_ref = ref;
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_slotupd_node_replaced++;
 #endif
             }
@@ -494,13 +494,13 @@ class QuART_kfp : public QuART {
     // spliced above fp and the child cell that holds fp has moved.
     void onFpRefUpdate(ArtNode* targetFp, ArtNode** newRef) override {
         ART::onFpRefUpdate(targetFp, newRef);
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
         cnt_hook_fp_ref_update++;
 #endif
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp == targetFp) {
                 slots[j].fp_ref = newRef;
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_slotupd_fp_ref_update++;
 #endif
             }
@@ -513,7 +513,7 @@ class QuART_kfp : public QuART {
     void onLeafExpanded(ArtNode* oldLeaf, Node4* newNode, ArtNode** nodeRef,
                         ArtNode* prevNode) override {
         ART::onLeafExpanded(oldLeaf, newNode, nodeRef, prevNode);
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
         cnt_hook_leaf_expanded++;
 #endif
         for (int j = 0; j < num_active; j++) {
@@ -526,7 +526,7 @@ class QuART_kfp : public QuART {
                 slots[j].fp_type = newNode->type;  // Node4
                 slots[j].fp_ref  = nodeRef;
                 slots[j].fp_prev = prevNode;
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_slotupd_leaf_expanded++;
 #endif
             }
@@ -538,14 +538,14 @@ class QuART_kfp : public QuART {
     void onPrefixMismatch(ArtNode* fpNode, Node4* newParent,
                           unsigned mismatchPrefixLen) override {
         ART::onPrefixMismatch(fpNode, newParent, mismatchPrefixLen);
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
         cnt_hook_prefix_mismatch++;
 #endif
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp == fpNode) {
                 slots[j].fp_prev  = newParent;
                 slots[j].fp_depth += mismatchPrefixLen + 1;
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_slotupd_prefix_mismatch++;
 #endif
             }
@@ -557,14 +557,14 @@ class QuART_kfp : public QuART {
     // fp_ref by scanning the node for the slot's fp.
     void onParentShifted(ArtNode* node) override {
         ART::onParentShifted(node);
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
         cnt_hook_parent_shifted++;
 #endif
         for (int j = 0; j < num_active; j++) {
             if (slots[j].fp_prev == node) {
                 ArtNode** ref = findChildPtr(node, slots[j].fp);
                 if (ref) slots[j].fp_ref = ref;
-#ifdef QUART_KFP_STATS
+#ifdef QUART_MULTI_FP_STATS
                 cnt_slotupd_parent_shifted++;
 #endif
             }

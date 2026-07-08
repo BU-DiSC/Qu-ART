@@ -29,11 +29,28 @@
 
 namespace ART {
 class ART;
+struct ArtNode;
+
+// Node reclamation hook.  The base insert methods below free a grown-out node
+// by calling this instead of `delete this`, so a tree variant can override how
+// (and when) nodes are reclaimed.  Declared here (ART is still incomplete);
+// defined inline in ART.h once ART is complete.  Default behaviour = plain
+// delete, so single-threaded variants are byte-for-byte unchanged.  The
+// concurrent variant overrides it to DEFER the free (retire list) and mark the
+// node obsolete, so a cached fast-path pointer can never dereference freed
+// memory.
+void reclaimArtNode(ART* tree, ArtNode* n);
+
 // Constants for the node types
 static const int8_t NodeType4 = 0;
 static const int8_t NodeType16 = 1;
 static const int8_t NodeType48 = 2;
 static const int8_t NodeType256 = 3;
+// Sentinel type stamped on a node that has been grown out and unlinked from the
+// tree but not yet freed (deferred reclamation).  Never appears on a node that
+// is still reachable by normal traversal; the concurrent fast path checks for
+// it to detect that its cached tail pointer has gone stale.
+static const int8_t NodeTypeObsolete = -1;
 
 // The maximum prefix length for compressed paths stored in the
 // header, if the path is longer it is loaded from the database on
@@ -200,7 +217,7 @@ void Node4::insertNode4(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         for (unsigned i = 0; i < 4; i++)
             newNode->key[i] = flipSign(this->key[i]);
         memcpy(newNode->child, this->child, this->count * sizeof(uintptr_t));
-        delete this;
+        reclaimArtNode(tree, this);
         return newNode->insertNode16(tree, nodeRef, keyByte, child);
     }
 }
@@ -284,7 +301,7 @@ void Node16::insertNode16(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
             newNode->childIndex[flipSign(this->key[i])] = i;
         copyPrefix(this, newNode);
         newNode->count = this->count;
-        delete this;
+        reclaimArtNode(tree, this);
         return newNode->insertNode48(tree, nodeRef, keyByte, child);
     }
 }
@@ -336,7 +353,7 @@ void Node48::insertNode48(ART* tree, ArtNode** nodeRef, uint8_t keyByte,
         newNode->count = this->count;
         copyPrefix(this, newNode);
         *nodeRef = newNode;
-        delete this;
+        reclaimArtNode(tree, this);
         return newNode->insertNode256(tree, nodeRef, keyByte, child);
     }
 }
